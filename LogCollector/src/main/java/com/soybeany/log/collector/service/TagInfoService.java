@@ -4,18 +4,18 @@ import com.soybeany.log.collector.model.QueryParam;
 import com.soybeany.log.collector.repository.TagInfo;
 import com.soybeany.log.collector.repository.TagInfoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author Soybeany
  * @date 2021/1/4
  */
-public interface TagInfoService {
+public interface TagInfoService extends QueryParam.ParamHandler {
 
+    @NonNull
     List<String> getMatchedUidList(QueryParam queryParam);
 
 }
@@ -23,28 +23,37 @@ public interface TagInfoService {
 @Service
 class TagInfoServiceImpl implements TagInfoService {
 
+    private static final String TAG_PREFIX = "tag";
+
     @Autowired
     private TagInfoRepository tagInfoRepository;
 
     @Override
-    public List<String> getMatchedUidList(QueryParam param) {
-        if (param.kvList.isEmpty()) {
-            System.out.println("没有指定参数");
+    public boolean hasParams(QueryParam param) {
+        return !param.getParams(TAG_PREFIX).isEmpty();
+    }
+
+    @Override
+    public List<String> getMatchedUidList(QueryParam queryParam) {
+        Map<String, String> params = queryParam.getParams(TAG_PREFIX);
+        if (params.isEmpty()) {
             return Collections.emptyList();
         }
-        QueryParam.Kv firstKv = param.kvList.get(0);
-        List<TagInfo> infoList = tagInfoRepository.findByKeyAndTimeBetweenAndValueContaining(firstKv.key, param.from, param.to, firstKv.value);
-        for (int i = 1; i < param.kvList.size(); i++) {
-            QueryParam.Kv kv = param.kvList.get(i);
+        Iterator<Map.Entry<String, String>> iterator = params.entrySet().iterator();
+        Map.Entry<String, String> firstEntry = iterator.next();
+        List<TagInfo> infoList = tagInfoRepository.findByKeyAndTimeBetweenAndValueContaining(firstEntry.getKey(), queryParam.getFrom(), queryParam.getTo(), firstEntry.getValue());
+        while (iterator.hasNext()) {
+            Map.Entry<String, String> entry = iterator.next();
             List<String> uids = toUidList(infoList);
             if (uids.isEmpty()) {
                 return Collections.emptyList();
             }
-            infoList = tagInfoRepository.findByKeyAndValueContainingAndUidIn(kv.key, kv.value, uids);
+            infoList = tagInfoRepository.findByKeyAndValueContainingAndUidIn(entry.getKey(), entry.getValue(), uids);
         }
         return toUidList(infoList);
     }
 
+    @NonNull
     private List<String> toUidList(List<TagInfo> list) {
         List<String> result = new LinkedList<>();
         for (TagInfo info : list) {
@@ -52,5 +61,4 @@ class TagInfoServiceImpl implements TagInfoService {
         }
         return result;
     }
-
 }

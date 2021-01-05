@@ -23,8 +23,14 @@ public class LogLineInfo extends BaseEntity {
     /**
      * 所属的uid
      */
-    @Column(nullable = false)
+    @Column
     public String uid;
+
+    /**
+     * 调用深度
+     */
+    @Column
+    public Integer depth;
 
     /**
      * 关联的日志文件

@@ -16,4 +16,6 @@ public interface TagInfoRepository extends JpaRepository<TagInfo, Integer> {
 
     List<TagInfo> findByKeyAndValueContainingAndUidIn(String key, String value, Collection<String> uid);
 
+    List<TagInfo> findByUid(String uid);
+
 }
