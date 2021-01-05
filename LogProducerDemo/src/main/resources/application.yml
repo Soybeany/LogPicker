@@ -1,0 +1,6 @@
+server:
+  port: 8282
+
+logging:
+  pattern:
+    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%5p) %clr(%16X{xxx:-unknown}){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(:){faint} %m%n"
