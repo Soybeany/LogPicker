@@ -20,6 +20,9 @@ public class QueryContext {
     public final QueryParam queryParam;
     public final Map<String, Object> data = new HashMap<>();
     public final Map<String, Object> tempData = new HashMap<>();
+
+    public String lastId;
+    public String nextId;
     public ResultVO result;
 
     public QueryContext(QueryParam queryParam) {
@@ -55,7 +58,25 @@ public class QueryContext {
         return prefix + SEPARATOR + key;
     }
 
-    public interface NextContextHandler {
+    public interface IListener {
+        void onInitTempData(QueryContext context);
+    }
+
+    public interface NextContextHandler extends Comparable<NextContextHandler> {
+
+        @Override
+        default int compareTo(NextContextHandler o) {
+            return o.priority() - priority();
+        }
+
+        /**
+         * 优先级，值越大，越先被执行，默认值为0
+         */
+        default int priority() {
+            return 0;
+        }
+
         void onHandleNextContext(QueryContext old, QueryContext next);
+
     }
 }

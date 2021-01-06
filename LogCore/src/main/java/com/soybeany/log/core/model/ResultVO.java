@@ -26,6 +26,11 @@ public class ResultVO implements Serializable {
     public String nextContextId;
 
     /**
+     * 结束原因
+     */
+    public String endReason = "已搜索全部日志";
+
+    /**
      * 匹配结果的列表
      */
     public final List<LogResult> logResults = new LinkedList<>();

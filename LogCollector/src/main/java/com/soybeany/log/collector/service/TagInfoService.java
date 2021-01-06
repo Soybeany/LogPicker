@@ -16,10 +16,10 @@ import java.util.*;
  * @author Soybeany
  * @date 2021/1/4
  */
-public interface TagInfoService extends QueryParam.ParamHandler {
+public interface TagInfoService extends QueryParam.ParamDetector {
 
     @NonNull
-    List<String> getMatchedUidList(QueryContext context, int page);
+    List<String> getMatchedUidList(QueryContext context, int page, int pageSize);
 
 }
 
@@ -37,7 +37,7 @@ class TagInfoServiceImpl implements TagInfoService {
     }
 
     @Override
-    public List<String> getMatchedUidList(QueryContext context, int page) {
+    public List<String> getMatchedUidList(QueryContext context, int page, int pageSize) {
         // 提取参数
         QueryParam queryParam = context.queryParam;
         Map<String, String> params = queryParam.getParams(TAG_PREFIX);
@@ -46,9 +46,9 @@ class TagInfoServiceImpl implements TagInfoService {
         }
         Iterator<Map.Entry<String, String>> iterator = params.entrySet().iterator();
         Map.Entry<String, String> firstEntry = iterator.next();
-        Pageable pageable = PageRequest.of(page, queryParam.getCountLimit());
+        Pageable pageable = PageRequest.of(page, pageSize);
         // 首次筛选
-        List<TagInfo> infoList = tagInfoRepository.findByKeyAndTimeBetweenAndValueContaining(firstEntry.getKey(), queryParam.getFrom(), queryParam.getTo(), firstEntry.getValue(), pageable);
+        List<TagInfo> infoList = tagInfoRepository.findByKeyAndTimeBetweenAndValueContaining(firstEntry.getKey(), queryParam.getFromTime(), queryParam.getToTime(), firstEntry.getValue(), pageable);
         // 进阶循环筛选
         while (iterator.hasNext()) {
             Map.Entry<String, String> entry = iterator.next();

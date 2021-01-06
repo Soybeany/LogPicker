@@ -22,6 +22,10 @@ public class ApiController {
     @Autowired
     private QueryService queryService;
 
+    public void scan() {
+
+    }
+
     @GetMapping("/query")
     public String query(@RequestParam Map<String, String> param) {
         try {
@@ -31,5 +35,6 @@ public class ApiController {
             return "异常:" + e.getMessage();
         }
     }
+
 
 }

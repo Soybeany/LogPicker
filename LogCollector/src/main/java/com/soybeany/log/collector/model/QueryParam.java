@@ -15,16 +15,16 @@ import java.util.*;
 public class QueryParam {
 
     private static final String SEPARATOR = "-";
-    private static final String KEY_FROM_TIME = "fromTime";
-    private static final String KEY_TO_TIME = "toTime";
-    private static final String KEY_COUNT_LIMIT = "countLimit";
+    private static final String P_KEY_FROM_TIME = "fromTime";
+    private static final String P_KEY_TO_TIME = "toTime";
+    private static final String P_KEY_COUNT_LIMIT = "countLimit";
 
     private static final Map<Integer, DateTimeFormatter> FORMATTER_MAP = new HashMap<>();
 
     private final Map<String, Map<String, String>> params = new HashMap<>();
 
-    private LocalDateTime from;
-    private LocalDateTime to;
+    private LocalDateTime fromTime;
+    private LocalDateTime toTime;
     private int countLimit = 30;
 
     static {
@@ -58,12 +58,12 @@ public class QueryParam {
 
     // ********************公开方法********************
 
-    public Date getFrom() {
-        return TimeUtils.toDate(from);
+    public Date getFromTime() {
+        return TimeUtils.toDate(fromTime);
     }
 
-    public Date getTo() {
-        return TimeUtils.toDate(to);
+    public Date getToTime() {
+        return TimeUtils.toDate(toTime);
     }
 
     public int getCountLimit() {
@@ -79,29 +79,28 @@ public class QueryParam {
 
     private void handleFixKey(String key, String value) {
         switch (key) {
-            case KEY_FROM_TIME:
-                from = parseTime(value);
+            case P_KEY_FROM_TIME:
+                fromTime = parseTime(value);
                 break;
-            case KEY_TO_TIME:
-                to = parseTime(value);
+            case P_KEY_TO_TIME:
+                toTime = parseTime(value);
                 break;
-            case KEY_COUNT_LIMIT:
+            case P_KEY_COUNT_LIMIT:
                 countLimit = Integer.parseInt(value);
-                break;
             default:
         }
     }
 
     private void postHandleTime() {
         // 确保时间参数不为null
-        if (null == from) {
-            from = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).minusSeconds(1);
+        if (null == fromTime) {
+            fromTime = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).minusSeconds(1);
         }
-        if (null == to) {
-            to = LocalDateTime.now();
+        if (null == toTime) {
+            toTime = LocalDateTime.now();
         }
         // 校验时间参数
-        if (from.isAfter(to)) {
+        if (fromTime.isAfter(toTime)) {
             throw new LogException("开始时间不能晚于结束时间");
         }
     }
@@ -129,8 +128,10 @@ public class QueryParam {
 
     // ********************内部类********************
 
-    public interface ParamHandler {
+    public interface ParamDetector {
+
         boolean hasParams(QueryContext context);
+
     }
 
 }
