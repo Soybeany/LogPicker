@@ -1,7 +1,7 @@
 package com.soybeany.log.collector.service.filter;
 
-import com.soybeany.log.collector.model.Context;
-import com.soybeany.log.collector.model.LogSection;
+import com.soybeany.log.collector.model.QueryContext;
+import com.soybeany.log.core.model.LogSection;
 import org.springframework.stereotype.Component;
 
 /**
@@ -11,12 +11,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class KeyContainsLogFilter implements LogFilter {
 
-    private static final String KEY_CONTAINS_KEY = "containsKey";
+    private static final String P_KEY_CONTAINS_KEY = "containsKey";
 
     @Override
-    public boolean shouldFilter(Context context, LogSection section) {
+    public boolean shouldFilter(QueryContext context, LogSection section) {
         // 若没有配置，则不作过滤
-        String key = getParams(context).get(KEY_CONTAINS_KEY);
+        String key = getParams(context).get(P_KEY_CONTAINS_KEY);
         if (null == key) {
             return false;
         }

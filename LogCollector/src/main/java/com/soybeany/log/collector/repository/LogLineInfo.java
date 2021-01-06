@@ -45,10 +45,16 @@ public class LogLineInfo extends BaseEntity {
     public Date time;
 
     /**
-     * 对应文件的开始字节位置
+     * 完整一行，对应文件的开始字节位置
      */
     @Column(nullable = false)
-    public Long fromByte;
+    public Long lineFromByte;
+
+    /**
+     * 内容部分，对应文件的开始字节位置
+     */
+    @Column(nullable = false)
+    public Long msgFromByte;
 
     /**
      * 对应文件的结束字节位置

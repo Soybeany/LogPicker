@@ -1,4 +1,4 @@
-package com.soybeany.log.collector.model;
+package com.soybeany.log.core.model;
 
 /**
  * @author Soybeany

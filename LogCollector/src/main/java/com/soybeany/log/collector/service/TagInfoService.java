@@ -1,9 +1,12 @@
 package com.soybeany.log.collector.service;
 
+import com.soybeany.log.collector.model.QueryContext;
 import com.soybeany.log.collector.model.QueryParam;
 import com.soybeany.log.collector.repository.TagInfo;
 import com.soybeany.log.collector.repository.TagInfoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
@@ -16,7 +19,7 @@ import java.util.*;
 public interface TagInfoService extends QueryParam.ParamHandler {
 
     @NonNull
-    List<String> getMatchedUidList(QueryParam queryParam);
+    List<String> getMatchedUidList(QueryContext context, int page);
 
 }
 
@@ -29,19 +32,24 @@ class TagInfoServiceImpl implements TagInfoService {
     private TagInfoRepository tagInfoRepository;
 
     @Override
-    public boolean hasParams(QueryParam param) {
-        return !param.getParams(TAG_PREFIX).isEmpty();
+    public boolean hasParams(QueryContext context) {
+        return !context.queryParam.getParams(TAG_PREFIX).isEmpty();
     }
 
     @Override
-    public List<String> getMatchedUidList(QueryParam queryParam) {
+    public List<String> getMatchedUidList(QueryContext context, int page) {
+        // 提取参数
+        QueryParam queryParam = context.queryParam;
         Map<String, String> params = queryParam.getParams(TAG_PREFIX);
         if (params.isEmpty()) {
             return Collections.emptyList();
         }
         Iterator<Map.Entry<String, String>> iterator = params.entrySet().iterator();
         Map.Entry<String, String> firstEntry = iterator.next();
-        List<TagInfo> infoList = tagInfoRepository.findByKeyAndTimeBetweenAndValueContaining(firstEntry.getKey(), queryParam.getFrom(), queryParam.getTo(), firstEntry.getValue());
+        Pageable pageable = PageRequest.of(page, queryParam.getCountLimit());
+        // 首次筛选
+        List<TagInfo> infoList = tagInfoRepository.findByKeyAndTimeBetweenAndValueContaining(firstEntry.getKey(), queryParam.getFrom(), queryParam.getTo(), firstEntry.getValue(), pageable);
+        // 进阶循环筛选
         while (iterator.hasNext()) {
             Map.Entry<String, String> entry = iterator.next();
             List<String> uids = toUidList(infoList);
@@ -50,6 +58,7 @@ class TagInfoServiceImpl implements TagInfoService {
             }
             infoList = tagInfoRepository.findByKeyAndValueContainingAndUidIn(entry.getKey(), entry.getValue(), uids);
         }
+        // 转换为uid列表
         return toUidList(infoList);
     }
 
@@ -61,4 +70,5 @@ class TagInfoServiceImpl implements TagInfoService {
         }
         return result;
     }
+
 }

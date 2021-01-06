@@ -1,6 +1,7 @@
 package com.soybeany.log.collector.model;
 
-import com.soybeany.log.collector.util.TimeUtils;
+import com.soybeany.log.core.model.LogException;
+import com.soybeany.log.core.util.TimeUtils;
 import org.springframework.lang.NonNull;
 
 import java.time.LocalDateTime;
@@ -16,15 +17,22 @@ public class QueryParam {
     private static final String SEPARATOR = "-";
     private static final String KEY_FROM_TIME = "fromTime";
     private static final String KEY_TO_TIME = "toTime";
+    private static final String KEY_COUNT_LIMIT = "countLimit";
 
     private static final Map<Integer, DateTimeFormatter> FORMATTER_MAP = new HashMap<>();
 
     private final Map<String, Map<String, String>> params = new HashMap<>();
+
     private LocalDateTime from;
     private LocalDateTime to;
+    private int countLimit = 30;
 
     static {
         initFormatterMap();
+    }
+
+    public static String getParam(String prefix, String key, Map<String, String> param) {
+        return param.get(prefix + SEPARATOR + key);
     }
 
     private static void initFormatterMap() {
@@ -58,6 +66,10 @@ public class QueryParam {
         return TimeUtils.toDate(to);
     }
 
+    public int getCountLimit() {
+        return countLimit;
+    }
+
     @NonNull
     public Map<String, String> getParams(String prefix) {
         return Optional.ofNullable(params.get(prefix)).orElseGet(HashMap::new);
@@ -73,6 +85,9 @@ public class QueryParam {
             case KEY_TO_TIME:
                 to = parseTime(value);
                 break;
+            case KEY_COUNT_LIMIT:
+                countLimit = Integer.parseInt(value);
+                break;
             default:
         }
     }
@@ -80,10 +95,10 @@ public class QueryParam {
     private void postHandleTime() {
         // 确保时间参数不为null
         if (null == from) {
-            from = getDefaultFrom();
+            from = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).minusSeconds(1);
         }
         if (null == to) {
-            to = getDefaultTo();
+            to = LocalDateTime.now();
         }
         // 校验时间参数
         if (from.isAfter(to)) {
@@ -112,18 +127,10 @@ public class QueryParam {
         return LocalDateTime.parse(string, formatter);
     }
 
-    private LocalDateTime getDefaultFrom() {
-        return LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).minusSeconds(1);
-    }
-
-    private LocalDateTime getDefaultTo() {
-        return LocalDateTime.now();
-    }
-
     // ********************内部类********************
 
     public interface ParamHandler {
-        boolean hasParams(QueryParam param);
+        boolean hasParams(QueryContext context);
     }
 
 }

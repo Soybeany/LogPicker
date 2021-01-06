@@ -1,15 +1,14 @@
 package com.soybeany.log.collector.controller;
 
-import com.soybeany.log.collector.model.LogException;
-import com.soybeany.log.collector.model.ResultVO;
 import com.soybeany.log.collector.service.QueryService;
+import com.soybeany.log.core.model.LogException;
+import com.soybeany.log.core.model.ResultVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -26,8 +25,8 @@ public class ApiController {
     @GetMapping("/query")
     public String query(@RequestParam Map<String, String> param) {
         try {
-            List<ResultVO> results = queryService.query(param);
-            return "匹配到:" + results.size();
+            ResultVO result = queryService.query(param);
+            return "匹配到:" + result.logResults.size();
         } catch (LogException e) {
             return "异常:" + e.getMessage();
         }

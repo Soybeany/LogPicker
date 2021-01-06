@@ -1,7 +1,7 @@
 package com.soybeany.log.collector.service.filter;
 
-import com.soybeany.log.collector.model.Context;
-import com.soybeany.log.collector.model.LogSection;
+import com.soybeany.log.collector.model.QueryContext;
+import com.soybeany.log.core.model.LogSection;
 import org.springframework.lang.NonNull;
 
 import java.util.Map;
@@ -24,11 +24,11 @@ public interface LogFilter extends Comparable<LogFilter> {
      *
      * @return true则过滤指定的section
      */
-    boolean shouldFilter(Context context, LogSection section);
+    boolean shouldFilter(QueryContext context, LogSection section);
 
     @NonNull
-    default Map<String, String> getParams(Context context) {
-        return context.param.getParams(FILTER_PREFIX);
+    default Map<String, String> getParams(QueryContext context) {
+        return context.queryParam.getParams(FILTER_PREFIX);
     }
 
     /**

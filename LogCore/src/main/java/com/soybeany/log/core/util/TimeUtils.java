@@ -1,4 +1,4 @@
-package com.soybeany.log.collector.util;
+package com.soybeany.log.core.util;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;

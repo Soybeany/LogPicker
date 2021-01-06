@@ -1,4 +1,4 @@
-package com.soybeany.log.collector.model;
+package com.soybeany.log.core.model;
 
 import java.io.Serializable;
 import java.util.List;
@@ -9,7 +9,7 @@ import java.util.List;
  * @author Soybeany
  * @date 2020/12/31
  */
-public class ResultVO implements Serializable {
+public class LogResult implements Serializable {
 
     /**
      * 全局唯一号

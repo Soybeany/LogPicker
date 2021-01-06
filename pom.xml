@@ -20,6 +20,7 @@
         <module>LogProducerDemo</module>
         <module>LogTagWriter</module>
         <module>LogManager</module>
+        <module>LogCore</module>
     </modules>
 
 </project>

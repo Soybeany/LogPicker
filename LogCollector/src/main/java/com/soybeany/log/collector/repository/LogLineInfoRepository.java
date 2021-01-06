@@ -13,6 +13,6 @@ public interface LogLineInfoRepository extends JpaRepository<LogLineInfo, Intege
 
     List<LogLineInfo> findByUidIsNullAndTimeBetweenOrderByTime(Date from, Date to);
 
-    List<LogLineInfo> findByUid(String uid);
+    List<LogLineInfo> findByUidOrderByTime(String uid);
 
 }
