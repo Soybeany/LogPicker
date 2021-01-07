@@ -10,3 +10,8 @@ spring:
       ddl-auto: update
     show-sql: true
     open-in-view: false
+
+config:
+  max-page-size: 100
+  max-lines-per-result-with-null-uid: 20
+  max-bytes-return: 10000000

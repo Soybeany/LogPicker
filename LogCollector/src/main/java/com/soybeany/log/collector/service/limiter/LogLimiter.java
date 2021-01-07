@@ -1,7 +1,7 @@
 package com.soybeany.log.collector.service.limiter;
 
 import com.soybeany.log.collector.model.QueryContext;
-import com.soybeany.log.core.model.LogResult;
+import com.soybeany.log.collector.model.RawLogResult;
 import org.springframework.lang.NonNull;
 
 import java.util.Map;
@@ -12,11 +12,11 @@ import java.util.Map;
  */
 public interface LogLimiter {
 
-    String LIMITER_PREFIX = "limiter";
+    String PREFIX = "limiter";
 
     @NonNull
     default Map<String, String> getParams(QueryContext context) {
-        return context.queryParam.getParams(LIMITER_PREFIX);
+        return context.queryParam.getParams(PREFIX);
     }
 
     /**
@@ -25,8 +25,8 @@ public interface LogLimiter {
     String getDesc();
 
     /**
-     * 是否应该添加日志结果
+     * 是否能够添加日志结果
      */
-    boolean shouldAddResult(QueryContext context, LogResult result);
+    boolean canAddResult(QueryContext context, RawLogResult result);
 
 }

@@ -14,9 +14,10 @@ import java.util.Date;
  */
 @Entity
 @Table(indexes = {
+        @Index(columnList = "fileId"),
+        @Index(columnList = "time"),
         @Index(name = "uid_time_index", columnList = "uid"),
         @Index(name = "uid_time_index", columnList = "time"),
-        @Index(columnList = "fileId")
 })
 public class LogLineInfo extends BaseEntity {
 
@@ -25,12 +26,6 @@ public class LogLineInfo extends BaseEntity {
      */
     @Column
     public String uid;
-
-    /**
-     * 调用深度
-     */
-    @Column
-    public Integer depth;
 
     /**
      * 关联的日志文件
@@ -45,19 +40,19 @@ public class LogLineInfo extends BaseEntity {
     public Date time;
 
     /**
-     * 完整一行，对应文件的开始字节位置
+     * 等级
      */
     @Column(nullable = false)
-    public Long lineFromByte;
+    public String level;
 
     /**
-     * 内容部分，对应文件的开始字节位置
+     * 内容部分对应文件的开始字节位置
      */
     @Column(nullable = false)
-    public Long msgFromByte;
+    public Long fromByte;
 
     /**
-     * 对应文件的结束字节位置
+     * 内容部分对应文件的结束字节位置
      */
     @Column(nullable = false)
     public Long toByte;

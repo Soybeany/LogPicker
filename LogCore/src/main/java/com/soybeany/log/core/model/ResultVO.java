@@ -1,7 +1,6 @@
 package com.soybeany.log.core.model;
 
 import java.io.Serializable;
-import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -13,17 +12,17 @@ public class ResultVO implements Serializable {
     /**
      * 上一查询结果的上下文id
      */
-    public String lastContextId;
+    public final String lastContextId;
 
     /**
      * 当前查询结果的上下文id
      */
-    public String curContextId;
+    public final String curContextId;
 
     /**
      * 下一查询结果的上下文id
      */
-    public String nextContextId;
+    public final String nextContextId;
 
     /**
      * 结束原因
@@ -33,9 +32,12 @@ public class ResultVO implements Serializable {
     /**
      * 匹配结果的列表
      */
-    public final List<LogResult> logResults = new LinkedList<>();
+    public final List<LogResult> logResults;
 
-    public ResultVO(String curContextId) {
+    public ResultVO(String lastContextId, String curContextId, String nextContextId, List<LogResult> logResults) {
+        this.lastContextId = lastContextId;
         this.curContextId = curContextId;
+        this.nextContextId = nextContextId;
+        this.logResults = logResults;
     }
 }

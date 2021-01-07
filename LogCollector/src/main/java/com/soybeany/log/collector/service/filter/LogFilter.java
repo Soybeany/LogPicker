@@ -1,7 +1,7 @@
 package com.soybeany.log.collector.service.filter;
 
 import com.soybeany.log.collector.model.QueryContext;
-import com.soybeany.log.core.model.LogSection;
+import com.soybeany.log.collector.model.RawLogResult;
 import org.springframework.lang.NonNull;
 
 import java.util.Map;
@@ -12,18 +12,18 @@ import java.util.Map;
  */
 public interface LogFilter {
 
-    String FILTER_PREFIX = "filter";
+    String PREFIX = "filter";
 
     @NonNull
     default Map<String, String> getParams(QueryContext context) {
-        return context.queryParam.getParams(FILTER_PREFIX);
+        return context.queryParam.getParams(PREFIX);
     }
 
     /**
-     * 是否应该将指定的section过滤掉
+     * 是否应该将指定的result过滤掉
      *
-     * @return true则过滤指定的section
+     * @return true则过滤指定的result
      */
-    boolean shouldFilter(QueryContext context, LogSection section);
+    boolean shouldFilter(QueryContext context, RawLogResult result);
 
 }

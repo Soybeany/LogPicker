@@ -26,21 +26,21 @@ public interface TagInfoService extends QueryParam.ParamDetector {
 @Service
 class TagInfoServiceImpl implements TagInfoService {
 
-    private static final String TAG_PREFIX = "tag";
+    private static final String PREFIX = "tag";
 
     @Autowired
     private TagInfoRepository tagInfoRepository;
 
     @Override
     public boolean hasParams(QueryContext context) {
-        return !context.queryParam.getParams(TAG_PREFIX).isEmpty();
+        return !context.queryParam.getParams(PREFIX).isEmpty();
     }
 
     @Override
     public List<String> getMatchedUidList(QueryContext context, int page, int pageSize) {
         // 提取参数
         QueryParam queryParam = context.queryParam;
-        Map<String, String> params = queryParam.getParams(TAG_PREFIX);
+        Map<String, String> params = queryParam.getParams(PREFIX);
         if (params.isEmpty()) {
             return Collections.emptyList();
         }
