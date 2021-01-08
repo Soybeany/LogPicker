@@ -14,9 +14,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author Soybeany
@@ -53,7 +51,7 @@ class LogResultConvertServiceImpl implements LogResultConvertService {
         // 设置耗时
         result.spend = getSpend(info);
         // 设置标签集
-        result.tags.addAll(getTags(raw));
+        result.tags.putAll(getTags(raw));
         // 设置日志
         result.logs.addAll(getLogs(raw));
         // 设置其它简易信息
@@ -75,14 +73,27 @@ class LogResultConvertServiceImpl implements LogResultConvertService {
     }
 
     @NonNull
-    private List<String> getTags(RawLogResult raw) {
-        List<String> list = new LinkedList<>();
+    private Map<String, String> getTags(RawLogResult raw) {
+        Map<String, String> result = new LinkedHashMap<>();
         if (null != raw.tags) {
+            Map<String, List<String>> temp = new HashMap<>();
             for (TagInfo info : raw.tags) {
-                list.add(info.key + "-" + info.value);
+                temp.computeIfAbsent(info.key, k -> new ArrayList<>()).add(info.value);
+            }
+            for (Map.Entry<String, List<String>> entry : temp.entrySet()) {
+                List<String> valueList = entry.getValue();
+                if (valueList.size() == 1) {
+                    result.put(entry.getKey(), valueList.get(0));
+                }
+                // 为相同的tag重命名
+                else {
+                    for (int i = 0; i < valueList.size(); i++) {
+                        result.put(entry.getKey() + (i + 1), valueList.get(i));
+                    }
+                }
             }
         }
-        return list;
+        return result;
     }
 
     private String getSpend(TimeInfo timeInfo) {
@@ -112,9 +123,9 @@ class LogResultConvertServiceImpl implements LogResultConvertService {
         if (null != result.tags && !result.tags.isEmpty()) {
             info.firstTagTime = result.tags.get(0).time;
             for (TagInfo tag : result.tags) {
-                if (TagDesc.BORDER_START.equals(tag.key)) {
+                if (TagDesc.BORDER_START.equalsIgnoreCase(tag.key)) {
                     info.tagStartTime = tag.time;
-                } else if ((TagDesc.BORDER_END.equals(tag.key))) {
+                } else if ((TagDesc.BORDER_END.equalsIgnoreCase(tag.key))) {
                     info.tagEndTime = tag.time;
                 }
             }

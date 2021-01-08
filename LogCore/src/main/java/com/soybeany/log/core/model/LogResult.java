@@ -1,8 +1,10 @@
 package com.soybeany.log.core.model;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 一条匹配的结果，包含来自各台服务器的分段日志
@@ -25,7 +27,7 @@ public class LogResult implements Serializable {
     /**
      * 自定义标签，如url、user、param等
      */
-    public final List<String> tags = new LinkedList<>();
+    public final Map<String, String> tags = new HashMap<>();
 
     /**
      * 服务器

@@ -57,7 +57,7 @@ public class TagInfo extends BaseEntity {
     /**
      * 标签的值
      */
-    @Column(nullable = false)
+    @Column
     public String value;
 
 }
