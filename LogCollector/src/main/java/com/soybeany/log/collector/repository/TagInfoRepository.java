@@ -13,10 +13,10 @@ import java.util.List;
  */
 public interface TagInfoRepository extends JpaRepository<TagInfo, Integer> {
 
-    List<TagInfo> findByKeyAndTimeBetweenAndValueContaining(String key, Date from, Date to, String value, Pageable pageable);
+    List<TagInfo> findByKeyAndTimeBetweenAndValueContainingOrderByTime(String key, Date from, Date to, String value, Pageable pageable);
 
-    List<TagInfo> findByKeyAndValueContainingAndUidIn(String key, String value, Collection<String> uid);
+    List<TagInfo> findByKeyAndValueContainingAndUidInOrderByTime(String key, String value, Collection<String> uid);
 
-    List<TagInfo> findByUid(String uid);
+    List<TagInfo> findByUidAndThreadOrderByTime(String uid, String thread);
 
 }

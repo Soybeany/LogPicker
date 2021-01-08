@@ -1,13 +1,15 @@
 package com.soybeany.log.collector.service;
 
 import com.soybeany.log.collector.config.AppConfig;
+import com.soybeany.log.collector.model.LogLine;
 import com.soybeany.log.collector.model.QueryContext;
 import com.soybeany.log.collector.model.RawLogResult;
 import com.soybeany.log.collector.repository.LogLineInfo;
+import com.soybeany.log.collector.service.converter.LogLineConvertService;
+import com.soybeany.log.collector.service.converter.LogResultConvertService;
+import com.soybeany.log.collector.service.converter.RawLogResultConvertService;
 import com.soybeany.log.collector.service.filter.LogFilter;
 import com.soybeany.log.collector.service.limiter.LogLimiter;
-import com.soybeany.log.collector.service.selector.LogSelector;
-import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.core.model.LogResult;
 import com.soybeany.log.core.model.ResultVO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,19 +49,21 @@ class QueryResultServiceImpl implements QueryResultService {
     @Autowired
     private AppConfig appConfig;
     @Autowired
-    private RawLogResultService rawLogResultService;
-    @Autowired
-    private ModelConvertService modelConvertService;
-    @Autowired
     private QueryContextService queryContextService;
+    @Autowired
+    private LogSelectorService logSelectorService;
+    @Autowired
+    private LogLineConvertService logLineConvertService;
+    @Autowired
+    private RawLogResultConvertService rawLogResultConvertService;
+    @Autowired
+    private LogResultConvertService logResultConvertService;
     @Autowired
     private List<QueryContext.NextContextHandler> nextContextHandlers;
     @Autowired
     private List<LogFilter> logFilters;
     @Autowired
     private List<LogLimiter> logLimiters;
-    @Autowired
-    private List<LogSelector> logSelectors;
 
     @Override
     public ResultVO getResult(QueryContext context) {
@@ -81,7 +85,6 @@ class QueryResultServiceImpl implements QueryResultService {
     @PostConstruct
     private void onInit() {
         Collections.sort(nextContextHandlers);
-        Collections.sort(logSelectors);
     }
 
     private int getPage(QueryContext context) {
@@ -92,30 +95,18 @@ class QueryResultServiceImpl implements QueryResultService {
         return page;
     }
 
-    private int getPageSize(QueryContext context) {
-        return Math.min(appConfig.maxPageSize, context.queryParam.getCountLimit());
-    }
-
-    @NonNull
-    private LogSelector getLogSelector(QueryContext context) {
-        for (LogSelector selector : logSelectors) {
-            if (selector.isSupport(context)) {
-                return selector;
-            }
-        }
-        throw new LogException("没有找到合适的日志选择器");
-    }
-
     @NonNull
     private int searchResults(QueryContext context, List<RawLogResult> formalList, int page) {
-        LogSelector selector = getLogSelector(context);
+        int pageSize = Math.min(appConfig.maxPageSize, context.queryParam.getCountLimit());
         while (true) {
-            List<LogLineInfo> logs = selector.select(context, page, getPageSize(context));
-            List<RawLogResult> tempResults = rawLogResultService.toRawLogResults(context, logs);
+            List<LogLineInfo> infoList = logSelectorService.select(context, page, pageSize);
             // 如果已无更多，则不再继续
-            if (tempResults.isEmpty()) {
+            if (null == infoList || infoList.isEmpty()) {
                 break;
             }
+            // 对象转换
+            List<LogLine> logLines = logLineConvertService.convert(context, infoList);
+            List<RawLogResult> tempResults = rawLogResultConvertService.convert(context, logLines);
             // 使用过滤器过滤记录
             filterLogResults(context, tempResults);
             page++;
@@ -188,7 +179,7 @@ class QueryResultServiceImpl implements QueryResultService {
         // 按需分页
         checkPageable(context);
         // 创建Result
-        List<LogResult> results = modelConvertService.toLogResults(context, formalList);
+        List<LogResult> results = logResultConvertService.convert(context, formalList);
         return new ResultVO(context.lastId, context.id, context.nextId, results);
     }
 

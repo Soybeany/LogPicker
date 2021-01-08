@@ -31,7 +31,7 @@ public class FileInfo extends BaseEntity {
      * 已扫描的字节数
      */
     @Column(nullable = false)
-    public long scannedBytes;
+    public Long scannedBytes;
 
     /**
      * 文件的最后修改时间

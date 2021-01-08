@@ -1,31 +1,27 @@
-package com.soybeany.log.collector.service;
+package com.soybeany.log.collector.service.converter;
 
 import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.model.LogLine;
 import com.soybeany.log.collector.model.QueryContext;
 import com.soybeany.log.collector.model.RawLogResult;
-import com.soybeany.log.collector.repository.LogLineInfo;
 import com.soybeany.log.collector.repository.TagInfo;
 import com.soybeany.log.collector.repository.TagInfoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 
 /**
  * @author Soybeany
- * @date 2021/1/6
+ * @date 2021/1/8
  */
-public interface RawLogResultService {
-
-    @NonNull
-    List<RawLogResult> toRawLogResults(QueryContext context, List<LogLineInfo> list);
-
+public interface RawLogResultConvertService extends ConverterService<LogLine, RawLogResult> {
 }
 
 @Service
-class RawLogResultServiceImpl implements RawLogResultService {
+class RawLogResultConvertServiceImpl implements RawLogResultConvertService {
 
     private static final String PREFIX = "rawLogResult";
 
@@ -34,20 +30,12 @@ class RawLogResultServiceImpl implements RawLogResultService {
     @Autowired
     private AppConfig appConfig;
     @Autowired
-    private ModelConvertService modelConvertService;
-    @Autowired
     private TagInfoRepository tagInfoRepository;
 
     @Override
-    public List<RawLogResult> toRawLogResults(QueryContext context, List<LogLineInfo> list) {
-        // 若没待处理的日志行，直接返回空列表
-        if (list.isEmpty()) {
-            return Collections.emptyList();
-        }
-        // 转换为行列表
-        List<LogLine> lines = modelConvertService.toLineList(list);
+    public List<RawLogResult> convert(QueryContext context, List<LogLine> lines) {
         // 对日志行进行分类
-        Map<String, List<LogLine>> sortedUidMap = new HashMap<>();
+        Map<String, List<LogLine>> sortedUidMap = new LinkedHashMap<>();
         List<LogLine> nullUidList = new LinkedList<>();
         sortLogLines(lines, sortedUidMap, nullUidList);
         // 汇总并返回全部结果
@@ -62,11 +50,13 @@ class RawLogResultServiceImpl implements RawLogResultService {
     private List<RawLogResult> uidMapToResults(Map<String, List<LogLine>> sortedUidMap) {
         List<RawLogResult> results = new LinkedList<>();
         for (Map.Entry<String, List<LogLine>> entry : sortedUidMap.entrySet()) {
-            List<TagInfo> tagInfoList = tagInfoRepository.findByUid(entry.getKey());
+            String uid = entry.getKey();
             // 按线程拆分列表
             Map<String, List<LogLine>> splatMap = splitByThread(entry.getValue());
             for (Map.Entry<String, List<LogLine>> listEntry : splatMap.entrySet()) {
-                results.add(modelConvertService.toRawResult(entry.getKey(), listEntry.getKey(), tagInfoList, listEntry.getValue()));
+                String thread = listEntry.getKey();
+                List<TagInfo> tagInfoList = tagInfoRepository.findByUidAndThreadOrderByTime(uid, thread);
+                results.add(toRawResult(uid, thread, tagInfoList, listEntry.getValue()));
             }
         }
         return results;
@@ -78,12 +68,12 @@ class RawLogResultServiceImpl implements RawLogResultService {
         Map<String, List<LogLine>> splatMap = splitByThread(lines);
         for (Map.Entry<String, List<LogLine>> entry : splatMap.entrySet()) {
             // 按数目限制再次拆分
-            String maxLineCountString = context.queryParam.getParams(PREFIX).get(P_KEY_MAX_LINES_PER_RESULT_WITH_NULL_UID);
+            String maxLineCountString = context.getParam(PREFIX, P_KEY_MAX_LINES_PER_RESULT_WITH_NULL_UID);
             int maxLineCount = (null != maxLineCountString ? Integer.parseInt(maxLineCountString) : appConfig.maxLinesPerResultWithNullUid);
             Collection<List<LogLine>> splatLines = splitByLineCount(entry.getValue(), maxLineCount);
             // 转换为结果列表
             for (List<LogLine> lineList : splatLines) {
-                results.add(modelConvertService.toRawResult(null, entry.getKey(), null, lineList));
+                results.add(toRawResult(null, entry.getKey(), null, lineList));
             }
         }
         return results;
@@ -114,6 +104,15 @@ class RawLogResultServiceImpl implements RawLogResultService {
                 sortedUidMap.computeIfAbsent(logLine.uid, k -> new LinkedList<>()).add(logLine);
             }
         }
+    }
+
+    private RawLogResult toRawResult(String uid, String thread, @Nullable List<TagInfo> tags, @NonNull List<LogLine> lines) {
+        RawLogResult result = new RawLogResult();
+        result.uid = uid;
+        result.thread = thread;
+        result.tags = tags;
+        result.logLines.addAll(lines);
+        return result;
     }
 
 }

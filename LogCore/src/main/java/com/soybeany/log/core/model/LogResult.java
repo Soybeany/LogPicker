@@ -1,8 +1,8 @@
 package com.soybeany.log.core.model;
 
 import java.io.Serializable;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 一条匹配的结果，包含来自各台服务器的分段日志
@@ -13,9 +13,9 @@ import java.util.Map;
 public class LogResult implements Serializable {
 
     /**
-     * 时间，默认为开始时间；也可能是结束时间(添加标识)；也可能是未知(2个标签均缺失)
+     * 日期
      */
-    public String time;
+    public String date;
 
     /**
      * 耗时，一般为具体值，但若缺失统计标签，则显示备注
@@ -25,7 +25,7 @@ public class LogResult implements Serializable {
     /**
      * 自定义标签，如url、user、param等
      */
-    public Map<String, String> tags;
+    public final List<String> tags = new LinkedList<>();
 
     /**
      * 服务器
@@ -45,6 +45,6 @@ public class LogResult implements Serializable {
     /**
      * 日志
      */
-    public List<String> logs;
+    public final List<String> logs = new LinkedList<>();
 
 }

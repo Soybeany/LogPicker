@@ -17,7 +17,7 @@ class KeyContainsLogFilter implements LogFilter {
     @Override
     public boolean shouldFilter(QueryContext context, RawLogResult result) {
         // 若没有配置，则不作过滤
-        String key = getParams(context).get(P_KEY_CONTAINS_KEY);
+        String key = context.getParam(PREFIX, P_KEY_CONTAINS_KEY);
         if (null == key) {
             return false;
         }

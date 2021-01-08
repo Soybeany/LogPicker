@@ -48,7 +48,7 @@ class TagInfoServiceImpl implements TagInfoService {
         Map.Entry<String, String> firstEntry = iterator.next();
         Pageable pageable = PageRequest.of(page, pageSize);
         // 首次筛选
-        List<TagInfo> infoList = tagInfoRepository.findByKeyAndTimeBetweenAndValueContaining(firstEntry.getKey(), queryParam.getFromTime(), queryParam.getToTime(), firstEntry.getValue(), pageable);
+        List<TagInfo> infoList = tagInfoRepository.findByKeyAndTimeBetweenAndValueContainingOrderByTime(firstEntry.getKey(), queryParam.getFromTime(), queryParam.getToTime(), firstEntry.getValue(), pageable);
         // 进阶循环筛选
         while (iterator.hasNext()) {
             Map.Entry<String, String> entry = iterator.next();
@@ -56,7 +56,7 @@ class TagInfoServiceImpl implements TagInfoService {
             if (uids.isEmpty()) {
                 return Collections.emptyList();
             }
-            infoList = tagInfoRepository.findByKeyAndValueContainingAndUidIn(entry.getKey(), entry.getValue(), uids);
+            infoList = tagInfoRepository.findByKeyAndValueContainingAndUidInOrderByTime(entry.getKey(), entry.getValue(), uids);
         }
         // 转换为uid列表
         return toUidList(infoList);

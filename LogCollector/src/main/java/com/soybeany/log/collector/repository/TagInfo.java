@@ -14,8 +14,9 @@ import java.util.Date;
  */
 @Entity
 @Table(indexes = {
-        @Index(columnList = "uid"),
         @Index(columnList = "fileId"),
+        @Index(name = "uid_thread_index", columnList = "uid"),
+        @Index(name = "uid_thread_index", columnList = "thread"),
         @Index(name = "key_time_index", columnList = "key"),
         @Index(name = "key_time_index", columnList = "time"),
         @Index(name = "key_uid_index", columnList = "key"),
@@ -24,10 +25,10 @@ import java.util.Date;
 public class TagInfo extends BaseEntity {
 
     /**
-     * 创建该标记的时间
+     * 关联的日志文件
      */
     @Column(nullable = false)
-    public Date time;
+    public Integer fileId;
 
     /**
      * 所属的uid
@@ -36,10 +37,16 @@ public class TagInfo extends BaseEntity {
     public String uid;
 
     /**
-     * 关联的日志文件
+     * 线程
      */
     @Column(nullable = false)
-    public Integer fileId;
+    public String thread;
+
+    /**
+     * 创建该标记的时间
+     */
+    @Column(nullable = false)
+    public Date time;
 
     /**
      * 标签的键

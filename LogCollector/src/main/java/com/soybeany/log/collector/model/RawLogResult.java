@@ -1,10 +1,10 @@
 package com.soybeany.log.collector.model;
 
+import com.soybeany.log.collector.repository.TagInfo;
 import org.springframework.lang.Nullable;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author Soybeany
@@ -16,7 +16,7 @@ public class RawLogResult {
      * 自定义标签，如url、user、param等
      */
     @Nullable
-    public Map<String, String> tags;
+    public List<TagInfo> tags;
 
     /**
      * 全局唯一号

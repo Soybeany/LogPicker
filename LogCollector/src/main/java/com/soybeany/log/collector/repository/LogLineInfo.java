@@ -22,16 +22,22 @@ import java.util.Date;
 public class LogLineInfo extends BaseEntity {
 
     /**
+     * 关联的日志文件
+     */
+    @Column(nullable = false)
+    public Integer fileId;
+
+    /**
      * 所属的uid
      */
     @Column
     public String uid;
 
     /**
-     * 关联的日志文件
+     * 线程
      */
     @Column(nullable = false)
-    public Integer fileId;
+    public String thread;
 
     /**
      * 该行日志的时间

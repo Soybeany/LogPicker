@@ -29,7 +29,7 @@ class MaxBytesReturnLogLimiter implements LogLimiter, QueryContext.IListener {
 
     @Override
     public void onInitTempData(QueryContext context) {
-        String limit = context.queryParam.getParams(PREFIX).get(P_KEY_MAX_BYTES_RETURN);
+        String limit = context.getParam(PREFIX, P_KEY_MAX_BYTES_RETURN);
         long bytes = (null != limit ? Long.parseLong(limit) : appConfig.maxBytesReturn);
         context.putTempData(PREFIX, T_KEY_MAX_BYTES_RETURN, bytes);
     }

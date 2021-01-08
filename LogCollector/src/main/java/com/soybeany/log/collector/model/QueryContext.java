@@ -29,6 +29,8 @@ public class QueryContext {
         this.queryParam = queryParam;
     }
 
+    // ********************公开方法********************
+
     public void putData(String prefix, String key, Object value) {
         data.put(getRealKey(prefix, key), value);
     }
@@ -51,12 +53,20 @@ public class QueryContext {
         tempData.clear();
     }
 
+    public String getParam(String prefix, String key) {
+        return queryParam.getParams(prefix).get(key);
+    }
+
+    // ********************内部方法********************
+
     private String getRealKey(String prefix, String key) {
         if (null == prefix) {
             return key;
         }
         return prefix + SEPARATOR + key;
     }
+
+    // ********************内部类********************
 
     public interface IListener {
         void onInitTempData(QueryContext context);

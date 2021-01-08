@@ -2,9 +2,6 @@ package com.soybeany.log.collector.service.filter;
 
 import com.soybeany.log.collector.model.QueryContext;
 import com.soybeany.log.collector.model.RawLogResult;
-import org.springframework.lang.NonNull;
-
-import java.util.Map;
 
 /**
  * @author Soybeany
@@ -13,11 +10,6 @@ import java.util.Map;
 public interface LogFilter {
 
     String PREFIX = "filter";
-
-    @NonNull
-    default Map<String, String> getParams(QueryContext context) {
-        return context.queryParam.getParams(PREFIX);
-    }
 
     /**
      * 是否应该将指定的result过滤掉
