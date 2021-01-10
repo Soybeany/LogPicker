@@ -12,6 +12,11 @@ spring:
     open-in-view: false
 
 config:
+  # 每次数据库查询时，单个分页最大查询数量
   max-page-size: 100
+  # 当日志行没有uid时，每条查询结果允许包含的最大行数
   max-lines-per-result-with-null-uid: 20
+  # 返回给客户端结果的最大字节数
   max-bytes-return: 10000000
+  # 待扫描的目录
+  dir-to-scan: E:\logDir

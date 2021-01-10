@@ -14,6 +14,7 @@ public class AppConfig {
     public int maxPageSize;
     public int maxLinesPerResultWithNullUid;
     public int maxBytesReturn;
+    public String dirToScan;
 
     public void setMaxPageSize(int maxPageSize) {
         this.maxPageSize = maxPageSize;
@@ -25,5 +26,9 @@ public class AppConfig {
 
     public void setMaxBytesReturn(int maxBytesReturn) {
         this.maxBytesReturn = maxBytesReturn;
+    }
+
+    public void setDirToScan(String dirToScan) {
+        this.dirToScan = dirToScan;
     }
 }

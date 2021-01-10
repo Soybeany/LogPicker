@@ -17,6 +17,11 @@
       "type": "java.lang.Integer",
       "description": "返回给客户端结果的最大字节数.",
       "defaultValue": 10000000
+    },
+    {
+      "name": "config.dir-to-scan",
+      "type": "java.lang.String",
+      "description": "待扫描的目录."
     }
   ]
 }

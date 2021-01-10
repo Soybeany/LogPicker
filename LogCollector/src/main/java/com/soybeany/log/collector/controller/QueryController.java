@@ -19,18 +19,14 @@ import java.util.Map;
  * @date 2021/1/4
  */
 @RestController
-@RequestMapping("/api")
-public class ApiController {
+@RequestMapping("/query")
+public class QueryController {
 
     @Autowired
     private QueryService queryService;
 
-    public void scan() {
-
-    }
-
-    @GetMapping("/query")
-    public String query(@RequestParam Map<String, String> param) {
+    @GetMapping("/byParam")
+    public String byParam(@RequestParam Map<String, String> param) {
         try {
             ResultVO result = queryService.query(param);
             return new Gson().toJson(toOutputObj(result));
