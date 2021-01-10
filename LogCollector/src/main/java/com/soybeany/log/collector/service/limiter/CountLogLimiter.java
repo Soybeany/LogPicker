@@ -1,7 +1,7 @@
 package com.soybeany.log.collector.service.limiter;
 
+import com.soybeany.log.collector.model.LogPack;
 import com.soybeany.log.collector.model.QueryContext;
-import com.soybeany.log.collector.model.RawLogResult;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -21,7 +21,7 @@ class CountLogLimiter implements LogLimiter {
     }
 
     @Override
-    public boolean canAddResult(QueryContext context, RawLogResult result) {
+    public boolean canAddResult(QueryContext context, LogPack result) {
         int count = Optional.ofNullable((Integer) context.getTempData(PREFIX, T_KEY_COUNT)).orElse(0);
         if (++count > context.queryParam.getCountLimit()) {
             return false;

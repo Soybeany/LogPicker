@@ -1,6 +1,5 @@
 package com.soybeany.log.collector.model;
 
-import com.soybeany.log.core.model.ResultVO;
 import com.soybeany.log.core.util.UidUtils;
 
 import java.util.HashMap;
@@ -23,7 +22,8 @@ public class QueryContext {
 
     public String lastId;
     public String nextId;
-    public ResultVO result;
+    public String endReason = "已搜索全部日志";
+    public Object result;
 
     public QueryContext(QueryParam queryParam) {
         this.queryParam = queryParam;

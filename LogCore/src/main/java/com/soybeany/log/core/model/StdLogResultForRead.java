@@ -7,12 +7,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 一条匹配的结果，包含来自各台服务器的分段日志
+ * 供阅读的结果
  *
  * @author Soybeany
  * @date 2020/12/31
  */
-public class LogResult implements Serializable {
+public class StdLogResultForRead implements Serializable {
 
     /**
      * 日期

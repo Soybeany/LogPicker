@@ -1,7 +1,7 @@
 package com.soybeany.log.collector.service.filter;
 
+import com.soybeany.log.collector.model.LogPack;
 import com.soybeany.log.collector.model.QueryContext;
-import com.soybeany.log.collector.model.RawLogResult;
 
 /**
  * @author Soybeany
@@ -16,6 +16,6 @@ public interface LogFilter {
      *
      * @return true则过滤指定的result
      */
-    boolean shouldFilter(QueryContext context, RawLogResult result);
+    boolean shouldFilter(QueryContext context, LogPack result);
 
 }

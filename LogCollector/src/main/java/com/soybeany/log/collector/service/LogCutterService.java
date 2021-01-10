@@ -1,9 +1,9 @@
-package com.soybeany.log.collector.service.converter;
+package com.soybeany.log.collector.service;
 
 import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.model.LogLine;
+import com.soybeany.log.collector.model.LogPack;
 import com.soybeany.log.collector.model.QueryContext;
-import com.soybeany.log.collector.model.RawLogResult;
 import com.soybeany.log.collector.repository.TagInfo;
 import com.soybeany.log.collector.repository.TagInfoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,15 +15,18 @@ import java.util.*;
 
 /**
  * @author Soybeany
- * @date 2021/1/8
+ * @date 2021/1/10
  */
-public interface RawLogResultConvertService extends ConverterService<LogLine, RawLogResult> {
+public interface LogCutterService {
+
+    List<LogPack> cut(QueryContext context, List<LogLine> lines);
 }
 
 @Service
-class RawLogResultConvertServiceImpl implements RawLogResultConvertService {
+class LogCutterServiceImpl implements LogCutterService {
 
-    private static final String PREFIX = "rawLogResult";
+
+    private static final String PREFIX = "logCutter";
 
     private static final String P_KEY_MAX_LINES_PER_RESULT_WITH_NULL_UID = "maxLinesPerResultWithNullUid"; // uid为null时，每条结果所包含的最大行数，int
 
@@ -33,22 +36,22 @@ class RawLogResultConvertServiceImpl implements RawLogResultConvertService {
     private TagInfoRepository tagInfoRepository;
 
     @Override
-    public List<RawLogResult> convert(QueryContext context, List<LogLine> lines) {
+    public List<LogPack> cut(QueryContext context, List<LogLine> lines) {
         // 对日志行进行分类
         Map<String, List<LogLine>> sortedUidMap = new LinkedHashMap<>();
         List<LogLine> nullUidList = new LinkedList<>();
         sortLogLines(lines, sortedUidMap, nullUidList);
         // 汇总并返回全部结果
-        List<RawLogResult> results = new LinkedList<>();
-        results.addAll(uidMapToResults(sortedUidMap));
-        results.addAll(nullUidListToResults(context, nullUidList));
+        List<LogPack> results = new LinkedList<>();
+        results.addAll(uidMapToPacks(sortedUidMap));
+        results.addAll(nullUidListToPacks(context, nullUidList));
         return results;
     }
 
     // ********************内部方法********************
 
-    private List<RawLogResult> uidMapToResults(Map<String, List<LogLine>> sortedUidMap) {
-        List<RawLogResult> results = new LinkedList<>();
+    private List<LogPack> uidMapToPacks(Map<String, List<LogLine>> sortedUidMap) {
+        List<LogPack> results = new LinkedList<>();
         for (Map.Entry<String, List<LogLine>> entry : sortedUidMap.entrySet()) {
             String uid = entry.getKey();
             // 按线程拆分列表
@@ -56,15 +59,15 @@ class RawLogResultConvertServiceImpl implements RawLogResultConvertService {
             for (Map.Entry<String, List<LogLine>> listEntry : splatMap.entrySet()) {
                 String thread = listEntry.getKey();
                 List<TagInfo> tagInfoList = tagInfoRepository.findByUidAndThreadOrderByTime(uid, thread);
-                results.add(toRawResult(uid, thread, tagInfoList, listEntry.getValue()));
+                results.add(toPack(uid, thread, tagInfoList, listEntry.getValue()));
             }
         }
         return results;
     }
 
-    private List<RawLogResult> nullUidListToResults(QueryContext context, List<LogLine> lines) {
+    private List<LogPack> nullUidListToPacks(QueryContext context, List<LogLine> lines) {
         // 按线程拆分列表
-        List<RawLogResult> results = new LinkedList<>();
+        List<LogPack> results = new LinkedList<>();
         Map<String, List<LogLine>> splatMap = splitByThread(lines);
         for (Map.Entry<String, List<LogLine>> entry : splatMap.entrySet()) {
             // 按数目限制再次拆分
@@ -73,7 +76,7 @@ class RawLogResultConvertServiceImpl implements RawLogResultConvertService {
             Collection<List<LogLine>> splatLines = splitByLineCount(entry.getValue(), maxLineCount);
             // 转换为结果列表
             for (List<LogLine> lineList : splatLines) {
-                results.add(toRawResult(null, entry.getKey(), null, lineList));
+                results.add(toPack(null, entry.getKey(), null, lineList));
             }
         }
         return results;
@@ -106,8 +109,8 @@ class RawLogResultConvertServiceImpl implements RawLogResultConvertService {
         }
     }
 
-    private RawLogResult toRawResult(String uid, String thread, @Nullable List<TagInfo> tags, @NonNull List<LogLine> lines) {
-        RawLogResult result = new RawLogResult();
+    private LogPack toPack(@Nullable String uid, String thread, @Nullable List<TagInfo> tags, @NonNull List<LogLine> lines) {
+        LogPack result = new LogPack();
         result.uid = uid;
         result.thread = thread;
         result.tags = tags;

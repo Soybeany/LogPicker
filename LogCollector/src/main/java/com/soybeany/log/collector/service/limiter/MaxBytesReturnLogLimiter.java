@@ -1,8 +1,8 @@
 package com.soybeany.log.collector.service.limiter;
 
 import com.soybeany.log.collector.config.AppConfig;
+import com.soybeany.log.collector.model.LogPack;
 import com.soybeany.log.collector.model.QueryContext;
-import com.soybeany.log.collector.model.RawLogResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -35,7 +35,7 @@ class MaxBytesReturnLogLimiter implements LogLimiter, QueryContext.IListener {
     }
 
     @Override
-    public boolean canAddResult(QueryContext context, RawLogResult result) {
+    public boolean canAddResult(QueryContext context, LogPack result) {
         long bytes = Optional.ofNullable((Long) context.getTempData(PREFIX, T_KEY_BYTES)).orElse(0L);
         // 计算待评估结果的字节数
         long[] totalBytes = new long[1];

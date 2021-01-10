@@ -1,5 +1,6 @@
 package com.soybeany.log.collector.service;
 
+import com.soybeany.log.collector.model.LogLine;
 import com.soybeany.log.collector.model.QueryContext;
 import com.soybeany.log.collector.model.QueryParam;
 import com.soybeany.log.collector.repository.LogLineInfo;
@@ -7,7 +8,7 @@ import com.soybeany.log.collector.repository.LogLineInfoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.lang.Nullable;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -25,8 +26,8 @@ public interface LogSelectorService {
      *
      * @return 返回null或空列表，表示没有更多记录
      */
-    @Nullable
-    List<LogLineInfo> select(QueryContext context, int page, int pageSize);
+    @NonNull
+    List<LogLine> select(QueryContext context, int page, int pageSize);
 
 }
 
@@ -36,16 +37,22 @@ class LogSelectorServiceImpl implements LogSelectorService {
     @Autowired
     private TagInfoService tagInfoService;
     @Autowired
+    private LogLineConvertService logLineConvertService;
+    @Autowired
     private LogLineInfoRepository logLineInfoRepository;
 
     @Override
-    public List<LogLineInfo> select(QueryContext context, int page, int pageSize) {
+    public List<LogLine> select(QueryContext context, int page, int pageSize) {
+        List<LogLineInfo> list;
         if (tagInfoService.hasParams(context)) {
-            return selectWithTag(context, page, pageSize);
+            list = selectWithTag(context, page, pageSize);
+        } else {
+            list = selectWithoutTag(context, page, pageSize);
         }
-        return selectWithoutTag(context, page, pageSize);
+        return logLineConvertService.convert(context, list);
     }
 
+    @NonNull
     private List<LogLineInfo> selectWithTag(QueryContext context, int page, int pageSize) {
         // 使用标签查找匹配的uid
         List<String> uidList = tagInfoService.getMatchedUidList(context, page, pageSize);
@@ -60,6 +67,7 @@ class LogSelectorServiceImpl implements LogSelectorService {
         return result;
     }
 
+    @NonNull
     private List<LogLineInfo> selectWithoutTag(QueryContext context, int page, int pageSize) {
         QueryParam queryParam = context.queryParam;
         Pageable pageable = PageRequest.of(page, pageSize);

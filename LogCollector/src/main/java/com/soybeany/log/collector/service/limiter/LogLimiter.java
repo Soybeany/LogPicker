@@ -1,7 +1,7 @@
 package com.soybeany.log.collector.service.limiter;
 
+import com.soybeany.log.collector.model.LogPack;
 import com.soybeany.log.collector.model.QueryContext;
-import com.soybeany.log.collector.model.RawLogResult;
 
 /**
  * @author Soybeany
@@ -19,6 +19,6 @@ public interface LogLimiter {
     /**
      * 是否能够添加日志结果
      */
-    boolean canAddResult(QueryContext context, RawLogResult result);
+    boolean canAddResult(QueryContext context, LogPack result);
 
 }

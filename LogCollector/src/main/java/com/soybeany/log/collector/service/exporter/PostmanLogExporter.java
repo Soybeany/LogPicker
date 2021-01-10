@@ -1,14 +1,14 @@
-package com.soybeany.log.collector.service.converter;
+package com.soybeany.log.collector.service.exporter;
 
 import com.soybeany.log.collector.model.LogLine;
+import com.soybeany.log.collector.model.LogPack;
 import com.soybeany.log.collector.model.QueryContext;
-import com.soybeany.log.collector.model.RawLogResult;
 import com.soybeany.log.collector.repository.TagInfo;
-import com.soybeany.log.core.model.LogResult;
+import com.soybeany.log.core.model.StdLogResultForRead;
 import com.soybeany.log.core.model.TagDesc;
 import com.soybeany.log.core.util.TimeUtils;
 import org.springframework.lang.NonNull;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -18,13 +18,10 @@ import java.util.*;
 
 /**
  * @author Soybeany
- * @date 2021/1/8
+ * @date 2021/1/10
  */
-public interface LogResultConvertService extends ConverterService<RawLogResult, LogResult> {
-}
-
-@Service
-class LogResultConvertServiceImpl implements LogResultConvertService {
+@Component
+class PostmanLogExporter implements LogExporter {
 
     private static final DateTimeFormatter FORMATTER1 = DateTimeFormatter.ofPattern("yy-MM-dd");
     private static final DateTimeFormatter FORMATTER2 = DateTimeFormatter.ofPattern("HH:mm:ss");
@@ -32,36 +29,44 @@ class LogResultConvertServiceImpl implements LogResultConvertService {
     private final String ipAddress = getIpAddress();
 
     @Override
-    public List<LogResult> convert(QueryContext context, List<RawLogResult> list) {
-        List<LogResult> results = new LinkedList<>();
-        for (RawLogResult raw : list) {
-            results.add(toResult(raw));
+    public Object export(QueryContext context, List<LogPack> packs) {
+        List<Object> output = new LinkedList<>();
+        // 添加结果信息
+        Map<String, String> info = new LinkedHashMap<>();
+        info.put("lastContextId", context.lastId);
+        info.put("curContextId", context.id);
+        info.put("nextContextId", context.nextId);
+        info.put("endReason", context.endReason);
+        output.add(info);
+        // 添加结果列表
+        for (LogPack pack : packs) {
+            output.add(toResult(pack));
         }
-        return results;
+        return output;
     }
 
     // ********************内部方法********************
 
-    private LogResult toResult(RawLogResult raw) {
-        LogResult result = new LogResult();
-        TimeInfo info = getTimeInfo(raw);
+    private StdLogResultForRead toResult(LogPack pack) {
+        StdLogResultForRead result = new StdLogResultForRead();
+        TimeInfo info = getTimeInfo(pack);
         // 设置日期
         LocalDateTime earliestTime = TimeUtils.toLocalDateTime(getEarliestTime(info));
         result.date = earliestTime.format(FORMATTER1);
         // 设置耗时
         result.spend = getSpend(info);
         // 设置标签集
-        result.tags.putAll(getTags(raw));
+        result.tags.putAll(getTags(pack));
         // 设置日志
-        result.logs.addAll(getLogs(raw));
+        result.logs.addAll(getLogs(pack));
         // 设置其它简易信息
         result.server = ipAddress;
-        result.uid = raw.uid;
-        result.thread = raw.thread;
+        result.uid = pack.uid;
+        result.thread = pack.thread;
         return result;
     }
 
-    private List<String> getLogs(RawLogResult raw) {
+    private List<String> getLogs(LogPack raw) {
         // todo 拼装时间时，在日期右侧显示+n代表跨天，如:00:02(+1)
         List<String> logs = new LinkedList<>();
         for (LogLine line : raw.logLines) {
@@ -73,7 +78,7 @@ class LogResultConvertServiceImpl implements LogResultConvertService {
     }
 
     @NonNull
-    private Map<String, String> getTags(RawLogResult raw) {
+    private Map<String, String> getTags(LogPack raw) {
         Map<String, String> result = new LinkedHashMap<>();
         if (null != raw.tags) {
             Map<String, List<String>> temp = new HashMap<>();
@@ -118,7 +123,7 @@ class LogResultConvertServiceImpl implements LogResultConvertService {
         return info.firstTagTime.before(info.firstLogTime) ? info.firstTagTime : info.firstLogTime;
     }
 
-    private TimeInfo getTimeInfo(RawLogResult result) {
+    private TimeInfo getTimeInfo(LogPack result) {
         TimeInfo info = new TimeInfo();
         if (null != result.tags && !result.tags.isEmpty()) {
             info.firstTagTime = result.tags.get(0).time;
@@ -153,4 +158,5 @@ class LogResultConvertServiceImpl implements LogResultConvertService {
         Date firstTagTime;
         Date firstLogTime;
     }
+
 }

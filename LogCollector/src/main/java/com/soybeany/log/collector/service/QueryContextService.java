@@ -3,8 +3,10 @@ package com.soybeany.log.collector.service;
 import com.soybeany.log.collector.model.QueryContext;
 import com.soybeany.log.collector.model.QueryParam;
 import com.soybeany.log.core.model.LogException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -14,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public interface QueryContextService {
 
-    QueryContext loadContext(Map<String, String> param);
+    QueryContext initFromParam(Map<String, String> param);
 
     QueryContext createNewNextContextOf(QueryContext old);
 
@@ -27,10 +29,13 @@ class QueryContextServiceImpl implements QueryContextService {
 
     private static final String P_KEY_ID = "id"; // 关联context的id，string
 
+    @Autowired
+    private List<QueryContext.IListener> queryContextListeners;
+
     private final Map<String, QueryContext> contextMap = new ConcurrentHashMap<>();
 
     @Override
-    public QueryContext loadContext(Map<String, String> param) {
+    public QueryContext initFromParam(Map<String, String> param) {
         String contextId = QueryParam.getParam(PREFIX, P_KEY_ID, param);
         // 若指定了contextId，则尝试复用context
         QueryContext context;
@@ -43,6 +48,10 @@ class QueryContextServiceImpl implements QueryContextService {
         // 创建新的context
         else {
             context = createNew(new QueryParam(param));
+        }
+        // 回调监听器
+        for (QueryContext.IListener listener : queryContextListeners) {
+            listener.onInitTempData(context);
         }
         return context;
     }
