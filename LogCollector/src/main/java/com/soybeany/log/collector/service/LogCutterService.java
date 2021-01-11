@@ -1,11 +1,12 @@
 package com.soybeany.log.collector.service;
 
 import com.soybeany.log.collector.config.AppConfig;
-import com.soybeany.log.collector.model.LogLine;
-import com.soybeany.log.collector.model.LogPack;
 import com.soybeany.log.collector.model.QueryContext;
 import com.soybeany.log.collector.repository.TagInfo;
 import com.soybeany.log.collector.repository.TagInfoRepository;
+import com.soybeany.log.core.model.LogLine;
+import com.soybeany.log.core.model.LogPack;
+import com.soybeany.log.core.model.LogTag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -109,13 +110,30 @@ class LogCutterServiceImpl implements LogCutterService {
         }
     }
 
-    private LogPack toPack(@Nullable String uid, String thread, @Nullable List<TagInfo> tags, @NonNull List<LogLine> lines) {
+    private LogPack toPack(@Nullable String uid, String thread, @Nullable List<TagInfo> tagInfoList, @NonNull List<LogLine> lines) {
         LogPack result = new LogPack();
         result.uid = uid;
         result.thread = thread;
-        result.tags = tags;
+        result.tags = toLogTags(tagInfoList);
         result.logLines.addAll(lines);
         return result;
+    }
+
+    private List<LogTag> toLogTags(@Nullable List<TagInfo> tagInfoList) {
+        if (null == tagInfoList) {
+            return null;
+        }
+        List<LogTag> tags = new LinkedList<>();
+        for (TagInfo info : tagInfoList) {
+            LogTag tag = new LogTag();
+            tag.uid = info.uid;
+            tag.thread = info.thread;
+            tag.time = info.time;
+            tag.key = info.key;
+            tag.value = info.value;
+            tags.add(tag);
+        }
+        return tags;
     }
 
 }

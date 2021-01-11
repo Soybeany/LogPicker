@@ -23,7 +23,7 @@ public class QueryContext {
     public String lastId;
     public String nextId;
     public String endReason = "已搜索全部日志";
-    public Object result;
+    public String result;
 
     public QueryContext(QueryParam queryParam) {
         this.queryParam = queryParam;

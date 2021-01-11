@@ -1,10 +1,10 @@
 package com.soybeany.log.collector.service;
 
-import com.soybeany.log.collector.model.LogLine;
 import com.soybeany.log.collector.model.QueryContext;
 import com.soybeany.log.collector.model.QueryParam;
 import com.soybeany.log.collector.repository.LogLineInfo;
 import com.soybeany.log.collector.repository.LogLineInfoRepository;
+import com.soybeany.log.core.model.LogLine;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;

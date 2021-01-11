@@ -12,7 +12,7 @@ import java.util.Map;
  * @author Soybeany
  * @date 2020/12/31
  */
-public class StdLogItem implements Serializable {
+public class LogPackForRead implements Serializable {
 
     /**
      * 日期

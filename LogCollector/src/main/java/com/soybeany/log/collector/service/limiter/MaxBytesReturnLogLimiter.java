@@ -2,8 +2,8 @@ package com.soybeany.log.collector.service.limiter;
 
 import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.model.IQueryListener;
-import com.soybeany.log.collector.model.LogPack;
 import com.soybeany.log.collector.model.QueryContext;
+import com.soybeany.log.core.model.LogPack;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

@@ -2,12 +2,12 @@ package com.soybeany.log.collector.service;
 
 import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.model.IQueryListener;
-import com.soybeany.log.collector.model.LogLine;
-import com.soybeany.log.collector.model.LogPack;
 import com.soybeany.log.collector.model.QueryContext;
 import com.soybeany.log.collector.service.exporter.LogExporter;
 import com.soybeany.log.collector.service.filter.LogFilter;
 import com.soybeany.log.collector.service.limiter.LogLimiter;
+import com.soybeany.log.core.model.LogLine;
+import com.soybeany.log.core.model.LogPack;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
@@ -23,7 +23,7 @@ import java.util.*;
 public interface QueryService {
 
     @NonNull
-    Object simpleQuery(Map<String, String> param);
+    String simpleQuery(Map<String, String> param);
 
 }
 
@@ -57,7 +57,7 @@ class QueryServiceImpl implements QueryService {
     private LogExporter logExporter;
 
     @Override
-    public Object simpleQuery(Map<String, String> param) {
+    public String simpleQuery(Map<String, String> param) {
         QueryContext context = queryContextService.initFromParam(param);
         try {
             // 获取锁
@@ -81,7 +81,7 @@ class QueryServiceImpl implements QueryService {
         Collections.sort(queryListeners);
     }
 
-    private Object query(QueryContext context) {
+    private String query(QueryContext context) {
         // 回调监听器
         for (IQueryListener listener : queryListeners) {
             listener.onQuery(context);
@@ -173,7 +173,7 @@ class QueryServiceImpl implements QueryService {
         }
     }
 
-    private Object exportLogs(QueryContext context, List<LogPack> formalList) {
+    private String exportLogs(QueryContext context, List<LogPack> formalList) {
         // 按需分页
         checkPageable(context);
         // 导出日志

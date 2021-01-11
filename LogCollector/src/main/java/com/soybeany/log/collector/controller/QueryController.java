@@ -1,6 +1,5 @@
 package com.soybeany.log.collector.controller;
 
-import com.google.gson.Gson;
 import com.soybeany.log.collector.service.QueryService;
 import com.soybeany.log.core.model.LogException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,8 +24,7 @@ public class QueryController {
     @GetMapping("/byParam")
     public String byParam(@RequestParam Map<String, String> param) {
         try {
-            Object result = queryService.simpleQuery(param);
-            return new Gson().toJson(result);
+            return queryService.simpleQuery(param);
         } catch (LogException e) {
             return "异常:" + e.getMessage();
         }

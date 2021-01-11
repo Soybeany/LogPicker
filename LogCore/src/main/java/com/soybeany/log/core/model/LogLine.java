@@ -1,12 +1,13 @@
-package com.soybeany.log.collector.model;
+package com.soybeany.log.core.model;
 
+import java.io.Serializable;
 import java.util.Date;
 
 /**
  * @author Soybeany
  * @date 2021/1/7
  */
-public class LogLine {
+public class LogLine implements Serializable {
 
     /**
      * 时间

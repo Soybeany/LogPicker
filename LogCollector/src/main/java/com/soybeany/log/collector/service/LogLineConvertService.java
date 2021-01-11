@@ -1,11 +1,11 @@
 package com.soybeany.log.collector.service;
 
-import com.soybeany.log.collector.model.LogLine;
 import com.soybeany.log.collector.model.QueryContext;
 import com.soybeany.log.collector.repository.FileInfo;
 import com.soybeany.log.collector.repository.FileInfoRepository;
 import com.soybeany.log.collector.repository.LogLineInfo;
 import com.soybeany.log.core.model.LogException;
+import com.soybeany.log.core.model.LogLine;
 import com.soybeany.util.file.BdFileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;

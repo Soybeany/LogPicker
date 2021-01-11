@@ -1,8 +1,6 @@
-package com.soybeany.log.collector.model;
+package com.soybeany.log.core.model;
 
-import com.soybeany.log.collector.repository.TagInfo;
-import org.springframework.lang.Nullable;
-
+import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -12,18 +10,16 @@ import java.util.List;
  * @author Soybeany
  * @date 2021/1/7
  */
-public class LogPack {
+public class LogPack implements Serializable {
 
     /**
      * 自定义标签，如url、user、param等
      */
-    @Nullable
-    public List<TagInfo> tags;
+    public List<LogTag> tags;
 
     /**
      * 全局唯一号
      */
-    @Nullable
     public String uid;
 
     /**

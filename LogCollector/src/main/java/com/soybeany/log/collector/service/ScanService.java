@@ -1,6 +1,8 @@
 package com.soybeany.log.collector.service;
 
 import com.soybeany.log.collector.config.AppConfig;
+import com.soybeany.log.collector.model.IQueryListener;
+import com.soybeany.log.collector.model.QueryContext;
 import com.soybeany.log.core.model.LogException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -22,7 +24,11 @@ public interface ScanService {
 }
 
 @Service
-class ScanServiceImpl implements ScanService {
+class ScanServiceImpl implements ScanService, IQueryListener {
+
+    private static final String PREFIX = "scan";
+
+    private static final String P_KEY_BEFORE_QUERY = "beforeQuery"; // 查询前进行扫描的文件列表，可使用today指代当天，string
 
     @Autowired
     private AppConfig appConfig;
@@ -34,5 +40,10 @@ class ScanServiceImpl implements ScanService {
             throw new LogException("指定的日志目录不存在");
         }
 
+    }
+
+    @Override
+    public void onQuery(QueryContext context) {
+        // todo 如果包含需先扫描的文件，则先执行扫描
     }
 }

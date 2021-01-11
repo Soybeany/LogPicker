@@ -1,5 +1,6 @@
 package com.soybeany.log.core.model;
 
+import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -7,13 +8,13 @@ import java.util.List;
  * @author Soybeany
  * @date 2021/1/11
  */
-public class StdLogVO {
+public class QueryResultVO implements Serializable {
 
-    public Info info;
+    public final Info info = new Info();
 
-    public final List<StdLogItem> packs = new LinkedList<>();
+    public final List<Object> packs = new LinkedList<>();
 
-    public static class Info {
+    public static class Info implements Serializable {
         public String lastContextId;
         public String curContextId;
         public String nextContextId;

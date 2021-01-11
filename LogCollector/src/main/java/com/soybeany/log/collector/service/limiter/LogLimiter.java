@@ -1,7 +1,7 @@
 package com.soybeany.log.collector.service.limiter;
 
-import com.soybeany.log.collector.model.LogPack;
 import com.soybeany.log.collector.model.QueryContext;
+import com.soybeany.log.core.model.LogPack;
 
 /**
  * @author Soybeany

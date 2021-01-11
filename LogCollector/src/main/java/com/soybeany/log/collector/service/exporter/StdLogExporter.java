@@ -1,16 +1,15 @@
 package com.soybeany.log.collector.service.exporter;
 
-import com.soybeany.log.collector.model.LogLine;
-import com.soybeany.log.collector.model.LogPack;
+import com.google.gson.Gson;
 import com.soybeany.log.collector.model.QueryContext;
-import com.soybeany.log.collector.repository.TagInfo;
-import com.soybeany.log.core.model.StdLogItem;
-import com.soybeany.log.core.model.StdLogVO;
-import com.soybeany.log.core.model.TagDesc;
+import com.soybeany.log.core.model.*;
 import com.soybeany.log.core.util.TimeUtils;
+import com.soybeany.util.HexUtils;
+import com.soybeany.util.SerializeUtils;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.LocalDateTime;
@@ -24,29 +23,38 @@ import java.util.*;
 @Component
 class StdLogExporter implements LogExporter {
 
-    private static final String P_KEY_IS_FOR_READ = "isForRead";
+    private static final String P_KEY_EXPORT_TYPE = "exportType";
 
     private static final DateTimeFormatter FORMATTER1 = DateTimeFormatter.ofPattern("yy-MM-dd HH:mm:ss");
     private static final DateTimeFormatter FORMATTER2 = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     private final String ipAddress = getIpAddress();
+    private final Gson gson = new Gson();
 
     @Override
-    public Object export(QueryContext context, List<LogPack> packs) {
-        // 转换为VO
-        StdLogVO vo = toLogVO(context, packs);
-        // 若为一般模式直接返回
-        String isForRead = context.getParam(PREFIX, P_KEY_IS_FOR_READ);
-        if (!Boolean.parseBoolean(isForRead)) {
-            return vo;
+    public String export(QueryContext context, List<LogPack> packs) {
+        String exportType = Optional.ofNullable(context.getParam(PREFIX, P_KEY_EXPORT_TYPE)).orElse(Constants.EXPORT_FOR_DIRECT_READ);
+        switch (exportType) {
+            case Constants.EXPORT_FOR_DIRECT_READ:
+                return gson.toJson(toObjectForRead(toLogVO(context, packs)));
+            case Constants.EXPORT_FOR_READ:
+                return gson.toJson(toLogVO(context, packs));
+            case Constants.EXPORT_IN_SERIALIZE:
+                QueryResultVO vo = getNewResultVO(context);
+                vo.packs.addAll(packs);
+                try {
+                    return HexUtils.bytesToHex(SerializeUtils.serialize(vo));
+                } catch (IOException e) {
+                    throw new LogException("结果导出异常:" + e.getMessage());
+                }
+            default:
+                throw new LogException("使用了不支持的导出类型");
         }
-        // 若为阅读模式，特殊转换
-        return toObjectForRead(vo);
     }
 
     // ********************内部方法********************
 
-    private Object toObjectForRead(StdLogVO vo) {
+    private Object toObjectForRead(QueryResultVO vo) {
         List<Object> result = new LinkedList<>();
         // 添加结果信息
         result.add(vo.info);
@@ -55,15 +63,8 @@ class StdLogExporter implements LogExporter {
         return result;
     }
 
-    private StdLogVO toLogVO(QueryContext context, List<LogPack> packs) {
-        StdLogVO vo = new StdLogVO();
-        // 设置结果信息
-        StdLogVO.Info info = new StdLogVO.Info();
-        info.lastContextId = context.lastId;
-        info.curContextId = context.id;
-        info.nextContextId = context.nextId;
-        info.endReason = context.endReason;
-        vo.info = info;
+    private QueryResultVO toLogVO(QueryContext context, List<LogPack> packs) {
+        QueryResultVO vo = getNewResultVO(context);
         // 添加结果列表
         for (LogPack pack : packs) {
             vo.packs.add(toLogItem(pack));
@@ -71,8 +72,17 @@ class StdLogExporter implements LogExporter {
         return vo;
     }
 
-    private StdLogItem toLogItem(LogPack pack) {
-        StdLogItem result = new StdLogItem();
+    private QueryResultVO getNewResultVO(QueryContext context) {
+        QueryResultVO vo = new QueryResultVO();
+        vo.info.lastContextId = context.lastId;
+        vo.info.curContextId = context.id;
+        vo.info.nextContextId = context.nextId;
+        vo.info.endReason = context.endReason;
+        return vo;
+    }
+
+    private LogPackForRead toLogItem(LogPack pack) {
+        LogPackForRead result = new LogPackForRead();
         TimeInfo info = getTimeInfo(pack);
         // 设置时间
         LocalDateTime earliestTime = TimeUtils.toLocalDateTime(getEarliestTime(info));
@@ -106,8 +116,8 @@ class StdLogExporter implements LogExporter {
         Map<String, String> result = new LinkedHashMap<>();
         if (null != raw.tags) {
             Map<String, List<String>> temp = new HashMap<>();
-            for (TagInfo info : raw.tags) {
-                temp.computeIfAbsent(info.key, k -> new ArrayList<>()).add(info.value);
+            for (LogTag tag : raw.tags) {
+                temp.computeIfAbsent(tag.key, k -> new ArrayList<>()).add(tag.value);
             }
             for (Map.Entry<String, List<String>> entry : temp.entrySet()) {
                 List<String> valueList = entry.getValue();
@@ -151,10 +161,10 @@ class StdLogExporter implements LogExporter {
         TimeInfo info = new TimeInfo();
         if (null != result.tags && !result.tags.isEmpty()) {
             info.firstTagTime = result.tags.get(0).time;
-            for (TagInfo tag : result.tags) {
-                if (TagDesc.BORDER_START.equalsIgnoreCase(tag.key)) {
+            for (LogTag tag : result.tags) {
+                if (Constants.TAG_BORDER_START.equalsIgnoreCase(tag.key)) {
                     info.tagStartTime = tag.time;
-                } else if ((TagDesc.BORDER_END.equalsIgnoreCase(tag.key))) {
+                } else if ((Constants.TAG_BORDER_END.equalsIgnoreCase(tag.key))) {
                     info.tagEndTime = tag.time;
                 }
             }
