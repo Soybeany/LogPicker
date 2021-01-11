@@ -65,28 +65,4 @@ public class QueryContext {
         }
         return prefix + SEPARATOR + key;
     }
-
-    // ********************内部类********************
-
-    public interface IListener {
-        void onInitTempData(QueryContext context);
-    }
-
-    public interface NextContextHandler extends Comparable<NextContextHandler> {
-
-        @Override
-        default int compareTo(NextContextHandler o) {
-            return o.priority() - priority();
-        }
-
-        /**
-         * 优先级，值越大，越先被执行，默认值为0
-         */
-        default int priority() {
-            return 0;
-        }
-
-        void onHandleNextContext(QueryContext old, QueryContext next);
-
-    }
 }

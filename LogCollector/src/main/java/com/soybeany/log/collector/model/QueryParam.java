@@ -126,12 +126,4 @@ public class QueryParam {
         return LocalDateTime.parse(string, formatter);
     }
 
-    // ********************内部类********************
-
-    public interface ParamDetector {
-
-        boolean hasParams(QueryContext context);
-
-    }
-
 }

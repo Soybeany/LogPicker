@@ -1,6 +1,7 @@
 package com.soybeany.log.collector.service.limiter;
 
 import com.soybeany.log.collector.config.AppConfig;
+import com.soybeany.log.collector.model.IQueryListener;
 import com.soybeany.log.collector.model.LogPack;
 import com.soybeany.log.collector.model.QueryContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +14,7 @@ import java.util.Optional;
  * @date 2021/1/6
  */
 @Component
-class MaxBytesReturnLogLimiter implements LogLimiter, QueryContext.IListener {
+class MaxBytesReturnLogLimiter implements LogLimiter, IQueryListener {
 
     private static final String P_KEY_MAX_BYTES_RETURN = "maxBytesReturn";
     private static final String T_KEY_MAX_BYTES_RETURN = "maxBytesReturn";
@@ -28,7 +29,7 @@ class MaxBytesReturnLogLimiter implements LogLimiter, QueryContext.IListener {
     }
 
     @Override
-    public void onInitTempData(QueryContext context) {
+    public void onQuery(QueryContext context) {
         String limit = context.getParam(PREFIX, P_KEY_MAX_BYTES_RETURN);
         long bytes = (null != limit ? Long.parseLong(limit) : appConfig.maxBytesReturn);
         context.putTempData(PREFIX, T_KEY_MAX_BYTES_RETURN, bytes);

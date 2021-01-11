@@ -44,7 +44,7 @@ class LogSelectorServiceImpl implements LogSelectorService {
     @Override
     public List<LogLine> select(QueryContext context, int page, int pageSize) {
         List<LogLineInfo> list;
-        if (tagInfoService.hasParams(context)) {
+        if (tagInfoService.hasTags(context)) {
             list = selectWithTag(context, page, pageSize);
         } else {
             list = selectWithoutTag(context, page, pageSize);

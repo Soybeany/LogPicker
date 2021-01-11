@@ -3,10 +3,8 @@ package com.soybeany.log.collector.service;
 import com.soybeany.log.collector.model.QueryContext;
 import com.soybeany.log.collector.model.QueryParam;
 import com.soybeany.log.core.model.LogException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -29,9 +27,6 @@ class QueryContextServiceImpl implements QueryContextService {
 
     private static final String P_KEY_ID = "id"; // 关联context的id，string
 
-    @Autowired
-    private List<QueryContext.IListener> queryContextListeners;
-
     private final Map<String, QueryContext> contextMap = new ConcurrentHashMap<>();
 
     @Override
@@ -48,10 +43,6 @@ class QueryContextServiceImpl implements QueryContextService {
         // 创建新的context
         else {
             context = createNew(new QueryParam(param));
-        }
-        // 回调监听器
-        for (QueryContext.IListener listener : queryContextListeners) {
-            listener.onInitTempData(context);
         }
         return context;
     }

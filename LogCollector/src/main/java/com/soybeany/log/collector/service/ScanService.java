@@ -13,7 +13,7 @@ import java.io.File;
  */
 public interface ScanService {
     // todo 全扫描，扫描指定目录，清理已经没有文件的数据
-    // todo 精准扫描，只扫描指定的文件
+    // todo 精准扫描，只扫描指定的文件，查询时可以加参
     // todo 加锁后扫描
     // todo 扫描前，使用观察者模式，先禁止新查询，待全部已有查询结束后，再进行扫描
 

@@ -1,6 +1,7 @@
 package com.soybeany.log.collector.service;
 
 import com.soybeany.log.collector.config.AppConfig;
+import com.soybeany.log.collector.model.IQueryListener;
 import com.soybeany.log.collector.model.LogLine;
 import com.soybeany.log.collector.model.LogPack;
 import com.soybeany.log.collector.model.QueryContext;
@@ -51,7 +52,7 @@ class QueryServiceImpl implements QueryService {
     @Autowired
     private List<LogLimiter> logLimiters;
     @Autowired
-    private List<QueryContext.NextContextHandler> nextContextHandlers;
+    private List<IQueryListener> queryListeners;
     @Autowired
     private LogExporter logExporter;
 
@@ -77,10 +78,14 @@ class QueryServiceImpl implements QueryService {
 
     @PostConstruct
     private void onInit() {
-        Collections.sort(nextContextHandlers);
+        Collections.sort(queryListeners);
     }
 
     private Object query(QueryContext context) {
+        // 回调监听器
+        for (IQueryListener listener : queryListeners) {
+            listener.onQuery(context);
+        }
         List<LogPack> formalPacks = new LinkedList<>();
         // 预先添加额外的结果
         boolean needSearch = addExResults(context, formalPacks);
@@ -183,7 +188,7 @@ class QueryServiceImpl implements QueryService {
         context.endReason = pagingReason;
         // 设置nextContext
         QueryContext nextContext = queryContextService.createNewNextContextOf(context);
-        nextContextHandlers.forEach(handler -> handler.onHandleNextContext(context, nextContext));
+        queryListeners.forEach(handler -> handler.onHandleNextContext(context, nextContext));
         context.nextId = nextContext.id;
         nextContext.lastId = context.id;
     }
@@ -191,7 +196,7 @@ class QueryServiceImpl implements QueryService {
     // ********************内部类********************
 
     @Component
-    static class NextContextHandler implements QueryContext.NextContextHandler {
+    static class NextContextHandler implements IQueryListener {
         @Override
         public void onHandleNextContext(QueryContext old, QueryContext next) {
             // 标签分页

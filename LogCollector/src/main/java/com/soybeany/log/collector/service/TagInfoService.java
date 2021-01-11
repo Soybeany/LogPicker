@@ -16,7 +16,9 @@ import java.util.*;
  * @author Soybeany
  * @date 2021/1/4
  */
-public interface TagInfoService extends QueryParam.ParamDetector {
+public interface TagInfoService {
+
+    boolean hasTags(QueryContext context);
 
     @NonNull
     List<String> getMatchedUidList(QueryContext context, int page, int pageSize);
@@ -32,7 +34,7 @@ class TagInfoServiceImpl implements TagInfoService {
     private TagInfoRepository tagInfoRepository;
 
     @Override
-    public boolean hasParams(QueryContext context) {
+    public boolean hasTags(QueryContext context) {
         return !context.queryParam.getParams(PREFIX).isEmpty();
     }
 
