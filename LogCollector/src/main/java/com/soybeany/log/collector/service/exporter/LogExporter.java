@@ -11,6 +11,8 @@ import java.util.List;
  */
 public interface LogExporter {
 
+    String PREFIX = "exporter";
+
     Object export(QueryContext context, List<LogPack> packs);
 
 }

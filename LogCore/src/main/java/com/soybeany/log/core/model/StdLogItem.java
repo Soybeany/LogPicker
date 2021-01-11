@@ -12,12 +12,12 @@ import java.util.Map;
  * @author Soybeany
  * @date 2020/12/31
  */
-public class StdLogResultForRead implements Serializable {
+public class StdLogItem implements Serializable {
 
     /**
      * 日期
      */
-    public String date;
+    public String time;
 
     /**
      * 耗时，一般为具体值，但若缺失统计标签，则显示备注

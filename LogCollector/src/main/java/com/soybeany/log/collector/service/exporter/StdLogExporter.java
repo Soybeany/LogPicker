@@ -4,7 +4,8 @@ import com.soybeany.log.collector.model.LogLine;
 import com.soybeany.log.collector.model.LogPack;
 import com.soybeany.log.collector.model.QueryContext;
 import com.soybeany.log.collector.repository.TagInfo;
-import com.soybeany.log.core.model.StdLogResultForRead;
+import com.soybeany.log.core.model.StdLogItem;
+import com.soybeany.log.core.model.StdLogVO;
 import com.soybeany.log.core.model.TagDesc;
 import com.soybeany.log.core.util.TimeUtils;
 import org.springframework.lang.NonNull;
@@ -18,41 +19,64 @@ import java.util.*;
 
 /**
  * @author Soybeany
- * @date 2021/1/10
+ * @date 2021/1/11
  */
 @Component
-class PostmanLogExporter implements LogExporter {
+class StdLogExporter implements LogExporter {
 
-    private static final DateTimeFormatter FORMATTER1 = DateTimeFormatter.ofPattern("yy-MM-dd");
+    private static final String P_KEY_IS_FOR_READ = "isForRead";
+
+    private static final DateTimeFormatter FORMATTER1 = DateTimeFormatter.ofPattern("yy-MM-dd HH:mm:ss");
     private static final DateTimeFormatter FORMATTER2 = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     private final String ipAddress = getIpAddress();
 
     @Override
     public Object export(QueryContext context, List<LogPack> packs) {
-        List<Object> output = new LinkedList<>();
-        // 添加结果信息
-        Map<String, String> info = new LinkedHashMap<>();
-        info.put("lastContextId", context.lastId);
-        info.put("curContextId", context.id);
-        info.put("nextContextId", context.nextId);
-        info.put("endReason", context.endReason);
-        output.add(info);
-        // 添加结果列表
-        for (LogPack pack : packs) {
-            output.add(toResult(pack));
+        // 转换为VO
+        StdLogVO vo = toLogVO(context, packs);
+        // 若为一般模式直接返回
+        String isForRead = context.getParam(PREFIX, P_KEY_IS_FOR_READ);
+        if (!Boolean.parseBoolean(isForRead)) {
+            return vo;
         }
-        return output;
+        // 若为阅读模式，特殊转换
+        return toObjectForRead(vo);
     }
 
     // ********************内部方法********************
 
-    private StdLogResultForRead toResult(LogPack pack) {
-        StdLogResultForRead result = new StdLogResultForRead();
+    private Object toObjectForRead(StdLogVO vo) {
+        List<Object> result = new LinkedList<>();
+        // 添加结果信息
+        result.add(vo.info);
+        // 添加结果列表
+        result.addAll(vo.packs);
+        return result;
+    }
+
+    private StdLogVO toLogVO(QueryContext context, List<LogPack> packs) {
+        StdLogVO vo = new StdLogVO();
+        // 设置结果信息
+        StdLogVO.Info info = new StdLogVO.Info();
+        info.lastContextId = context.lastId;
+        info.curContextId = context.id;
+        info.nextContextId = context.nextId;
+        info.endReason = context.endReason;
+        vo.info = info;
+        // 添加结果列表
+        for (LogPack pack : packs) {
+            vo.packs.add(toLogItem(pack));
+        }
+        return vo;
+    }
+
+    private StdLogItem toLogItem(LogPack pack) {
+        StdLogItem result = new StdLogItem();
         TimeInfo info = getTimeInfo(pack);
-        // 设置日期
+        // 设置时间
         LocalDateTime earliestTime = TimeUtils.toLocalDateTime(getEarliestTime(info));
-        result.date = earliestTime.format(FORMATTER1);
+        result.time = earliestTime.format(FORMATTER1);
         // 设置耗时
         result.spend = getSpend(info);
         // 设置标签集
