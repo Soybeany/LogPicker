@@ -1,9 +1,10 @@
-package com.soybeany.log.collector.service;
+package com.soybeany.log.collector.service.query;
 
 import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.model.QueryContext;
-import com.soybeany.log.collector.repository.TagInfo;
-import com.soybeany.log.collector.repository.TagInfoRepository;
+import com.soybeany.log.collector.repository.LogTagInfo;
+import com.soybeany.log.collector.repository.LogTagInfoRepository;
+import com.soybeany.log.collector.service.convert.LogTagConvertService;
 import com.soybeany.log.core.model.LogLine;
 import com.soybeany.log.core.model.LogPack;
 import com.soybeany.log.core.model.LogTag;
@@ -34,7 +35,9 @@ class LogCutterServiceImpl implements LogCutterService {
     @Autowired
     private AppConfig appConfig;
     @Autowired
-    private TagInfoRepository tagInfoRepository;
+    private LogTagInfoRepository logTagInfoRepository;
+    @Autowired
+    private LogTagConvertService logTagConvertService;
 
     @Override
     public List<LogPack> cut(QueryContext context, List<LogLine> lines) {
@@ -59,8 +62,8 @@ class LogCutterServiceImpl implements LogCutterService {
             Map<String, List<LogLine>> splatMap = splitByThread(entry.getValue());
             for (Map.Entry<String, List<LogLine>> listEntry : splatMap.entrySet()) {
                 String thread = listEntry.getKey();
-                List<TagInfo> tagInfoList = tagInfoRepository.findByUidAndThreadOrderByTime(uid, thread);
-                results.add(toPack(uid, thread, tagInfoList, listEntry.getValue()));
+                List<LogTagInfo> logTagInfoList = logTagInfoRepository.findByUidAndThreadOrderByTime(uid, thread);
+                results.add(toPack(uid, thread, logTagInfoList, listEntry.getValue()));
             }
         }
         return results;
@@ -110,28 +113,22 @@ class LogCutterServiceImpl implements LogCutterService {
         }
     }
 
-    private LogPack toPack(@Nullable String uid, String thread, @Nullable List<TagInfo> tagInfoList, @NonNull List<LogLine> lines) {
+    private LogPack toPack(@Nullable String uid, String thread, @Nullable List<LogTagInfo> logTagInfoList, @NonNull List<LogLine> lines) {
         LogPack result = new LogPack();
         result.uid = uid;
         result.thread = thread;
-        result.tags = toLogTags(tagInfoList);
+        result.tags = toLogTags(logTagInfoList);
         result.logLines.addAll(lines);
         return result;
     }
 
-    private List<LogTag> toLogTags(@Nullable List<TagInfo> tagInfoList) {
-        if (null == tagInfoList) {
+    private List<LogTag> toLogTags(@Nullable List<LogTagInfo> logTagInfoList) {
+        if (null == logTagInfoList) {
             return null;
         }
         List<LogTag> tags = new LinkedList<>();
-        for (TagInfo info : tagInfoList) {
-            LogTag tag = new LogTag();
-            tag.uid = info.uid;
-            tag.thread = info.thread;
-            tag.time = info.time;
-            tag.key = info.key;
-            tag.value = info.value;
-            tags.add(tag);
+        for (LogTagInfo info : logTagInfoList) {
+            tags.add(logTagConvertService.fromInfo(info));
         }
         return tags;
     }

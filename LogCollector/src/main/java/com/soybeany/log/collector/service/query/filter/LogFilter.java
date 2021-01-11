@@ -1,4 +1,4 @@
-package com.soybeany.log.collector.service.filter;
+package com.soybeany.log.collector.service.query.filter;
 
 import com.soybeany.log.collector.model.QueryContext;
 import com.soybeany.log.core.model.LogPack;

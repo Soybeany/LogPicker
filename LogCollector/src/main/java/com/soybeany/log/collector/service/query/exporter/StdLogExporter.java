@@ -1,4 +1,4 @@
-package com.soybeany.log.collector.service.exporter;
+package com.soybeany.log.collector.service.query.exporter;
 
 import com.google.gson.Gson;
 import com.soybeany.log.collector.model.QueryContext;

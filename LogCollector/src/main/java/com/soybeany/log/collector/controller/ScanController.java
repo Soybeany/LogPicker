@@ -1,6 +1,6 @@
 package com.soybeany.log.collector.controller;
 
-import com.soybeany.log.collector.service.ScanService;
+import com.soybeany.log.collector.service.scan.ScanService;
 import com.soybeany.log.core.model.LogException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;

@@ -1,9 +1,10 @@
-package com.soybeany.log.collector.service;
+package com.soybeany.log.collector.service.query;
 
 import com.soybeany.log.collector.model.QueryContext;
 import com.soybeany.log.collector.model.QueryParam;
 import com.soybeany.log.collector.repository.LogLineInfo;
 import com.soybeany.log.collector.repository.LogLineInfoRepository;
+import com.soybeany.log.collector.service.convert.LogLineConvertService;
 import com.soybeany.log.core.model.LogLine;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -49,7 +50,11 @@ class LogSelectorServiceImpl implements LogSelectorService {
         } else {
             list = selectWithoutTag(context, page, pageSize);
         }
-        return logLineConvertService.convert(context, list);
+        List<LogLine> result = new LinkedList<>();
+        for (LogLineInfo info : list) {
+            result.add(logLineConvertService.fromInfo(info));
+        }
+        return result;
     }
 
     @NonNull

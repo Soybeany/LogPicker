@@ -19,9 +19,20 @@
       "defaultValue": 10000000
     },
     {
-      "name": "config.dir-to-scan",
+      "name": "config.dirs-to-scan",
       "type": "java.lang.String",
-      "description": "待扫描的目录."
+      "description": "待扫描的目录，多个使用“;”进行分隔."
+    },
+    {
+      "name": "config.line-parse-regex",
+      "type": "java.lang.String",
+      "description": "行解析的正则."
+    },
+    {
+      "name": "config.lines-to-batch-save",
+      "type": "java.lang.Integer",
+      "description": "每读取多少行进行一次批量保存.",
+      "defaultValue": 10000
     }
   ]
 }

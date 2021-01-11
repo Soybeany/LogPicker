@@ -28,6 +28,12 @@ public class FileInfo extends BaseEntity {
     public String fileName;
 
     /**
+     * 路径md5，需唯一
+     */
+    @Column(nullable = false, unique = true)
+    public String pathMd5;
+
+    /**
      * 已扫描的字节数
      */
     @Column(nullable = false)

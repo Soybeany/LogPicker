@@ -11,10 +11,24 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "config")
 public class AppConfig {
 
+    public String dirsToScan;
+    public String lineParseRegex;
+    public int linesToBatchSave;
     public int maxPageSize;
     public int maxLinesPerResultWithNullUid;
     public int maxBytesReturn;
-    public String dirToScan;
+
+    public void setDirsToScan(String dirsToScan) {
+        this.dirsToScan = dirsToScan;
+    }
+
+    public void setLineParseRegex(String regex) {
+        this.lineParseRegex = regex;
+    }
+
+    public void setLinesToBatchSave(int linesToBatchSave) {
+        this.linesToBatchSave = linesToBatchSave;
+    }
 
     public void setMaxPageSize(int maxPageSize) {
         this.maxPageSize = maxPageSize;
@@ -28,7 +42,4 @@ public class AppConfig {
         this.maxBytesReturn = maxBytesReturn;
     }
 
-    public void setDirToScan(String dirToScan) {
-        this.dirToScan = dirToScan;
-    }
 }

@@ -1,4 +1,4 @@
-package com.soybeany.log.collector.service.limiter;
+package com.soybeany.log.collector.service.query.limiter;
 
 import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.model.IQueryListener;

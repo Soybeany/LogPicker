@@ -1,4 +1,4 @@
-package com.soybeany.log.collector.service;
+package com.soybeany.log.collector.service.query;
 
 import com.soybeany.log.collector.model.QueryContext;
 import com.soybeany.log.collector.model.QueryParam;

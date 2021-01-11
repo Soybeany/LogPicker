@@ -22,7 +22,7 @@ import java.util.Date;
         @Index(name = "key_uid_index", columnList = "key"),
         @Index(name = "key_uid_index", columnList = "uid"),
 })
-public class TagInfo extends BaseEntity {
+public class LogTagInfo extends BaseEntity {
 
     /**
      * 关联的日志文件

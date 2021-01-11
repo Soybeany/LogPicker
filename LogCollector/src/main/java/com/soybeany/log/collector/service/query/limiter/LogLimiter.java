@@ -1,4 +1,4 @@
-package com.soybeany.log.collector.service.limiter;
+package com.soybeany.log.collector.service.query.limiter;
 
 import com.soybeany.log.collector.model.QueryContext;
 import com.soybeany.log.core.model.LogPack;

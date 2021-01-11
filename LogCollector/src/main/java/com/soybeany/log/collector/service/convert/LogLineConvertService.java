@@ -1,6 +1,5 @@
-package com.soybeany.log.collector.service;
+package com.soybeany.log.collector.service.convert;
 
-import com.soybeany.log.collector.model.QueryContext;
 import com.soybeany.log.collector.repository.FileInfo;
 import com.soybeany.log.collector.repository.FileInfoRepository;
 import com.soybeany.log.collector.repository.LogLineInfo;
@@ -8,14 +7,11 @@ import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.core.model.LogLine;
 import com.soybeany.util.file.BdFileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * @author Soybeany
@@ -23,8 +19,9 @@ import java.util.List;
  */
 public interface LogLineConvertService {
 
-    @NonNull
-    List<LogLine> convert(QueryContext context, @NonNull List<LogLineInfo> list);
+    LogLine fromInfo(LogLineInfo info);
+
+    LogLineInfo toInfo(int fileId, long fromByte, long toByte, LogLine line);
 
 }
 
@@ -35,15 +32,7 @@ class LogLineConvertServiceImpl implements LogLineConvertService {
     private FileInfoRepository fileInfoRepository;
 
     @Override
-    public List<LogLine> convert(QueryContext context, List<LogLineInfo> list) {
-        List<LogLine> result = new LinkedList<>();
-        for (LogLineInfo info : list) {
-            result.add(toLine(info));
-        }
-        return result;
-    }
-
-    private LogLine toLine(LogLineInfo info) {
+    public LogLine fromInfo(LogLineInfo info) {
         LogLine line = new LogLine();
         line.time = info.time;
         line.uid = info.uid;
@@ -51,6 +40,19 @@ class LogLineConvertServiceImpl implements LogLineConvertService {
         line.level = info.level;
         line.content = getContent(info);
         return line;
+    }
+
+    @Override
+    public LogLineInfo toInfo(int fileId, long fromByte, long toByte, LogLine line) {
+        LogLineInfo info = new LogLineInfo();
+        info.fileId = fileId;
+        info.time = line.time;
+        info.uid = line.uid;
+        info.thread = line.thread;
+        info.level = line.level;
+        info.fromByte = fromByte;
+        info.toByte = toByte;
+        return info;
     }
 
     private String getContent(LogLineInfo info) {

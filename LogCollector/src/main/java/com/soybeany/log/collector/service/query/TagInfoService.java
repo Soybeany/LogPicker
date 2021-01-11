@@ -1,9 +1,9 @@
-package com.soybeany.log.collector.service;
+package com.soybeany.log.collector.service.query;
 
 import com.soybeany.log.collector.model.QueryContext;
 import com.soybeany.log.collector.model.QueryParam;
-import com.soybeany.log.collector.repository.TagInfo;
-import com.soybeany.log.collector.repository.TagInfoRepository;
+import com.soybeany.log.collector.repository.LogTagInfo;
+import com.soybeany.log.collector.repository.LogTagInfoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -31,7 +31,7 @@ class TagInfoServiceImpl implements TagInfoService {
     private static final String PREFIX = "tag";
 
     @Autowired
-    private TagInfoRepository tagInfoRepository;
+    private LogTagInfoRepository logTagInfoRepository;
 
     @Override
     public boolean hasTags(QueryContext context) {
@@ -50,7 +50,7 @@ class TagInfoServiceImpl implements TagInfoService {
         Map.Entry<String, String> firstEntry = iterator.next();
         Pageable pageable = PageRequest.of(page, pageSize);
         // 首次筛选
-        List<TagInfo> infoList = tagInfoRepository.findByKeyAndTimeBetweenAndValueContainingOrderByTime(firstEntry.getKey(), queryParam.getFromTime(), queryParam.getToTime(), firstEntry.getValue(), pageable);
+        List<LogTagInfo> infoList = logTagInfoRepository.findByKeyAndTimeBetweenAndValueContainingOrderByTime(firstEntry.getKey(), queryParam.getFromTime(), queryParam.getToTime(), firstEntry.getValue(), pageable);
         // 进阶循环筛选
         while (iterator.hasNext()) {
             Map.Entry<String, String> entry = iterator.next();
@@ -58,16 +58,16 @@ class TagInfoServiceImpl implements TagInfoService {
             if (uids.isEmpty()) {
                 return Collections.emptyList();
             }
-            infoList = tagInfoRepository.findByKeyAndValueContainingAndUidInOrderByTime(entry.getKey(), entry.getValue(), uids);
+            infoList = logTagInfoRepository.findByKeyAndValueContainingAndUidInOrderByTime(entry.getKey(), entry.getValue(), uids);
         }
         // 转换为uid列表
         return toUidList(infoList);
     }
 
     @NonNull
-    private List<String> toUidList(List<TagInfo> list) {
+    private List<String> toUidList(List<LogTagInfo> list) {
         List<String> result = new LinkedList<>();
-        for (TagInfo info : list) {
+        for (LogTagInfo info : list) {
             result.add(info.uid);
         }
         return result;
