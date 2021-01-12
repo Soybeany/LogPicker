@@ -15,6 +15,8 @@ public class AppConfig {
     public String logParseMode;
     public String lineParseRegex;
     public int linesToBatchSave;
+    public int maxResultCount;
+    public int pageSizeCoefficientWithoutTag;
     public int maxPageSize;
     public int maxLinesPerResultWithNullUid;
     public int maxBytesReturn;
@@ -33,6 +35,14 @@ public class AppConfig {
 
     public void setLinesToBatchSave(int linesToBatchSave) {
         this.linesToBatchSave = linesToBatchSave;
+    }
+
+    public void setMaxResultCount(int maxResultCount) {
+        this.maxResultCount = maxResultCount;
+    }
+
+    public void setPageSizeCoefficientWithoutTag(int pageSizeCoefficientWithoutTag) {
+        this.pageSizeCoefficientWithoutTag = pageSizeCoefficientWithoutTag;
     }
 
     public void setMaxPageSize(int maxPageSize) {

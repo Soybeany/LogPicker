@@ -1,8 +1,10 @@
 package com.soybeany.log.collector.service.query;
 
+import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.model.QueryContext;
 import com.soybeany.log.collector.model.QueryParam;
 import com.soybeany.log.core.model.LogException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -27,6 +29,9 @@ class QueryContextServiceImpl implements QueryContextService {
 
     private static final String P_KEY_ID = "id"; // 关联context的id，string
 
+    @Autowired
+    private AppConfig appConfig;
+
     private final Map<String, QueryContext> contextMap = new ConcurrentHashMap<>();
 
     @Override
@@ -42,7 +47,7 @@ class QueryContextServiceImpl implements QueryContextService {
         }
         // 创建新的context
         else {
-            context = createNew(new QueryParam(param));
+            context = createNew(new QueryParam(appConfig, param));
         }
         return context;
     }

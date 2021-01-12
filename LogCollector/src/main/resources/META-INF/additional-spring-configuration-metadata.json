@@ -39,6 +39,18 @@
       "type": "java.lang.String",
       "description": "日志解析模式：v4-默认，compact-V3及以前.",
       "defaultValue": "v4"
+    },
+    {
+      "name": "config.max-result-count",
+      "type": "java.lang.Integer",
+      "description": "一次查询，最多返回的结果条数.",
+      "defaultValue": 30
+    },
+    {
+      "name": "config.page-size-coefficient-without-tag",
+      "type": "java.lang.Integer",
+      "description": "没有指定查询标签时，查询行记录表的分页大小系数，即设置返回30条结果，系数为10，则最终分页大小为30*10=300.",
+      "defaultValue": 10
     }
   ]
 }

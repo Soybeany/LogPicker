@@ -21,6 +21,10 @@ config:
   #  line-parse-regex: (?<time>.{10} .{8})\.\d{3}\s+(?<level>\w+)\s+(?<uid>\w+)\s+---\s+\[(?<thread>.+)]\s+:\s+(?<content>.+)
   # 每读取多少行进行一次批量保存
   lines-to-batch-save: 10000
+  # 一次查询，最多返回的结果条数
+  max-result-count: 30
+  # 没有指定查询标签时，查询行记录表的分页大小系数，即设置返回30条结果，系数为10，则最终分页大小为30*10=300
+  page-size-coefficient-without-tag: 10
   # 每次数据库查询时，单个分页最大查询数量
   max-page-size: 100
   # 当日志行没有uid时，每条查询结果允许包含的最大行数

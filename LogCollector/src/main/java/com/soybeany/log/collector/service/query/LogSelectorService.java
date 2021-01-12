@@ -1,5 +1,6 @@
 package com.soybeany.log.collector.service.query;
 
+import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.model.QueryContext;
 import com.soybeany.log.collector.model.QueryParam;
 import com.soybeany.log.collector.repository.LogLineInfo;
@@ -35,6 +36,8 @@ public interface LogSelectorService {
 @Service
 class LogSelectorServiceImpl implements LogSelectorService {
 
+    @Autowired
+    private AppConfig appConfig;
     @Autowired
     private TagInfoService tagInfoService;
     @Autowired
@@ -75,7 +78,7 @@ class LogSelectorServiceImpl implements LogSelectorService {
     @NonNull
     private List<LogLineInfo> selectWithoutTag(QueryContext context, int page, int pageSize) {
         QueryParam queryParam = context.queryParam;
-        Pageable pageable = PageRequest.of(page, pageSize);
+        Pageable pageable = PageRequest.of(page, appConfig.pageSizeCoefficientWithoutTag * pageSize);
         return logLineInfoRepository.findByTimeBetweenOrderByTime(queryParam.getFromTime(), queryParam.getToTime(), pageable);
     }
 }

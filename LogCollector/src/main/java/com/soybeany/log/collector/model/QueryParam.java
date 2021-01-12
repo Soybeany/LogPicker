@@ -1,5 +1,6 @@
 package com.soybeany.log.collector.model;
 
+import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.core.util.TimeUtils;
 import org.springframework.lang.NonNull;
@@ -22,10 +23,11 @@ public class QueryParam {
     private static final Map<Integer, DateTimeFormatter> FORMATTER_MAP = new HashMap<>();
 
     private final Map<String, Map<String, String>> params = new HashMap<>();
+    private final AppConfig appConfig;
 
     private LocalDateTime fromTime;
     private LocalDateTime toTime;
-    private int countLimit = 30;
+    private int countLimit;
 
     static {
         initFormatterMap();
@@ -42,7 +44,8 @@ public class QueryParam {
         FORMATTER_MAP.put(14, DateTimeFormatter.ofPattern("yy-MM-dd HH:mm"));
     }
 
-    public QueryParam(Map<String, String> param) {
+    public QueryParam(AppConfig appConfig, Map<String, String> param) {
+        this.appConfig = appConfig;
         // 处理入参
         for (Map.Entry<String, String> entry : param.entrySet()) {
             // 处理动态kv
@@ -54,6 +57,7 @@ public class QueryParam {
         }
         // 后处理参数
         postHandleTime();
+        countLimit = appConfig.maxResultCount;
     }
 
     // ********************公开方法********************
