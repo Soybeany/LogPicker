@@ -7,8 +7,7 @@ import com.soybeany.log.collector.repository.LogLineInfo;
 import com.soybeany.log.collector.repository.LogTagInfo;
 import com.soybeany.log.collector.service.convert.LogLineConvertService;
 import com.soybeany.log.collector.service.convert.LogTagConvertService;
-import com.soybeany.log.collector.service.scan.parser.LineParser;
-import com.soybeany.log.collector.service.scan.parser.TagParser;
+import com.soybeany.log.collector.service.scan.parser.LogParser;
 import com.soybeany.log.collector.service.scan.saver.LogSaver;
 import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.core.model.LogLine;
@@ -17,9 +16,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.regex.Pattern;
 
 /**
  * @author Soybeany
@@ -30,8 +33,6 @@ import java.util.List;
 class StdImporter implements LogImporter {
 
     @Autowired
-    private AppConfig appConfig;
-    @Autowired
     private LogLineConvertService logLineConvertService;
     @Autowired
     private LogTagConvertService logTagConvertService;
@@ -40,18 +41,27 @@ class StdImporter implements LogImporter {
     @Autowired
     private LogSaver logSaver;
 
-    private final LineParser lineParser;
-    private final TagParser tagParser;
+    private final AppConfig appConfig;
+    private final LogParser logParser;
+    private Pattern linePattern;
 
-    private FileInfo fileInfo;
-    private LogLineContainer lastLogLine;
     private final List<LogTagInfo> tagBufferList = new LinkedList<>();
     private final List<LogLineInfo> lineBufferList = new LinkedList<>();
+
+    private FileInfo fileInfo;
     private int readLines;
 
-    public StdImporter(LineParser lineParser, TagParser tagParser) {
-        this.lineParser = lineParser;
-        this.tagParser = tagParser;
+    private LogLine lastLogLine;
+    private StringBuilder tempContent;
+    private int lastLogStartIndex;
+    private long fromByte;
+    private long toByte;
+
+    public StdImporter(AppConfig appConfig, Map<String, LogParser> parsers) {
+        this.appConfig = appConfig;
+        this.logParser = Optional
+                .ofNullable(parsers.get(appConfig.logParseMode + "LogParser"))
+                .orElseThrow(() -> new LogException("没有找到指定的日志解析模式"));
     }
 
     @Override
@@ -61,18 +71,18 @@ class StdImporter implements LogImporter {
 
     @Override
     public void onRead(long startPointer, long endPointer, String line) {
-        LogLine curLogLine = lineParser.parse(line);
+        LogLine curLogLine = logParser.parseToLogLine(linePattern, line);
         // 尝试日志拼接
         if (null == curLogLine) {
             // 舍弃无法拼接的日志
             if (null == lastLogLine) {
                 return;
             }
-            if (null == lastLogLine.contentBuilder) {
-                lastLogLine.contentBuilder = new StringBuilder(lastLogLine.logLine.content);
+            if (null == tempContent) {
+                tempContent = new StringBuilder(lastLogLine.content);
             }
-            lastLogLine.contentBuilder.append(line);
-            lastLogLine.toByte = endPointer;
+            tempContent.append(line);
+            toByte = endPointer;
             return;
         }
         // 更新已扫描的字节
@@ -82,7 +92,10 @@ class StdImporter implements LogImporter {
         // 尝试保存
         tryToSave();
         // 将lastLogLine替换为当前LogLine
-        lastLogLine = new LogLineContainer(curLogLine, startPointer, endPointer);
+        lastLogLine = curLogLine;
+        lastLogStartIndex = line.length() - curLogLine.content.length();
+        fromByte = startPointer;
+        toByte = endPointer;
     }
 
     @Override
@@ -93,22 +106,29 @@ class StdImporter implements LogImporter {
 
     // ********************内部方法********************
 
+    @PostConstruct
+    private void onInit() {
+        linePattern = Pattern.compile(appConfig.lineParseRegex);
+    }
+
     private void handleLastLogLine() {
         if (null == lastLogLine) {
             return;
         }
         // 若有必要，进行日志替换
-        if (null != lastLogLine.contentBuilder) {
-            lastLogLine.logLine.content = lastLogLine.contentBuilder.toString();
-            lastLogLine.contentBuilder = null;
+        if (null != tempContent) {
+            lastLogLine.content = tempContent.toString();
+            tempContent = null;
         }
         // 标签处理
-        LogTag logTag = tagParser.parse(lastLogLine.logLine);
-        if (null != logTag) {
-            LogTagInfo info = logTagConvertService.toInfo(fileInfo.getId(), logTag);
-            tagBufferList.add(info);
+        List<LogTag> tags = logParser.parseToLogTags(lastLogLine);
+        if (null != tags) {
+            for (LogTag tag : tags) {
+                LogTagInfo info = logTagConvertService.toInfo(fileInfo.getId(), tag);
+                tagBufferList.add(info);
+            }
         } else {
-            LogLineInfo info = logLineConvertService.toInfo(fileInfo.getId(), lastLogLine.fromByte, lastLogLine.toByte, lastLogLine.logLine);
+            LogLineInfo info = logLineConvertService.toInfo(fileInfo.getId(), fromByte, toByte, lastLogStartIndex, lastLogLine);
             lineBufferList.add(info);
         }
     }
@@ -123,22 +143,6 @@ class StdImporter implements LogImporter {
         tagBufferList.clear();
         lineBufferList.clear();
         readLines = 0;
-    }
-
-    // ********************内部类区********************
-
-    private static class LogLineContainer {
-        LogLine logLine;
-
-        StringBuilder contentBuilder;
-        long fromByte;
-        long toByte;
-
-        public LogLineContainer(LogLine logLine, long fromByte, long toByte) {
-            this.logLine = logLine;
-            this.fromByte = fromByte;
-            this.toByte = toByte;
-        }
     }
 
 }

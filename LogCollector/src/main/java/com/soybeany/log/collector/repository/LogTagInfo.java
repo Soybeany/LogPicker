@@ -51,13 +51,13 @@ public class LogTagInfo extends BaseEntity {
     /**
      * 标签的键
      */
-    @Column(nullable = false)
+    @Column(columnDefinition = "text not null collate nocase")
     public String key;
 
     /**
      * 标签的值
      */
-    @Column
+    @Column(columnDefinition = "text collate nocase")
     public String value;
 
 }

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 public class AppConfig {
 
     public String dirsToScan;
+    public String logParseMode;
     public String lineParseRegex;
     public int linesToBatchSave;
     public int maxPageSize;
@@ -20,6 +21,10 @@ public class AppConfig {
 
     public void setDirsToScan(String dirsToScan) {
         this.dirsToScan = dirsToScan;
+    }
+
+    public void setLogParseMode(String logParseMode) {
+        this.logParseMode = logParseMode;
     }
 
     public void setLineParseRegex(String regex) {

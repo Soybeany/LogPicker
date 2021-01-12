@@ -14,8 +14,11 @@ spring:
 config:
   # 待扫描的目录，多个使用“;”进行分隔
   dirs-to-scan: E:\logDir
+  # 日志解析模式：v4-默认，compact-V3及以前
+  log-parse-mode: v4
   # 行解析的正则
-  line-parse-regex: xxxx
+  line-parse-regex: (?<time>.{10} .{8})\.\d{3}\s+(?<level>\w+)\s+(?<uid>\S+)\s+---\s+\[\s*(?<thread>.+)]\s+:\s+(?<content>.+)
+  #  line-parse-regex: (?<time>.{10} .{8})\.\d{3}\s+(?<level>\w+)\s+(?<uid>\w+)\s+---\s+\[(?<thread>.+)]\s+:\s+(?<content>.+)
   # 每读取多少行进行一次批量保存
   lines-to-batch-save: 10000
   # 每次数据库查询时，单个分页最大查询数量

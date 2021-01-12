@@ -62,4 +62,10 @@ public class LogLineInfo extends BaseEntity {
      */
     @Column(nullable = false)
     public Long toByte;
+
+    /**
+     * 日志在内容中开始的下标
+     */
+    @Column(nullable = false)
+    public int logStartIndex;
 }

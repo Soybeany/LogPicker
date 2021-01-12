@@ -28,6 +28,11 @@ class StdLogExporter implements LogExporter {
     private static final DateTimeFormatter FORMATTER1 = DateTimeFormatter.ofPattern("yy-MM-dd HH:mm:ss");
     private static final DateTimeFormatter FORMATTER2 = DateTimeFormatter.ofPattern("HH:mm:ss");
 
+    private static final Set<String> EXCLUDE_TAGS = new HashSet<String>() {{
+        add(Constants.TAG_BORDER_START);
+        add(Constants.TAG_BORDER_END);
+    }};
+
     private final String ipAddress = getIpAddress();
     private final Gson gson = new Gson();
 
@@ -36,7 +41,7 @@ class StdLogExporter implements LogExporter {
         String exportType = Optional.ofNullable(context.getParam(PREFIX, P_KEY_EXPORT_TYPE)).orElse(Constants.EXPORT_FOR_DIRECT_READ);
         switch (exportType) {
             case Constants.EXPORT_FOR_DIRECT_READ:
-                return gson.toJson(toObjectForRead(toLogVO(context, packs)));
+                return gson.toJson(toObjectForRead(context, toLogVO(context, packs)));
             case Constants.EXPORT_FOR_READ:
                 return gson.toJson(toLogVO(context, packs));
             case Constants.EXPORT_IN_SERIALIZE:
@@ -54,10 +59,15 @@ class StdLogExporter implements LogExporter {
 
     // ********************内部方法********************
 
-    private Object toObjectForRead(QueryResultVO vo) {
+    private Object toObjectForRead(QueryContext context, QueryResultVO vo) {
         List<Object> result = new LinkedList<>();
         // 添加结果信息
         result.add(vo.info);
+        // 添加额外信息
+        Map<String, String> exInfo = new LinkedHashMap<>();
+        exInfo.put("expectCount", context.queryParam.getCountLimit() + "");
+        exInfo.put("actualCount", vo.packs.size() + "");
+        result.add(exInfo);
         // 添加结果列表
         result.addAll(vo.packs);
         return result;
@@ -114,21 +124,25 @@ class StdLogExporter implements LogExporter {
     @NonNull
     private Map<String, String> getTags(LogPack raw) {
         Map<String, String> result = new LinkedHashMap<>();
-        if (null != raw.tags) {
-            Map<String, List<String>> temp = new HashMap<>();
-            for (LogTag tag : raw.tags) {
-                temp.computeIfAbsent(tag.key, k -> new ArrayList<>()).add(tag.value);
+        if (null == raw.tags) {
+            return result;
+        }
+        Map<String, List<String>> temp = new HashMap<>();
+        for (LogTag tag : raw.tags) {
+            if (EXCLUDE_TAGS.contains(tag.key)) {
+                continue;
             }
-            for (Map.Entry<String, List<String>> entry : temp.entrySet()) {
-                List<String> valueList = entry.getValue();
-                if (valueList.size() == 1) {
-                    result.put(entry.getKey(), valueList.get(0));
-                }
-                // 为相同的tag重命名
-                else {
-                    for (int i = 0; i < valueList.size(); i++) {
-                        result.put(entry.getKey() + (i + 1), valueList.get(i));
-                    }
+            temp.computeIfAbsent(tag.key, k -> new ArrayList<>()).add(tag.value);
+        }
+        for (Map.Entry<String, List<String>> entry : temp.entrySet()) {
+            List<String> valueList = entry.getValue();
+            if (valueList.size() == 1) {
+                result.put(entry.getKey(), valueList.get(0));
+            }
+            // 为相同的tag重命名
+            else {
+                for (int i = 0; i < valueList.size(); i++) {
+                    result.put(entry.getKey() + (i + 1), valueList.get(i));
                 }
             }
         }
@@ -140,7 +154,7 @@ class StdLogExporter implements LogExporter {
             return "缺失标签数据";
         }
         int deltaSec = (int) ((timeInfo.tagEndTime.getTime() - timeInfo.tagStartTime.getTime()) / 1000);
-        return deltaSec + "s";
+        return deltaSec >= 1 ? deltaSec + "s" : "<1s";
     }
 
     @NonNull

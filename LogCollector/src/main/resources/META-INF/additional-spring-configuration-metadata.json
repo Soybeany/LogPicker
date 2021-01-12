@@ -33,6 +33,12 @@
       "type": "java.lang.Integer",
       "description": "每读取多少行进行一次批量保存.",
       "defaultValue": 10000
+    },
+    {
+      "name": "config.log-parse-mode",
+      "type": "java.lang.String",
+      "description": "日志解析模式：v4-默认，compact-V3及以前.",
+      "defaultValue": "v4"
     }
   ]
 }

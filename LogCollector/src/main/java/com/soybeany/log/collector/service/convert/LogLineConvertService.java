@@ -21,7 +21,7 @@ public interface LogLineConvertService {
 
     LogLine fromInfo(LogLineInfo info);
 
-    LogLineInfo toInfo(int fileId, long fromByte, long toByte, LogLine line);
+    LogLineInfo toInfo(int fileId, long fromByte, long toByte, int logStartIndex, LogLine line);
 
 }
 
@@ -38,12 +38,12 @@ class LogLineConvertServiceImpl implements LogLineConvertService {
         line.uid = info.uid;
         line.thread = info.thread;
         line.level = info.level;
-        line.content = getContent(info);
+        line.content = getContent(info).substring(info.logStartIndex);
         return line;
     }
 
     @Override
-    public LogLineInfo toInfo(int fileId, long fromByte, long toByte, LogLine line) {
+    public LogLineInfo toInfo(int fileId, long fromByte, long toByte, int logStartIndex, LogLine line) {
         LogLineInfo info = new LogLineInfo();
         info.fileId = fileId;
         info.time = line.time;
@@ -52,6 +52,7 @@ class LogLineConvertServiceImpl implements LogLineConvertService {
         info.level = line.level;
         info.fromByte = fromByte;
         info.toByte = toByte;
+        info.logStartIndex = logStartIndex;
         return info;
     }
 

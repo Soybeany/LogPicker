@@ -30,9 +30,8 @@ public interface ScanService {
     // todo 精准扫描，只扫描指定的文件，查询时可以加参
     // todo 加锁后扫描
     // todo 扫描前，使用观察者模式，先禁止新查询，待全部已有查询结束后，再进行扫描
-    // todo 分批次进行保存
-    // todo sqlite大小写敏感，应在字段创建时使用 COLLATE NOCASE
-    // todo 部分内容需要trim后再入库
+    // todo 日志条目限制改为配置
+    // todo 日志切割未合并
 
     /**
      * 执行全扫描
