@@ -30,6 +30,7 @@ public interface ScanService {
     // todo 精准扫描，只扫描指定的文件，查询时可以加参
     // todo 加锁后扫描
     // todo 扫描前，使用观察者模式，先禁止新查询，待全部已有查询结束后，再进行扫描
+    // todo logIndex有崩溃的情况
 
     /**
      * 执行全扫描

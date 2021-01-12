@@ -21,8 +21,12 @@ public class ScanController {
     @GetMapping("/full")
     public String full() {
         try {
+            long start = System.currentTimeMillis();
             scanService.fullScan();
-            return "ok";
+            long end = System.currentTimeMillis();
+            String spend = "ok，耗时:" + ((end - start) / 1000) + "s";
+            System.out.println(spend);
+            return spend;
         } catch (LogException e) {
             return "异常:" + e.getMessage();
         }

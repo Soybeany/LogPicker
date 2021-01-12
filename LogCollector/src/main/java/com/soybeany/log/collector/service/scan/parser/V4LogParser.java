@@ -6,8 +6,8 @@ import com.soybeany.log.core.model.LogTag;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import java.text.DateFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -23,12 +23,10 @@ import static com.soybeany.log.core.model.Constants.*;
 @Component
 public class V4LogParser implements LogParser {
 
-    private final Pattern tagPattern = Pattern.compile("FLAG-(?<" + PARSER_KEY_KEY + ">.+)-(?<" + PARSER_KEY_VALUE + ">.*)");
-
-    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yy-MM-dd HH:mm:ss");
+    private static final Pattern TAG_PATTERN = Pattern.compile("FLAG-(?<" + PARSER_KEY_KEY + ">.+)-(?<" + PARSER_KEY_VALUE + ">.*)");
 
     @Override
-    public LogLine parseToLogLine(Pattern pattern, String lineString) {
+    public LogLine parseToLogLine(Pattern pattern, DateFormat dateFormat, String lineString) {
         Matcher matcher = pattern.matcher(lineString);
         if (!matcher.find()) {
             return null;
@@ -48,7 +46,7 @@ public class V4LogParser implements LogParser {
 
     @Override
     public List<LogTag> parseToLogTags(LogLine logLine) {
-        Matcher matcher = tagPattern.matcher(logLine.content);
+        Matcher matcher = TAG_PATTERN.matcher(logLine.content);
         if (!matcher.find()) {
             return null;
         }
@@ -60,4 +58,5 @@ public class V4LogParser implements LogParser {
         tag.value = matcher.group(PARSER_KEY_VALUE);
         return Collections.singletonList(tag);
     }
+
 }

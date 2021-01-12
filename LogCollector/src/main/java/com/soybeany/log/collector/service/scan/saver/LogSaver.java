@@ -1,6 +1,7 @@
 package com.soybeany.log.collector.service.scan.saver;
 
 import com.soybeany.log.collector.repository.*;
+import com.soybeany.log.core.model.LogException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,7 +14,7 @@ import java.util.List;
  */
 public interface LogSaver {
 
-    void save(FileInfo info, List<LogTagInfo> tagList, List<LogLineInfo> lineList);
+    void save(int fileId, long readBytes, List<LogTagInfo> tagList, List<LogLineInfo> lineList);
 
 }
 
@@ -29,7 +30,9 @@ class LogSaverImpl implements LogSaver {
     private LogLineInfoRepository logLineInfoRepository;
 
     @Override
-    public void save(FileInfo info, List<LogTagInfo> tagList, List<LogLineInfo> lineList) {
+    public void save(int fileId, long readBytes, List<LogTagInfo> tagList, List<LogLineInfo> lineList) {
+        FileInfo info = fileInfoRepository.findById(fileId).orElseThrow(() -> new LogException("没有找到指定的文件"));
+        info.scannedBytes = readBytes;
         fileInfoRepository.save(info);
         logTagInfoRepository.saveAll(tagList);
         logLineInfoRepository.saveAll(lineList);

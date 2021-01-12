@@ -51,6 +51,12 @@
       "type": "java.lang.Integer",
       "description": "没有指定查询标签时，查询行记录表的分页大小系数，即设置返回30条结果，系数为10，则最终分页大小为30*10=300.",
       "defaultValue": 10
+    },
+    {
+      "name": "config.line-time-format",
+      "type": "java.lang.String",
+      "description": "行的时间格式.",
+      "defaultValue": "yy-MM-dd HH:mm:ss"
     }
   ]
 }

@@ -1,8 +1,6 @@
 package com.soybeany.log.collector.service.scan.importer;
 
 import com.soybeany.log.collector.config.AppConfig;
-import com.soybeany.log.collector.repository.FileInfo;
-import com.soybeany.log.collector.repository.FileInfoRepository;
 import com.soybeany.log.collector.repository.LogLineInfo;
 import com.soybeany.log.collector.repository.LogTagInfo;
 import com.soybeany.log.collector.service.convert.LogLineConvertService;
@@ -18,6 +16,8 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -37,18 +37,17 @@ class StdImporter implements LogImporter {
     @Autowired
     private LogTagConvertService logTagConvertService;
     @Autowired
-    private FileInfoRepository fileInfoRepository;
-    @Autowired
     private LogSaver logSaver;
 
     private final AppConfig appConfig;
     private final LogParser logParser;
     private Pattern linePattern;
+    private DateFormat dateFormat;
 
     private final List<LogTagInfo> tagBufferList = new LinkedList<>();
     private final List<LogLineInfo> lineBufferList = new LinkedList<>();
 
-    private FileInfo fileInfo;
+    private int fileId;
     private int readLines;
 
     private LogLine lastLogLine;
@@ -66,12 +65,12 @@ class StdImporter implements LogImporter {
 
     @Override
     public void onStart(int fileId, File file) {
-        this.fileInfo = fileInfoRepository.findById(fileId).orElseThrow(() -> new LogException("没有找到指定的文件"));
+        this.fileId = fileId;
     }
 
     @Override
     public void onRead(long startPointer, long endPointer, String line) {
-        LogLine curLogLine = logParser.parseToLogLine(linePattern, line);
+        LogLine curLogLine = logParser.parseToLogLine(linePattern, dateFormat, line);
         // 尝试日志拼接
         if (null == curLogLine) {
             // 舍弃无法拼接的日志
@@ -85,23 +84,21 @@ class StdImporter implements LogImporter {
             toByte = endPointer;
             return;
         }
-        // 更新已扫描的字节
-        fileInfo.scannedBytes = endPointer;
         // 处理lastLogLine
         handleLastLogLine();
-        // 尝试保存
-        tryToSave();
         // 将lastLogLine替换为当前LogLine
         lastLogLine = curLogLine;
         lastLogStartIndex = line.length() - curLogLine.content.length();
         fromByte = startPointer;
         toByte = endPointer;
+        // 尝试保存
+        tryToSave();
     }
 
     @Override
     public void onFinish() {
         handleLastLogLine();
-        logSaver.save(fileInfo, tagBufferList, lineBufferList);
+        logSaver.save(fileId, toByte, tagBufferList, lineBufferList);
     }
 
     // ********************内部方法********************
@@ -109,6 +106,7 @@ class StdImporter implements LogImporter {
     @PostConstruct
     private void onInit() {
         linePattern = Pattern.compile(appConfig.lineParseRegex);
+        dateFormat = new SimpleDateFormat(appConfig.lineTimeFormat);
     }
 
     private void handleLastLogLine() {
@@ -124,11 +122,11 @@ class StdImporter implements LogImporter {
         List<LogTag> tags = logParser.parseToLogTags(lastLogLine);
         if (null != tags) {
             for (LogTag tag : tags) {
-                LogTagInfo info = logTagConvertService.toInfo(fileInfo.getId(), tag);
+                LogTagInfo info = logTagConvertService.toInfo(fileId, tag);
                 tagBufferList.add(info);
             }
         } else {
-            LogLineInfo info = logLineConvertService.toInfo(fileInfo.getId(), fromByte, toByte, lastLogStartIndex, lastLogLine);
+            LogLineInfo info = logLineConvertService.toInfo(fileId, fromByte, toByte, lastLogStartIndex, lastLogLine);
             lineBufferList.add(info);
         }
     }
@@ -138,7 +136,7 @@ class StdImporter implements LogImporter {
             return;
         }
         // 保存
-        logSaver.save(fileInfo, tagBufferList, lineBufferList);
+        logSaver.save(fileId, toByte, tagBufferList, lineBufferList);
         // 重置
         tagBufferList.clear();
         lineBufferList.clear();

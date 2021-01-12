@@ -14,6 +14,7 @@ public class AppConfig {
     public String dirsToScan;
     public String logParseMode;
     public String lineParseRegex;
+    public String lineTimeFormat;
     public int linesToBatchSave;
     public int maxResultCount;
     public int pageSizeCoefficientWithoutTag;
@@ -31,6 +32,10 @@ public class AppConfig {
 
     public void setLineParseRegex(String regex) {
         this.lineParseRegex = regex;
+    }
+
+    public void setLineTimeFormat(String lineTimeFormat) {
+        this.lineTimeFormat = lineTimeFormat;
     }
 
     public void setLinesToBatchSave(int linesToBatchSave) {
