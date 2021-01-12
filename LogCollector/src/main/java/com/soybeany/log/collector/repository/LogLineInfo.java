@@ -4,7 +4,6 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Index;
 import javax.persistence.Table;
-import java.util.Date;
 
 /**
  * 日志行信息
@@ -14,7 +13,6 @@ import java.util.Date;
  */
 @Entity
 @Table(indexes = {
-        @Index(columnList = "fileId"),
         @Index(columnList = "time"),
         @Index(name = "uid_time_index", columnList = "uid"),
         @Index(name = "uid_time_index", columnList = "time"),
@@ -43,7 +41,7 @@ public class LogLineInfo extends BaseEntity {
      * 该行日志的时间
      */
     @Column(nullable = false)
-    public Date time;
+    public String time;
 
     /**
      * 等级

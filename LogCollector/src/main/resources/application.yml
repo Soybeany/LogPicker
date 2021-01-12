@@ -17,12 +17,12 @@ config:
   # 日志解析模式：v4-默认，compact-V3及以前
   log-parse-mode: compact
   # 行解析的正则
-  #  line-parse-regex: (?<time>.{10} .{8})\.\d{3}\s+(?<level>\w+)\s+(?<uid>\S+)\s+---\s+\[\s*(?<thread>.+)]\s+:\s+(?<content>.+)
-  line-parse-regex: \[(?<time>.+)] \[(?<level>.+)] \[(?<thread>.+)] \{(?<pos>.+)}-(?<content>.+)
+  #  line-parse-regex: (?<time>.{10} .{8})\.\d{3}\s+(?<level>INFO|WARN|ERROR) (?<uid>.+?) --- \[\s*(?<thread>.+?)] : (?<content>.*)
+  line-parse-regex: \[(?<time>.{17})] \[(?<level>INFO|WARN|ERROR)] \[(?<thread>.+?)] \{(?<pos>.+?)}-(?<content>.*)
   # 行的时间格式
   line-time-format: "yy-MM-dd HH:mm:ss"
   # 每读取多少行进行一次批量保存
-  lines-to-batch-save: 10000
+  lines-to-batch-save: 500000
   # 一次查询，最多返回的结果条数
   max-result-count: 30
   # 没有指定查询标签时，查询行记录表的分页大小系数，即设置返回30条结果，系数为10，则最终分页大小为30*10=300

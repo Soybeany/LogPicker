@@ -1,11 +1,13 @@
 package com.soybeany.log.collector.service.query.exporter;
 
 import com.google.gson.Gson;
+import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.model.QueryContext;
 import com.soybeany.log.core.model.*;
 import com.soybeany.log.core.util.TimeUtils;
 import com.soybeany.util.HexUtils;
 import com.soybeany.util.SerializeUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
@@ -32,6 +34,9 @@ class StdLogExporter implements LogExporter {
         add(Constants.TAG_BORDER_START);
         add(Constants.TAG_BORDER_END);
     }};
+
+    @Autowired
+    private AppConfig appConfig;
 
     private final String ipAddress = getIpAddress();
     private final Gson gson = new Gson();
@@ -114,7 +119,7 @@ class StdLogExporter implements LogExporter {
         // todo 拼装时间时，在日期右侧显示+n代表跨天，如:00:02(+1)
         List<String> logs = new LinkedList<>();
         for (LogLine line : raw.logLines) {
-            String time = TimeUtils.toLocalDateTime(line.time).format(FORMATTER2);
+            String time = LocalDateTime.parse(line.time, appConfig.lineTimeFormatter).format(FORMATTER2);
             String log = time + " " + line.level + " " + line.content;
             logs.add(log);
         }
@@ -174,19 +179,23 @@ class StdLogExporter implements LogExporter {
     private TimeInfo getTimeInfo(LogPack result) {
         TimeInfo info = new TimeInfo();
         if (null != result.tags && !result.tags.isEmpty()) {
-            info.firstTagTime = result.tags.get(0).time;
+            info.firstTagTime = getDate(result.tags.get(0).time);
             for (LogTag tag : result.tags) {
                 if (Constants.TAG_BORDER_START.equalsIgnoreCase(tag.key)) {
-                    info.tagStartTime = tag.time;
+                    info.tagStartTime = getDate(tag.time);
                 } else if ((Constants.TAG_BORDER_END.equalsIgnoreCase(tag.key))) {
-                    info.tagEndTime = tag.time;
+                    info.tagEndTime = getDate(tag.time);
                 }
             }
         }
         if (!result.logLines.isEmpty()) {
-            info.firstLogTime = result.logLines.get(0).time;
+            info.firstLogTime = getDate(result.logLines.get(0).time);
         }
         return info;
+    }
+
+    private Date getDate(String timeString) {
+        return TimeUtils.toDate(LocalDateTime.parse(timeString, appConfig.lineTimeFormatter));
     }
 
     private String getIpAddress() {

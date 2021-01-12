@@ -2,12 +2,14 @@ package com.soybeany.log.collector.model;
 
 import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.core.model.LogException;
-import com.soybeany.log.core.util.TimeUtils;
 import org.springframework.lang.NonNull;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * @author Soybeany
@@ -25,8 +27,8 @@ public class QueryParam {
     private final Map<String, Map<String, String>> params = new HashMap<>();
     private final AppConfig appConfig;
 
-    private LocalDateTime fromTime;
-    private LocalDateTime toTime;
+    private String fromTime;
+    private String toTime;
     private int countLimit;
 
     static {
@@ -62,12 +64,12 @@ public class QueryParam {
 
     // ********************公开方法********************
 
-    public Date getFromTime() {
-        return TimeUtils.toDate(fromTime);
+    public String getFromTime() {
+        return fromTime;
     }
 
-    public Date getToTime() {
-        return TimeUtils.toDate(toTime);
+    public String getToTime() {
+        return toTime;
     }
 
     public int getCountLimit() {
@@ -98,13 +100,15 @@ public class QueryParam {
     private void postHandleTime() {
         // 确保时间参数不为null
         if (null == fromTime) {
-            fromTime = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).minusSeconds(1);
+            fromTime = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).minusSeconds(1).format(appConfig.lineTimeFormatter);
         }
         if (null == toTime) {
-            toTime = LocalDateTime.now();
+            toTime = LocalDateTime.now().format(appConfig.lineTimeFormatter);
         }
         // 校验时间参数
-        if (fromTime.isAfter(toTime)) {
+        LocalDateTime fTime = LocalDateTime.parse(fromTime, appConfig.lineTimeFormatter);
+        LocalDateTime tTime = LocalDateTime.parse(toTime, appConfig.lineTimeFormatter);
+        if (fTime.isAfter(tTime)) {
             throw new LogException("开始时间不能晚于结束时间");
         }
     }
@@ -122,12 +126,12 @@ public class QueryParam {
         return true;
     }
 
-    private LocalDateTime parseTime(String string) {
+    private String parseTime(String string) {
         DateTimeFormatter formatter = FORMATTER_MAP.get(string.length());
         if (null == formatter) {
             throw new LogException("使用了不支持的时间格式");
         }
-        return LocalDateTime.parse(string, formatter);
+        return LocalDateTime.parse(string, formatter).format(appConfig.lineTimeFormatter);
     }
 
 }

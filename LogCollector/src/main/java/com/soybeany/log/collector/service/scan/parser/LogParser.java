@@ -4,7 +4,6 @@ import com.soybeany.log.core.model.LogLine;
 import com.soybeany.log.core.model.LogTag;
 import org.springframework.lang.Nullable;
 
-import java.text.DateFormat;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -18,7 +17,7 @@ public interface LogParser {
      * @return 能够解析返回对象，不能解析返回null
      */
     @Nullable
-    LogLine parseToLogLine(Pattern pattern, DateFormat dateFormat, String lineString);
+    LogLine parseToLogLine(Pattern pattern, String lineString);
 
     /**
      * @return 是否解析成功

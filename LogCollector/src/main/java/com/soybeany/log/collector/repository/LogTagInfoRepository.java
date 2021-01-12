@@ -4,7 +4,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -13,7 +12,7 @@ import java.util.List;
  */
 public interface LogTagInfoRepository extends JpaRepository<LogTagInfo, Integer> {
 
-    List<LogTagInfo> findByKeyAndTimeBetweenAndValueContainingOrderByTime(String key, Date from, Date to, String value, Pageable pageable);
+    List<LogTagInfo> findByKeyAndTimeBetweenAndValueContainingOrderByTime(String key, String from, String to, String value, Pageable pageable);
 
     List<LogTagInfo> findByKeyAndValueContainingAndUidInOrderByTime(String key, String value, Collection<String> uid);
 

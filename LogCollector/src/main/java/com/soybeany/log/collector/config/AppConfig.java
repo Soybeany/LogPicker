@@ -3,6 +3,8 @@ package com.soybeany.log.collector.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import java.time.format.DateTimeFormatter;
+
 /**
  * @author Soybeany
  * @date 2021/1/7
@@ -14,7 +16,7 @@ public class AppConfig {
     public String dirsToScan;
     public String logParseMode;
     public String lineParseRegex;
-    public String lineTimeFormat;
+    public DateTimeFormatter lineTimeFormatter;
     public int linesToBatchSave;
     public int maxResultCount;
     public int pageSizeCoefficientWithoutTag;
@@ -35,7 +37,7 @@ public class AppConfig {
     }
 
     public void setLineTimeFormat(String lineTimeFormat) {
-        this.lineTimeFormat = lineTimeFormat;
+        this.lineTimeFormatter = DateTimeFormatter.ofPattern(lineTimeFormat);
     }
 
     public void setLinesToBatchSave(int linesToBatchSave) {

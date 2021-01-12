@@ -4,7 +4,6 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Index;
 import javax.persistence.Table;
-import java.util.Date;
 
 /**
  * 标签信息
@@ -14,7 +13,6 @@ import java.util.Date;
  */
 @Entity
 @Table(indexes = {
-        @Index(columnList = "fileId"),
         @Index(name = "uid_thread_index", columnList = "uid"),
         @Index(name = "uid_thread_index", columnList = "thread"),
         @Index(name = "key_time_index", columnList = "key"),
@@ -46,7 +44,7 @@ public class LogTagInfo extends BaseEntity {
      * 创建该标记的时间
      */
     @Column(nullable = false)
-    public Date time;
+    public String time;
 
     /**
      * 标签的键

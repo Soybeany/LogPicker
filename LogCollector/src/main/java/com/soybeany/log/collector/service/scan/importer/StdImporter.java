@@ -10,14 +10,13 @@ import com.soybeany.log.collector.service.scan.saver.LogSaver;
 import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.core.model.LogLine;
 import com.soybeany.log.core.model.LogTag;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -28,9 +27,10 @@ import java.util.regex.Pattern;
  * @author Soybeany
  * @date 2021/1/11
  */
-@Scope("prototype")
 @Component
-class StdImporter implements LogImporter {
+public class StdImporter implements LogImporter {
+
+    private static final Logger LOG = LoggerFactory.getLogger(Object.class);
 
     @Autowired
     private LogLineConvertService logLineConvertService;
@@ -42,7 +42,6 @@ class StdImporter implements LogImporter {
     private final AppConfig appConfig;
     private final LogParser logParser;
     private Pattern linePattern;
-    private DateFormat dateFormat;
 
     private final List<LogTagInfo> tagBufferList = new LinkedList<>();
     private final List<LogLineInfo> lineBufferList = new LinkedList<>();
@@ -70,7 +69,7 @@ class StdImporter implements LogImporter {
 
     @Override
     public void onRead(long startPointer, long endPointer, String line) {
-        LogLine curLogLine = logParser.parseToLogLine(linePattern, dateFormat, line);
+        LogLine curLogLine = logParser.parseToLogLine(linePattern, line);
         // 尝试日志拼接
         if (null == curLogLine) {
             // 舍弃无法拼接的日志
@@ -98,7 +97,10 @@ class StdImporter implements LogImporter {
     @Override
     public void onFinish() {
         handleLastLogLine();
+        LOG.info("开始保存");
+        long start = System.currentTimeMillis();
         logSaver.save(fileId, toByte, tagBufferList, lineBufferList);
+        LOG.info("结束保存:" + (System.currentTimeMillis() - start) / 1000 + "s");
     }
 
     // ********************内部方法********************
@@ -106,7 +108,6 @@ class StdImporter implements LogImporter {
     @PostConstruct
     private void onInit() {
         linePattern = Pattern.compile(appConfig.lineParseRegex);
-        dateFormat = new SimpleDateFormat(appConfig.lineTimeFormat);
     }
 
     private void handleLastLogLine() {
@@ -136,7 +137,10 @@ class StdImporter implements LogImporter {
             return;
         }
         // 保存
+        LOG.info("开始保存");
+        long start = System.currentTimeMillis();
         logSaver.save(fileId, toByte, tagBufferList, lineBufferList);
+        LOG.info("结束保存:" + (System.currentTimeMillis() - start) / 1000 + "s");
         // 重置
         tagBufferList.clear();
         lineBufferList.clear();

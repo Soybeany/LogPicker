@@ -1,7 +1,6 @@
 package com.soybeany.log.core.model;
 
 import java.io.Serializable;
-import java.util.Date;
 
 /**
  * @author Soybeany
@@ -12,7 +11,7 @@ public class LogLine implements Serializable {
     /**
      * 时间
      */
-    public Date time;
+    public String time;
 
     /**
      * 全局唯一号
