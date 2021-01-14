@@ -13,6 +13,7 @@ import com.soybeany.log.core.model.LogTag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -27,6 +28,7 @@ import java.util.regex.Pattern;
  * @author Soybeany
  * @date 2021/1/11
  */
+@Scope("prototype")
 @Component
 public class StdImporter implements LogImporter {
 
