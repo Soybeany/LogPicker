@@ -19,7 +19,7 @@ public interface LogIndexService {
     @Nullable
     LogIndexes loadIndexes(File file) throws IOException, ClassNotFoundException;
 
-    void saveIndexes(File file, LogIndexes indexes) throws IOException;
+    void saveIndexes(LogIndexes indexes) throws IOException;
 }
 
 @Service
@@ -36,14 +36,14 @@ class LogIndexServiceImpl implements LogIndexService {
             return null;
         }
         // 读取索引文件
-        try (ObjectInputStream is = new ObjectInputStream(new FileInputStream(file))) {
+        try (ObjectInputStream is = new ObjectInputStream(new FileInputStream(indexFile))) {
             return (LogIndexes) is.readObject();
         }
     }
 
     @Override
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    public void saveIndexes(File file, LogIndexes indexes) throws IOException {
+    public void saveIndexes(LogIndexes indexes) throws IOException {
         File tempFile = new File(appConfig.dirForIndexes + "/temp", UUID.randomUUID().toString());
         BdFileUtils.mkParentDirs(tempFile);
         // 将索引保存到临时文件
@@ -52,9 +52,11 @@ class LogIndexServiceImpl implements LogIndexService {
         }
         // 替换原文件
         try {
-            File indexFile = getLogIndexesFile(file);
+            File indexFile = getLogIndexesFile(indexes.logFile);
             indexFile.delete();
-            tempFile.renameTo(indexFile);
+            BdFileUtils.mkParentDirs(indexFile);
+            boolean success = tempFile.renameTo(indexFile);
+            System.out.println("持久化:" + success);
         } finally {
             tempFile.delete();
         }

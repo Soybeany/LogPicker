@@ -12,7 +12,7 @@ public interface ILogReceiver {
     default void onStart() {
     }
 
-    default void onFinish() {
+    default void onFinish(long bytesRead, long endPointer) {
     }
 
     void onReceiveLogLine(long fromByte, long toByte, LogLine logLine);

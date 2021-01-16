@@ -7,6 +7,8 @@ import com.soybeany.log.collector.service.query.model.IQueryListener;
 import com.soybeany.log.collector.service.query.model.QueryContext;
 import com.soybeany.log.collector.service.scan.importer.IndexesImporter;
 import com.soybeany.log.core.model.LogException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -38,6 +40,8 @@ public interface ScanService {
 
 @Service
 class ScanServiceImpl implements ScanService, IQueryListener {
+
+    private static final Logger LOG = LoggerFactory.getLogger(Object.class);
 
     private static final String PREFIX = "scan";
 
@@ -77,9 +81,10 @@ class ScanServiceImpl implements ScanService, IQueryListener {
 
     private void scanFile(File file) {
         try {
-            LogIndexes indexes = Optional.ofNullable(logIndexService.loadIndexes(file)).orElseGet(LogIndexes::new);
+            LogIndexes indexes = Optional.ofNullable(logIndexService.loadIndexes(file)).orElseGet(() -> new LogIndexes(file));
             indexesImporter.executeImport(indexes);
-            logIndexService.saveIndexes(file, indexes);
+            LOG.info("开始持久化");
+            logIndexService.saveIndexes(indexes);
         } catch (Exception e) {
             throw new LogException("日志文件扫描异常:" + e.getMessage());
         }

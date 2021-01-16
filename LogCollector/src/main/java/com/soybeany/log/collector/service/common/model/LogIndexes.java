@@ -1,5 +1,6 @@
 package com.soybeany.log.collector.service.common.model;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
@@ -13,9 +14,9 @@ import java.util.TreeMap;
 public class LogIndexes implements Serializable {
 
     /**
-     * 被索引文件的路径
+     * 日志文件
      */
-    public String filePath;
+    public final File logFile;
 
     /**
      * 已扫描的字节数
@@ -31,5 +32,9 @@ public class LogIndexes implements Serializable {
      * 自定义标签索引
      */
     public final Map<String, Map<String, List<FileRange>>> tagsIndexMap = new HashMap<>();
+
+    public LogIndexes(File logFile) {
+        this.logFile = logFile;
+    }
 
 }

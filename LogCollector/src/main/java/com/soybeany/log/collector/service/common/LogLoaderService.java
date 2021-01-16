@@ -47,21 +47,27 @@ class LogLoaderServiceImpl implements LogLoaderService {
         }
         receiver.onStart();
         logParser.beforeBatchParse();
+        long bytesRead = 0, endPointer = 0;
         for (FileRange range : ranges) {
-            BdFileUtils.randomReadLine(file, range.from, new ReadLineCallbackImpl(range.to, receiver));
+            ReadLineCallbackImpl callback = new ReadLineCallbackImpl(range.to, receiver);
+            BdFileUtils.randomReadLine(file, range.from, callback);
+            bytesRead += callback.bytesRead;
+            endPointer = range.from + callback.bytesRead;
         }
         logParser.afterBatchParse(receiver);
-        receiver.onFinish();
+        receiver.onFinish(bytesRead, endPointer);
     }
 
     // ********************内部类********************
 
     private class ReadLineCallbackImpl implements BdFileUtils.RandomReadLineCallback {
-        private final long end;
+        private final long targetEnd;
         private final ILogReceiver receiver;
 
-        public ReadLineCallbackImpl(long end, ILogReceiver receiver) {
-            this.end = end;
+        long bytesRead;
+
+        public ReadLineCallbackImpl(long targetEnd, ILogReceiver receiver) {
+            this.targetEnd = targetEnd;
             this.receiver = receiver;
         }
 
@@ -73,9 +79,10 @@ class LogLoaderServiceImpl implements LogLoaderService {
         @Override
         public int onHandleLine(long startPointer, long endPointer, String line) {
             // 若已读到限制的字节，则不再继续
-            if (endPointer > end) {
+            if (endPointer > targetEnd) {
                 return STATE_ABORT;
             }
+            bytesRead += (endPointer - startPointer);
             logParser.onParse(appConfig.lineParsePattern, startPointer, endPointer, line, receiver);
             return STATE_CONTINUE;
         }
