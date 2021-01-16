@@ -1,10 +1,10 @@
 package com.soybeany.log.collector.service.query;
 
 import com.soybeany.log.collector.config.AppConfig;
-import com.soybeany.log.collector.model.QueryContext;
 import com.soybeany.log.collector.repository.LogTagInfo;
 import com.soybeany.log.collector.repository.LogTagInfoRepository;
 import com.soybeany.log.collector.service.convert.LogTagConvertService;
+import com.soybeany.log.collector.service.query.model.QueryContext;
 import com.soybeany.log.core.model.LogLine;
 import com.soybeany.log.core.model.LogPack;
 import com.soybeany.log.core.model.LogTag;

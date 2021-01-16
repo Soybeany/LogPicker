@@ -1,4 +1,4 @@
-package com.soybeany.log.collector.model;
+package com.soybeany.log.collector.service.query.model;
 
 /**
  * @author Soybeany

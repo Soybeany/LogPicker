@@ -14,15 +14,21 @@ spring:
 config:
   # 待扫描的目录，多个使用“;”进行分隔
   dirs-to-scan: E:\logDir
+  # 用于存放索引的目录
+  dir-for-indexes: E:\logIndexes
   # 日志解析模式：v4-默认，compact-V3及以前
   log-parse-mode: compact
+  # 日志的字符集
+  log-charset: GBK
   # 行解析的正则
   #  line-parse-regex: (?<time>.{10} .{8})\.\d{3}\s+(?<level>INFO|WARN|ERROR) (?<uid>.+?) --- \[\s*(?<thread>.+?)] : (?<content>.*)
   line-parse-regex: \[(?<time>.{17})] \[(?<level>INFO|WARN|ERROR)] \[(?<thread>.+?)] \{(?<pos>.+?)}-(?<content>.*)
   # 行的时间格式
   line-time-format: "yy-MM-dd HH:mm:ss"
-  # 每读取多少行进行一次批量保存
-  lines-to-batch-save: 500000
+  # 需要建立索引的标签，多个使用“;”进行分隔
+  tags-to-index: url;user
+  # 当新记录与旧记录间不超过指定行数时，将新记录合并至旧记录
+  max-lines-gap-to-merge: 1000
   # 一次查询，最多返回的结果条数
   max-result-count: 30
   # 没有指定查询标签时，查询行记录表的分页大小系数，即设置返回30条结果，系数为10，则最终分页大小为30*10=300

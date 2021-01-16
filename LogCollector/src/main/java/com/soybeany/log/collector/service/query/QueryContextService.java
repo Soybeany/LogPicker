@@ -1,8 +1,8 @@
 package com.soybeany.log.collector.service.query;
 
 import com.soybeany.log.collector.config.AppConfig;
-import com.soybeany.log.collector.model.QueryContext;
-import com.soybeany.log.collector.model.QueryParam;
+import com.soybeany.log.collector.service.query.model.QueryContext;
+import com.soybeany.log.collector.service.query.model.QueryParam;
 import com.soybeany.log.core.model.LogException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

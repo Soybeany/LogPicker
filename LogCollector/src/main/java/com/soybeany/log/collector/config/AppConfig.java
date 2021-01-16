@@ -4,6 +4,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * @author Soybeany
@@ -13,11 +17,15 @@ import java.time.format.DateTimeFormatter;
 @ConfigurationProperties(prefix = "config")
 public class AppConfig {
 
-    public String dirsToScan;
+    public String[] dirsToScan;
+    public String dirForIndexes;
     public String logParseMode;
-    public String lineParseRegex;
+    public String logCharset;
+    public Pattern lineParsePattern;
+    public String lineTimeFormat;
     public DateTimeFormatter lineTimeFormatter;
-    public int linesToBatchSave;
+    public final Set<String> tagsToIndex = new HashSet<>();
+    public int maxLinesGapToMerge;
     public int maxResultCount;
     public int pageSizeCoefficientWithoutTag;
     public int maxPageSize;
@@ -25,23 +33,36 @@ public class AppConfig {
     public int maxBytesReturn;
 
     public void setDirsToScan(String dirsToScan) {
-        this.dirsToScan = dirsToScan;
+        this.dirsToScan = dirsToScan.split(";");
+    }
+
+    public void setDirForIndexes(String dirForIndexes) {
+        this.dirForIndexes = dirForIndexes;
     }
 
     public void setLogParseMode(String logParseMode) {
         this.logParseMode = logParseMode;
     }
 
+    public void setLogCharset(String logCharset) {
+        this.logCharset = logCharset;
+    }
+
     public void setLineParseRegex(String regex) {
-        this.lineParseRegex = regex;
+        this.lineParsePattern = Pattern.compile(regex);
     }
 
     public void setLineTimeFormat(String lineTimeFormat) {
+        this.lineTimeFormat = lineTimeFormat;
         this.lineTimeFormatter = DateTimeFormatter.ofPattern(lineTimeFormat);
     }
 
-    public void setLinesToBatchSave(int linesToBatchSave) {
-        this.linesToBatchSave = linesToBatchSave;
+    public void setTagsToIndex(String tagsToIndex) {
+        this.tagsToIndex.addAll(Arrays.asList(tagsToIndex.split(";")));
+    }
+
+    public void setMaxLinesGapToMerge(int maxLinesGapToMerge) {
+        this.maxLinesGapToMerge = maxLinesGapToMerge;
     }
 
     public void setMaxResultCount(int maxResultCount) {

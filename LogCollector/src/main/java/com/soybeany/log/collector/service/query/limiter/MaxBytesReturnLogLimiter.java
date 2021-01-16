@@ -1,8 +1,8 @@
 package com.soybeany.log.collector.service.query.limiter;
 
 import com.soybeany.log.collector.config.AppConfig;
-import com.soybeany.log.collector.model.IQueryListener;
-import com.soybeany.log.collector.model.QueryContext;
+import com.soybeany.log.collector.service.query.model.IQueryListener;
+import com.soybeany.log.collector.service.query.model.QueryContext;
 import com.soybeany.log.core.model.LogPack;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -41,15 +41,11 @@ class MaxBytesReturnLogLimiter implements LogLimiter, IQueryListener {
         // 计算待评估结果的字节数
         long[] totalBytes = new long[1];
         result.logLines.forEach(log -> totalBytes[0] += log.content.getBytes().length);
-        if (bytes + totalBytes[0] > getBytesLimit(context)) {
+        if (bytes + totalBytes[0] > (long) context.getTempData(PREFIX, T_KEY_MAX_BYTES_RETURN)) {
             return false;
         }
         context.putTempData(PREFIX, T_KEY_BYTES, totalBytes[0]);
         return true;
-    }
-
-    private long getBytesLimit(QueryContext context) {
-        return context.getTempData(PREFIX, T_KEY_MAX_BYTES_RETURN);
     }
 
 }

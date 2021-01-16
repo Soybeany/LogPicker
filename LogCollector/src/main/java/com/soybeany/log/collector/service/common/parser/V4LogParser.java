@@ -1,8 +1,7 @@
-package com.soybeany.log.collector.service.scan.parser;
+package com.soybeany.log.collector.service.common.parser;
 
 import com.soybeany.log.core.model.LogLine;
 import com.soybeany.log.core.model.LogTag;
-import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -16,14 +15,13 @@ import static com.soybeany.log.core.model.Constants.*;
  * @author Soybeany
  * @date 2021/1/12
  */
-@Scope("prototype")
 @Component
-public class V4LogParser implements LogParser {
+public class V4LogParser extends BaseParser {
 
     private static final Pattern TAG_PATTERN = Pattern.compile("FLAG-(?<" + PARSER_KEY_KEY + ">.+?)-(?<" + PARSER_KEY_VALUE + ">.*)");
 
     @Override
-    public LogLine parseToLogLine(Pattern pattern, String lineString) {
+    protected LogLine parseToLogLine(Pattern pattern, String lineString) {
         Matcher matcher = pattern.matcher(lineString);
         if (!matcher.find()) {
             return null;
@@ -38,7 +36,7 @@ public class V4LogParser implements LogParser {
     }
 
     @Override
-    public List<LogTag> parseToLogTags(LogLine logLine) {
+    protected List<LogTag> parseToLogTags(LogLine logLine) {
         Matcher matcher = TAG_PATTERN.matcher(logLine.content);
         if (!matcher.find()) {
             return null;

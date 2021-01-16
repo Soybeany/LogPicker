@@ -1,9 +1,9 @@
 package com.soybeany.log.collector.service.query;
 
-import com.soybeany.log.collector.model.QueryContext;
-import com.soybeany.log.collector.model.QueryParam;
 import com.soybeany.log.collector.repository.LogTagInfo;
 import com.soybeany.log.collector.repository.LogTagInfoRepository;
+import com.soybeany.log.collector.service.query.model.QueryContext;
+import com.soybeany.log.collector.service.query.model.QueryParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
