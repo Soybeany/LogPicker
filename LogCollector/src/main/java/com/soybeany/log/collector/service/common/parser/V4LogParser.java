@@ -18,7 +18,7 @@ import static com.soybeany.log.core.model.Constants.*;
 @Component
 public class V4LogParser extends BaseParser {
 
-    private static final Pattern TAG_PATTERN = Pattern.compile("FLAG-(?<" + PARSER_KEY_KEY + ">.+?)-(?<" + PARSER_KEY_VALUE + ">.*)");
+    private static final Pattern TAG_PATTERN = Pattern.compile("^FLAG-(?<" + PARSER_KEY_KEY + ">.+?)-(?<" + PARSER_KEY_VALUE + ">.*)");
 
     @Override
     protected LogLine parseToLogLine(Pattern pattern, String lineString) {

@@ -20,7 +20,7 @@ import static com.soybeany.log.core.model.Constants.*;
 @Component
 public class CompactLogParser extends BaseParser {
 
-    private static final Pattern TAG_PATTERN = Pattern.compile("FLAG-(?<type>.+?)-(?<state>.+?):(?<user>.+?) (?<url>.+?) (?<param>\\{.+})");
+    private static final Pattern TAG_PATTERN = Pattern.compile("^FLAG-(?<type>.+?)-(?<state>.+?):(?<user>.+?) (?<url>.+?) (?<param>\\{.+})");
 
     private static final ThreadLocal<InfoHolder> HOLDER = new ThreadLocal<>();
 

@@ -22,7 +22,7 @@ config:
   log-charset: GBK
   # 行解析的正则
   #  line-parse-regex: (?<time>.{10} .{8})\.\d{3}\s+(?<level>INFO|WARN|ERROR) (?<uid>.+?) --- \[\s*(?<thread>.+?)] : (?<content>.*)
-  line-parse-regex: \[(?<time>.{17})] \[(?<level>INFO|WARN|ERROR)] \[(?<thread>.+?)] \{(?<pos>.+?)}-(?<content>.*)
+  line-parse-regex: ^\[(?<time>.{17})] \[(?<level>INFO|WARN|ERROR)] \[(?<thread>.+?)] \{(?<pos>.+?)}-(?<content>.*)
   # 行的时间格式
   line-time-format: "yy-MM-dd HH:mm:ss"
   # 需要建立索引的标签，多个使用“;”进行分隔
