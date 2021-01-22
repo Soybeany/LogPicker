@@ -3,8 +3,6 @@ package com.soybeany.log.collector.service.scan;
 import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.service.common.LogIndexService;
 import com.soybeany.log.collector.service.common.model.LogIndexes;
-import com.soybeany.log.collector.service.query.model.IQueryListener;
-import com.soybeany.log.collector.service.query.model.QueryContext;
 import com.soybeany.log.collector.service.scan.importer.IndexesImporter;
 import com.soybeany.log.core.model.LogException;
 import org.slf4j.Logger;
@@ -39,7 +37,7 @@ public interface ScanService {
 }
 
 @Service
-class ScanServiceImpl implements ScanService, IQueryListener {
+class ScanServiceImpl implements ScanService, LogIndexes.Updater {
 
     private static final Logger LOG = LoggerFactory.getLogger(Object.class);
 
@@ -73,20 +71,22 @@ class ScanServiceImpl implements ScanService, IQueryListener {
     }
 
     @Override
-    public void onQuery(QueryContext context) {
-        // todo 如果包含需先扫描的文件，则先执行扫描
+    public LogIndexes updateAndGet(File logFile) {
+        return scanFile(logFile);
     }
 
     // ********************内部方法********************
 
-    private void scanFile(File file) {
+    private LogIndexes scanFile(File file) {
         try {
             LogIndexes indexes = Optional.ofNullable(logIndexService.loadIndexes(file)).orElseGet(() -> new LogIndexes(file));
             indexesImporter.executeImport(indexes);
             LOG.info("开始持久化");
             logIndexService.saveIndexes(indexes);
+            return indexes;
         } catch (Exception e) {
             throw new LogException("日志文件扫描异常:" + e.getMessage());
         }
     }
+
 }

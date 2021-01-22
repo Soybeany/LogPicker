@@ -115,10 +115,10 @@ class StdLogExporter implements LogExporter {
         return result;
     }
 
-    private List<String> getLogs(LogPack raw) {
+    private List<String> getLogs(LogPack logPack) {
         // todo 拼装时间时，在日期右侧显示+n代表跨天，如:00:02(+1)
         List<String> logs = new LinkedList<>();
-        for (LogLine line : raw.logLines) {
+        for (LogLine line : logPack.logLines) {
             String time = LocalDateTime.parse(line.time, appConfig.lineTimeFormatter).format(FORMATTER2);
             String log = time + " " + line.level + " " + line.content;
             logs.add(log);

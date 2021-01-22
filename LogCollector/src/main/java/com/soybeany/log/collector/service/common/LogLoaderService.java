@@ -3,16 +3,14 @@ package com.soybeany.log.collector.service.common;
 import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.service.common.model.FileRange;
 import com.soybeany.log.collector.service.common.model.ILogReceiver;
-import com.soybeany.log.collector.service.common.parser.LogParser;
 import com.soybeany.log.core.model.LogException;
 import com.soybeany.util.file.BdFileUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * @author Soybeany
@@ -20,42 +18,42 @@ import java.util.Optional;
  */
 public interface LogLoaderService {
 
-    void load(File file, List<FileRange> ranges, ILogReceiver receiver) throws IOException;
+    int load(File file, List<FileRange> ranges, ILogReceiver receiver) throws IOException;
 
 }
 
 @Service
 class LogLoaderServiceImpl implements LogLoaderService {
 
-    private static final int STATE_CONTINUE = 0;
-    private static final int STATE_ABORT = 1;
-
-    private final AppConfig appConfig;
-    private final LogParser logParser;
-
-    public LogLoaderServiceImpl(AppConfig appConfig, Map<String, LogParser> parserMap) {
-        this.appConfig = appConfig;
-        this.logParser = Optional
-                .ofNullable(parserMap.get(appConfig.logParseMode + "LogParser"))
-                .orElseThrow(() -> new LogException("没有找到指定的日志解析模式"));
-    }
+    @Autowired
+    private AppConfig appConfig;
+    @Autowired
+    private LogParserService logParserService;
 
     @Override
-    public void load(File file, List<FileRange> ranges, ILogReceiver receiver) throws IOException {
+    public int load(File file, List<FileRange> ranges, ILogReceiver receiver) throws IOException {
         if (!file.exists()) {
             throw new LogException("找不到名称为“" + file.getName() + "”的日志文件");
         }
-        receiver.onStart();
-        logParser.beforeBatchParse();
         long bytesRead = 0, endPointer = 0;
-        for (FileRange range : ranges) {
-            ReadLineCallbackImpl callback = new ReadLineCallbackImpl(range.to, receiver);
-            BdFileUtils.randomReadLine(file, range.from, callback);
-            bytesRead += callback.bytesRead;
-            endPointer = range.from + callback.bytesRead;
+        try {
+            receiver.onStart();
+            logParserService.beforeBatchParse(receiver);
+            for (FileRange range : ranges) {
+                ReadLineCallbackImpl callback = new ReadLineCallbackImpl(range.to, receiver);
+                BdFileUtils.randomReadLine(file, range.from, callback);
+                bytesRead += callback.bytesRead;
+                endPointer = range.from + callback.bytesRead;
+                // 按需提前中断
+                if (ILogReceiver.STATE_CONTINUE != callback.status) {
+                    return callback.status;
+                }
+            }
+        } finally {
+            logParserService.afterBatchParse(receiver);
+            receiver.onFinish(bytesRead, endPointer);
         }
-        logParser.afterBatchParse(receiver);
-        receiver.onFinish(bytesRead, endPointer);
+        return ILogReceiver.STATE_CONTINUE;
     }
 
     // ********************内部类********************
@@ -65,6 +63,7 @@ class LogLoaderServiceImpl implements LogLoaderService {
         private final ILogReceiver receiver;
 
         long bytesRead;
+        int status;
 
         public ReadLineCallbackImpl(long targetEnd, ILogReceiver receiver) {
             this.targetEnd = targetEnd;
@@ -77,14 +76,20 @@ class LogLoaderServiceImpl implements LogLoaderService {
         }
 
         @Override
+        public void onFinish(int status) {
+            this.status = status;
+        }
+
+        @Override
         public int onHandleLine(long startPointer, long endPointer, String line) {
             // 若已读到限制的字节，则不再继续
             if (endPointer > targetEnd) {
-                return STATE_ABORT;
+                return ILogReceiver.STATE_ABORT;
             }
             bytesRead += (endPointer - startPointer);
-            logParser.onParse(appConfig.lineParsePattern, startPointer, endPointer, line, receiver);
-            return STATE_CONTINUE;
+            logParserService.onParse(appConfig.lineParsePattern, startPointer, endPointer, line, receiver);
+            return receiver.onGetState();
         }
     }
+
 }

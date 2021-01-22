@@ -1,19 +1,25 @@
 package com.soybeany.log.collector.service.query;
 
 import com.soybeany.log.collector.config.AppConfig;
+import com.soybeany.log.collector.service.common.BytesRangeService;
+import com.soybeany.log.collector.service.common.LogLoaderService;
+import com.soybeany.log.collector.service.common.model.FileRange;
+import com.soybeany.log.collector.service.common.model.ILogReceiver;
+import com.soybeany.log.collector.service.common.model.LogIndexes;
 import com.soybeany.log.collector.service.query.exporter.LogExporter;
 import com.soybeany.log.collector.service.query.filter.LogFilter;
-import com.soybeany.log.collector.service.query.limiter.LogLimiter;
-import com.soybeany.log.collector.service.query.model.IQueryListener;
+import com.soybeany.log.collector.service.query.model.ILogPackReceiver;
+import com.soybeany.log.collector.service.query.model.LogReceiverAdapter;
 import com.soybeany.log.collector.service.query.model.QueryContext;
-import com.soybeany.log.core.model.LogLine;
+import com.soybeany.log.collector.service.query.model.QueryParam;
+import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.core.model.LogPack;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -31,34 +37,30 @@ public interface QueryService {
 class QueryServiceImpl implements QueryService {
 
     private static final String PREFIX = "query";
+    private static final String P_KEY_FILES = "files"; // 需要查询文件的路径，使用“;”分隔，String
 
-    private static final String C_KEY_START_PAGE = "startPage"; // 开始分页下标(包含)，int
-    private static final String C_KEY_END_PAGE = "endPage"; // 结束分页下标(不包含)，int
-    private static final String C_KEY_EX_RESULT = "exResult"; // 额外的结果，即上一次查询超出数目限制的结果，List<RawLogResult>
-    private static final String C_KEY_REST_RESULT = "restResult"; // 剩余的结果，即本次查询剩余的结果，List<RawLogResult>
-
-    private static final String T_KEY_NEED_PAGING = "needPaging"; // 需要使用分页，String
+    private static final List<FileRange> FULL_RANGES = Collections.singletonList(new FileRange(0, Long.MAX_VALUE));
 
     @Autowired
     private AppConfig appConfig;
     @Autowired
     private QueryContextService queryContextService;
     @Autowired
-    private LogSelectorService logSelectorService;
+    private LogLoaderService logLoaderService;
     @Autowired
-    private LogCutterService logCutterService;
+    private BytesRangeService bytesRangeService;
+    @Autowired
+    private TagInfoService tagInfoService;
     @Autowired
     private List<LogFilter> logFilters;
     @Autowired
-    private List<LogLimiter> logLimiters;
-    @Autowired
-    private List<IQueryListener> queryListeners;
-    @Autowired
     private LogExporter logExporter;
+    @Autowired
+    private LogIndexes.Updater indexesUpdater;
 
     @Override
     public String simpleQuery(Map<String, String> param) {
-        QueryContext context = queryContextService.initFromParam(param);
+        QueryContext context = getContext(param);
         try {
             // 获取锁
             context.lock.lock();
@@ -67,6 +69,8 @@ class QueryServiceImpl implements QueryService {
                 return context.result;
             }
             return context.result = query(context);
+        } catch (Exception e) {
+            throw new LogException(e.getMessage());
         } finally {
             context.clearTempData();
             // 释放锁
@@ -76,136 +80,141 @@ class QueryServiceImpl implements QueryService {
 
     // ********************内部方法********************
 
-    @PostConstruct
-    private void onInit() {
-        Collections.sort(queryListeners);
-    }
-
-    private String query(QueryContext context) {
-        // 回调监听器
-        for (IQueryListener listener : queryListeners) {
-            listener.onQuery(context);
-        }
-        List<LogPack> formalPacks = new LinkedList<>();
-        // 预先添加额外的结果
-        boolean needSearch = addExResults(context, formalPacks);
-        int page = getPage(context);
-        if (needSearch) {
-            page = searchResults(context, formalPacks, page);
-        }
-        // 记录下标
-        context.putData(PREFIX, C_KEY_END_PAGE, page);
-        // 导出日志
-        return exportLogs(context, formalPacks);
-    }
-
-    private int getPage(QueryContext context) {
-        Integer page = context.getData(PREFIX, C_KEY_START_PAGE);
-        if (null == page) {
-            context.putData(PREFIX, C_KEY_START_PAGE, page = 0);
-        }
-        return page;
-    }
+//    private List<>
 
     @NonNull
-    private int searchResults(QueryContext context, List<LogPack> formalPacks, int page) {
-        int pageSize = Math.min(appConfig.maxPageSize, context.queryParam.getCountLimit());
-        while (true) {
-            List<LogLine> logLines = logSelectorService.select(context, page, pageSize);
-            // 如果已无更多，则不再继续
-            if (logLines.isEmpty()) {
-                break;
+    private QueryContext getContext(Map<String, String> param) {
+        QueryContext context = queryContextService.loadContextFromParam(param);
+        // 若已有context，则直接使用
+        if (null != context) {
+            return context;
+        }
+        // 若还没有，则创建新context
+        QueryParam queryParam = new QueryParam(appConfig, param);
+        context = new QueryContext(queryParam);
+        queryContextService.registerContext(context);
+        for (String filePath : context.getParam(PREFIX, P_KEY_FILES).split(";")) {
+            // 更新索引
+            LogIndexes indexes = indexesUpdater.updateAndGet(new File(filePath));
+            // 保存待查询的范围
+            context.pathMap.put(filePath, getRanges(indexes, queryParam));
+        }
+        return context;
+    }
+
+    private List<FileRange> getRanges(LogIndexes indexes, QueryParam param) {
+        // 如果没有指定标签，则进行全文查询
+        if (!tagInfoService.hasTags(param)) {
+            return FULL_RANGES;
+        }
+        // 否则返回使用tag筛选后的范围列表
+        return tagInfoService.getIntersectedRanges(indexes, param);
+    }
+
+    private String query(QueryContext context) throws IOException {
+        List<LogPack> results = new LinkedList<>();
+        // 如果还有查询范围，则继续查询
+        for (String path : context.pathMap.keySet()) {
+            List<FileRange> ranges = context.pathMap.get(path);
+            // 在范围中查找
+            LogPackReceiver receiver = new LogPackReceiver(context, results);
+            LogReceiverAdapter adapter = new LogReceiverAdapter(appConfig.maxLinesPerResultWithNullUid, context.uidMap, receiver);
+            int status = logLoaderService.load(new File(path), ranges, adapter);
+            // 使用已查询到的字节，再次进行范围合并，若合并后范围为空，则移除此范围
+            List<FileRange> nextRange = Collections.singletonList(new FileRange(receiver.actualEndPointer, Long.MAX_VALUE));
+            ranges = bytesRangeService.intersect(Arrays.asList(ranges, nextRange));
+            if (ranges.isEmpty()) {
+                context.pathMap.remove(path);
+            } else {
+                context.pathMap.put(path, ranges);
             }
-            // 分割日志
-            List<LogPack> tempPacks = logCutterService.cut(context, logLines);
-            // 使用过滤器过滤记录
-            filterLogPacks(context, tempPacks);
-            page++;
-            // 结果限制
-            boolean isLimited = addResultsAndReturnIsLimited(context, tempPacks, formalPacks);
-            if (isLimited) {
-                return page;
+            // 如果状态不为继续，则中断
+            if (ILogReceiver.STATE_CONTINUE != status) {
+                return exportLogs(context, results);
             }
         }
-        return page;
+        // 遍历临时列表弹出记录
+        for (String key : context.uidMap.keySet()) {
+            boolean canStop = tryAddToList(context, results, context.uidMap.get(key));
+            if (canStop) {
+                return exportLogs(context, results);
+            }
+        }
+        // 返回结果
+        return exportLogs(context, results);
     }
 
     /**
-     * @return 是否需要搜索更多结果
+     * @return 是否可以返回结果
      */
-    private boolean addExResults(QueryContext context, List<LogPack> formalList) {
-        List<LogPack> exResults = context.getData(PREFIX, C_KEY_EX_RESULT);
-        if (null == exResults) {
-            return true;
+    private boolean tryAddToList(QueryContext context, List<LogPack> results, LogPack candidate) {
+        // 筛选
+        boolean filtered = shouldFilter(context, candidate);
+        if (filtered) {
+            return false;
         }
-        return !addResultsAndReturnIsLimited(context, exResults, formalList);
+        // 添加到结果列表
+        results.add(candidate);
+        // 是否已达要求的结果数
+        boolean canStop = context.queryParam.getCountLimit() == results.size();
+        if (canStop) {
+            context.endReason = "已找到指定数目的结果";
+        }
+        return canStop;
     }
 
-    /**
-     * @return 是否对结果进行了限制
-     */
-    private boolean addResultsAndReturnIsLimited(QueryContext context, List<LogPack> tempList, List<LogPack> formalList) {
-        for (int i = 0; i < tempList.size(); i++) {
-            LogPack logResult = tempList.get(i);
-            for (LogLimiter limiter : logLimiters) {
-                if (limiter.canAddResult(context, logResult)) {
-                    continue;
-                }
-                context.putTempData(PREFIX, T_KEY_NEED_PAGING, "已达" + limiter.getDesc());
-                // 剩余的结果保存到context
-                context.putData(PREFIX, C_KEY_REST_RESULT, tempList.subList(i, tempList.size()));
+    private boolean shouldFilter(QueryContext context, LogPack logPack) {
+        for (LogFilter filter : logFilters) {
+            if (filter.shouldFilter(context, logPack)) {
                 return true;
             }
-            formalList.add(logResult);
         }
         return false;
     }
 
-    private void filterLogPacks(QueryContext context, List<LogPack> packs) {
-        Iterator<LogPack> iterator = packs.iterator();
-        while (iterator.hasNext()) {
-            LogPack result = iterator.next();
-            for (LogFilter filter : logFilters) {
-                if (filter.shouldFilter(context, result)) {
-                    iterator.remove();
-                }
-            }
-        }
-    }
-
     private String exportLogs(QueryContext context, List<LogPack> formalList) {
         // 按需分页
-        checkPageable(context);
+        setPageable(context);
+        // 日志排序
+        for (LogPack logPack : formalList) {
+            Collections.sort(logPack.logLines);
+        }
         // 导出日志
         return logExporter.export(context, formalList);
     }
 
-    private void checkPageable(QueryContext context) {
-        String pagingReason = context.getTempData(PREFIX, T_KEY_NEED_PAGING);
-        if (null == pagingReason) {
+    private void setPageable(QueryContext context) {
+        // 若查询范围、临时列表均为空，则不需要分页
+        if (context.pathMap.isEmpty() && context.uidMap.isEmpty()) {
             return;
         }
-        context.endReason = pagingReason;
-        // 设置nextContext
-        QueryContext nextContext = queryContextService.createNewNextContextOf(context);
-        queryListeners.forEach(handler -> handler.onHandleNextContext(context, nextContext));
+        // 创建并绑定下一分页
+        QueryContext nextContext = new QueryContext(context);
         context.nextId = nextContext.id;
         nextContext.lastId = context.id;
+        queryContextService.registerContext(nextContext);
     }
 
     // ********************内部类********************
 
-    @Component
-    static class NextContextHandler implements IQueryListener {
+    private class LogPackReceiver implements ILogPackReceiver {
+        private final QueryContext context;
+        private final List<LogPack> logPacks;
+        public long actualEndPointer = 0;
+
+        public LogPackReceiver(QueryContext context, List<LogPack> logPacks) {
+            this.context = context;
+            this.logPacks = logPacks;
+        }
+
         @Override
-        public void onHandleNextContext(QueryContext old, QueryContext next) {
-            // 标签分页
-            Integer endPage = old.getData(PREFIX, C_KEY_END_PAGE);
-            next.putData(PREFIX, C_KEY_START_PAGE, endPage);
-            // 查询结果
-            List<LogPack> restResult = old.getData(PREFIX, C_KEY_REST_RESULT);
-            next.putData(PREFIX, C_KEY_EX_RESULT, restResult);
+        public void onFinish(long bytesRead, long actualEndPointer) {
+            this.actualEndPointer = actualEndPointer;
+        }
+
+        @Override
+        public boolean onReceive(LogPack logPack) {
+            return !tryAddToList(context, logPacks, logPack);
         }
     }
-
 }

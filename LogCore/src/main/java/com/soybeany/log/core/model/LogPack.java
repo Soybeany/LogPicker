@@ -13,6 +13,16 @@ import java.util.List;
 public class LogPack implements Serializable {
 
     /**
+     * 开始标签
+     */
+    public LogTag startTag;
+
+    /**
+     * 结束标签
+     */
+    public LogTag endTag;
+
+    /**
      * 自定义标签，如url、user、param等
      */
     public List<LogTag> tags;

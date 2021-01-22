@@ -3,7 +3,7 @@ package com.soybeany.log.collector.service.common.model;
 import java.io.File;
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.List;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -31,10 +31,16 @@ public class LogIndexes implements Serializable {
     /**
      * 自定义标签索引
      */
-    public final Map<String, Map<String, List<FileRange>>> tagsIndexMap = new HashMap<>();
+    public final Map<String, Map<String, LinkedList<FileRange>>> tagsIndexMap = new HashMap<>();
 
     public LogIndexes(File logFile) {
         this.logFile = logFile;
+    }
+
+    // ********************内部类********************
+
+    public interface Updater {
+        LogIndexes updateAndGet(File logFile);
     }
 
 }

@@ -59,7 +59,7 @@ public class QueryParam {
         }
         // 后处理参数
         postHandleTime();
-        countLimit = appConfig.maxResultCount;
+        countLimit = appConfig.defaultMaxResultCount;
     }
 
     // ********************公开方法********************

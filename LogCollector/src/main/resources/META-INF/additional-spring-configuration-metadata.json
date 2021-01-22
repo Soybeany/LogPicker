@@ -29,13 +29,7 @@
       "description": "行解析的正则."
     },
     {
-      "name": "config.log-parse-mode",
-      "type": "java.lang.String",
-      "description": "日志解析模式：v4-默认，compact-V3及以前.",
-      "defaultValue": "v4"
-    },
-    {
-      "name": "config.max-result-count",
+      "name": "config.default-max-result-count",
       "type": "java.lang.Integer",
       "description": "一次查询，最多返回的结果条数.",
       "defaultValue": 30
@@ -63,15 +57,20 @@
       "description": "用于存放索引的目录."
     },
     {
-      "name": "config.max-lines-gap-to-merge",
+      "name": "config.max-bytes-gap-to-merge",
       "type": "java.lang.String",
-      "description": "当新记录与旧记录间不超过指定行数时，将新记录合并至旧记录.",
-      "defaultValue": 1000
+      "description": "当新记录与旧记录间不超过指定字节数时，将新记录合并至旧记录.",
+      "defaultValue": 10000
     },
     {
       "name": "config.log-charset",
       "type": "java.lang.String",
       "description": "日志的字符集."
+    },
+    {
+      "name": "config.tag-parse-regex",
+      "type": "java.lang.String",
+      "description": "标签解析的正则."
     }
   ]
 }

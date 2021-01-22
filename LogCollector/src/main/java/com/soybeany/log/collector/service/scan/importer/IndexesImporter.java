@@ -1,6 +1,7 @@
 package com.soybeany.log.collector.service.scan.importer;
 
 import com.soybeany.log.collector.config.AppConfig;
+import com.soybeany.log.collector.service.common.BytesRangeService;
 import com.soybeany.log.collector.service.common.LogLoaderService;
 import com.soybeany.log.collector.service.common.model.FileRange;
 import com.soybeany.log.collector.service.common.model.ILogReceiver;
@@ -12,6 +13,8 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
 
 /**
  * @author Soybeany
@@ -30,6 +33,8 @@ class IndexesImporterImpl implements IndexesImporter {
     private AppConfig appConfig;
     @Autowired
     private LogLoaderService logLoaderService;
+    @Autowired
+    private BytesRangeService bytesRangeService;
 
     @Override
     public void executeImport(LogIndexes indexes) throws IOException {
@@ -42,11 +47,9 @@ class IndexesImporterImpl implements IndexesImporter {
 
     private class LogReceiver implements ILogReceiver {
         private final LogIndexes indexes;
-        private final int timeEndIndex;
 
         public LogReceiver(LogIndexes indexes) {
             this.indexes = indexes;
-            this.timeEndIndex = appConfig.lineTimeFormat.indexOf(":s");
         }
 
         @Override
@@ -61,23 +64,21 @@ class IndexesImporterImpl implements IndexesImporter {
         }
 
         @Override
-        public void onFinish(long bytesRead, long endPointer) {
-            indexes.scannedBytes = endPointer;
+        public void onFinish(long bytesRead, long actualEndPointer) {
+            indexes.scannedBytes = actualEndPointer;
         }
 
         private void handleTag(long fromByte, long toByte, LogTag logTag) {
             if (!appConfig.tagsToIndex.contains(logTag.key)) {
                 return;
             }
+            LinkedList<FileRange> ranges = indexes.tagsIndexMap.computeIfAbsent(logTag.key, k -> new HashMap<>())
+                    .computeIfAbsent(logTag.value.toLowerCase(), k -> new LinkedList<>());
+            bytesRangeService.append(ranges, fromByte, toByte);
         }
 
         private void handleTime(long fromByte, LogLine logLine) {
-            String time = logLine.time;
-            Long fByte = indexes.timeIndexMap.get(time);
-            // 记录不存在，或者新的记录值更小(兼容模式下，由于有临时列表所以可能非升序)，则进行赋值
-            if (null == fByte || fromByte < fByte) {
-                indexes.timeIndexMap.put(time, fromByte);
-            }
+            indexes.timeIndexMap.putIfAbsent(logLine.time, fromByte);
         }
     }
 }

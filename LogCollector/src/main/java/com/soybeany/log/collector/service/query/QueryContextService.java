@@ -1,14 +1,13 @@
 package com.soybeany.log.collector.service.query;
 
-import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.service.query.model.QueryContext;
 import com.soybeany.log.collector.service.query.model.QueryParam;
 import com.soybeany.log.core.model.LogException;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.WeakHashMap;
 
 /**
  * @author Soybeany
@@ -16,9 +15,10 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public interface QueryContextService {
 
-    QueryContext initFromParam(Map<String, String> param);
+    @Nullable
+    QueryContext loadContextFromParam(Map<String, String> param);
 
-    QueryContext createNewNextContextOf(QueryContext old);
+    void registerContext(QueryContext context);
 
 }
 
@@ -29,37 +29,23 @@ class QueryContextServiceImpl implements QueryContextService {
 
     private static final String P_KEY_ID = "id"; // 关联context的id，string
 
-    @Autowired
-    private AppConfig appConfig;
-
-    private final Map<String, QueryContext> contextMap = new ConcurrentHashMap<>();
+    private final Map<String, QueryContext> contextMap = new WeakHashMap<>();
 
     @Override
-    public QueryContext initFromParam(Map<String, String> param) {
+    public QueryContext loadContextFromParam(Map<String, String> param) {
         String contextId = QueryParam.getParam(PREFIX, P_KEY_ID, param);
-        // 若指定了contextId，则尝试复用context
-        QueryContext context;
-        if (null != contextId) {
-            if (!contextMap.containsKey(contextId)) {
-                throw new LogException("找不到指定contextId对应的context");
-            }
-            context = contextMap.get(contextId);
+        if (null == contextId) {
+            return null;
         }
-        // 创建新的context
-        else {
-            context = createNew(new QueryParam(appConfig, param));
+        // 若指定了contextId，则尝试获取指定的context
+        if (!contextMap.containsKey(contextId)) {
+            throw new LogException("找不到指定contextId对应的context");
         }
-        return context;
+        return contextMap.get(contextId);
     }
 
     @Override
-    public QueryContext createNewNextContextOf(QueryContext old) {
-        return createNew(old.queryParam);
-    }
-
-    private QueryContext createNew(QueryParam param) {
-        QueryContext context = new QueryContext(param);
+    public synchronized void registerContext(QueryContext context) {
         contextMap.put(context.id, context);
-        return context;
     }
 }

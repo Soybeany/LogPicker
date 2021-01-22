@@ -6,7 +6,7 @@ import java.io.Serializable;
  * @author Soybeany
  * @date 2021/1/7
  */
-public class LogLine implements Serializable {
+public class LogLine implements Serializable, Comparable<LogLine> {
 
     /**
      * 时间
@@ -33,4 +33,8 @@ public class LogLine implements Serializable {
      */
     public String content;
 
+    @Override
+    public int compareTo(LogLine o) {
+        return time.compareTo(o.time);
+    }
 }

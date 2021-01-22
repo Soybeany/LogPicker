@@ -9,13 +9,23 @@ import com.soybeany.log.core.model.LogTag;
  */
 public interface ILogReceiver {
 
+    int STATE_CONTINUE = 0;
+    int STATE_ABORT = 1;
+
     default void onStart() {
     }
 
-    default void onFinish(long bytesRead, long endPointer) {
+    default void onFinish(long bytesRead, long actualEndPointer) {
     }
 
-    void onReceiveLogLine(long fromByte, long toByte, LogLine logLine);
+    default void onReceiveLogLine(long fromByte, long toByte, LogLine logLine) {
+    }
 
-    void onReceiveLogTag(long fromByte, long toByte, LogLine logLine, LogTag logTag);
+    default void onReceiveLogTag(long fromByte, long toByte, LogLine logLine, LogTag logTag) {
+    }
+
+    default int onGetState() {
+        return STATE_CONTINUE;
+    }
+
 }
