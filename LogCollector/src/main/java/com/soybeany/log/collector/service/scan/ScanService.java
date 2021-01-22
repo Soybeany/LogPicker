@@ -3,7 +3,6 @@ package com.soybeany.log.collector.service.scan;
 import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.service.common.LogIndexService;
 import com.soybeany.log.collector.service.common.model.LogIndexes;
-import com.soybeany.log.collector.service.scan.importer.IndexesImporter;
 import com.soybeany.log.core.model.LogException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
-import java.util.Optional;
 
 /**
  * @author Soybeany
@@ -49,8 +47,6 @@ class ScanServiceImpl implements ScanService, LogIndexes.Updater {
     private AppConfig appConfig;
     @Autowired
     private LogIndexService logIndexService;
-    @Autowired
-    private IndexesImporter indexesImporter;
 
     @Override
     public void fullScan() {
@@ -79,11 +75,7 @@ class ScanServiceImpl implements ScanService, LogIndexes.Updater {
 
     private LogIndexes scanFile(File file) {
         try {
-            LogIndexes indexes = Optional.ofNullable(logIndexService.loadIndexes(file)).orElseGet(() -> new LogIndexes(file));
-            indexesImporter.executeImport(indexes);
-            LOG.info("开始持久化");
-            logIndexService.saveIndexes(indexes);
-            return indexes;
+            return logIndexService.updateAndGetIndexes(file);
         } catch (Exception e) {
             throw new LogException("日志文件扫描异常:" + e.getMessage());
         }

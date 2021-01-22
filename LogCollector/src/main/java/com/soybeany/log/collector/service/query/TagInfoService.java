@@ -2,6 +2,7 @@ package com.soybeany.log.collector.service.query;
 
 import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.service.common.BytesRangeService;
+import com.soybeany.log.collector.service.common.LogIndexService;
 import com.soybeany.log.collector.service.common.model.FileRange;
 import com.soybeany.log.collector.service.common.model.LogIndexes;
 import com.soybeany.log.collector.service.query.model.QueryParam;
@@ -12,7 +13,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author Soybeany
@@ -35,6 +35,8 @@ class TagInfoServiceImpl implements TagInfoService {
     @Autowired
     private AppConfig appConfig;
     @Autowired
+    private LogIndexService logIndexService;
+    @Autowired
     private BytesRangeService bytesRangeService;
 
     @Override
@@ -45,18 +47,13 @@ class TagInfoServiceImpl implements TagInfoService {
     @Override
     public List<FileRange> getIntersectedRanges(LogIndexes indexes, QueryParam param) {
         List<List<FileRange>> rangeList = new LinkedList<>();
-        for (Map.Entry<String, String> entry : param.getParams(PREFIX).entrySet()) {
-            if (!appConfig.tagsToIndex.contains(entry.getKey())) {
-                throw new LogException("使用了未索引的标签:" + entry.getKey());
+        param.getParams(PREFIX).forEach((key, value) -> {
+            if (!appConfig.tagsToIndex.contains(key)) {
+                throw new LogException("使用了未索引的标签:" + key);
             }
-            List<FileRange> ranges = new LinkedList<>();
-            indexes.tagsIndexMap.get(entry.getKey()).forEach((value, r) -> {
-                if (value.contains(entry.getValue().toLowerCase())) {
-                    ranges.addAll(r);
-                }
-            });
+            List<FileRange> ranges = logIndexService.getRangesOfTag(indexes, key, value);
             rangeList.add(ranges);
-        }
+        });
         return bytesRangeService.intersect(rangeList);
     }
 }

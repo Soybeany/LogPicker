@@ -80,8 +80,6 @@ class QueryServiceImpl implements QueryService {
 
     // ********************内部方法********************
 
-//    private List<>
-
     @NonNull
     private QueryContext getContext(Map<String, String> param) {
         QueryContext context = queryContextService.loadContextFromParam(param);
