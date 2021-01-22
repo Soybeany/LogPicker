@@ -57,6 +57,10 @@ class LogIndexServiceImpl implements LogIndexService {
     public LogIndexes updateAndGetIndexes(File file) throws IOException, ClassNotFoundException {
         // 得到索引
         LogIndexes indexes = Optional.ofNullable(getIndexes(file)).orElseGet(() -> new LogIndexes(file));
+        // 若索引已是最新，则不再更新
+        if (file.length() == indexes.scannedBytes) {
+            return indexes;
+        }
         // 更新索引
         logLoaderService.load(indexes.logFile,
                 Collections.singletonList(new FileRange(indexes.scannedBytes, Long.MAX_VALUE)),
@@ -93,7 +97,7 @@ class LogIndexServiceImpl implements LogIndexService {
             indexFile.delete();
             BdFileUtils.mkParentDirs(indexFile);
             boolean success = tempFile.renameTo(indexFile);
-            System.out.println("持久化:" + success);
+            System.out.println("索引持久化:" + success);
         } finally {
             tempFile.delete();
         }

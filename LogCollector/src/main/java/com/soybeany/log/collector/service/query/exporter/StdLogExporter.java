@@ -30,11 +30,6 @@ class StdLogExporter implements LogExporter {
     private static final DateTimeFormatter FORMATTER1 = DateTimeFormatter.ofPattern("yy-MM-dd HH:mm:ss");
     private static final DateTimeFormatter FORMATTER2 = DateTimeFormatter.ofPattern("HH:mm:ss");
 
-    private static final Set<String> EXCLUDE_TAGS = new HashSet<String>() {{
-        add(Constants.TAG_BORDER_START);
-        add(Constants.TAG_BORDER_END);
-    }};
-
     @Autowired
     private AppConfig appConfig;
 
@@ -127,16 +122,13 @@ class StdLogExporter implements LogExporter {
     }
 
     @NonNull
-    private Map<String, String> getTags(LogPack raw) {
+    private Map<String, String> getTags(LogPack logPack) {
         Map<String, String> result = new LinkedHashMap<>();
-        if (null == raw.tags) {
+        if (logPack.tags.isEmpty()) {
             return result;
         }
         Map<String, List<String>> temp = new HashMap<>();
-        for (LogTag tag : raw.tags) {
-            if (EXCLUDE_TAGS.contains(tag.key)) {
-                continue;
-            }
+        for (LogTag tag : logPack.tags) {
             temp.computeIfAbsent(tag.key, k -> new ArrayList<>()).add(tag.value);
         }
         for (Map.Entry<String, List<String>> entry : temp.entrySet()) {
@@ -178,15 +170,14 @@ class StdLogExporter implements LogExporter {
 
     private TimeInfo getTimeInfo(LogPack result) {
         TimeInfo info = new TimeInfo();
-        if (null != result.tags && !result.tags.isEmpty()) {
+        if (null != result.startTag) {
+            info.tagStartTime = getDate(result.startTag.time);
+        }
+        if (null != result.endTag) {
+            info.tagEndTime = getDate(result.endTag.time);
+        }
+        if (!result.tags.isEmpty()) {
             info.firstTagTime = getDate(result.tags.get(0).time);
-            for (LogTag tag : result.tags) {
-                if (Constants.TAG_BORDER_START.equalsIgnoreCase(tag.key)) {
-                    info.tagStartTime = getDate(tag.time);
-                } else if ((Constants.TAG_BORDER_END.equalsIgnoreCase(tag.key))) {
-                    info.tagEndTime = getDate(tag.time);
-                }
-            }
         }
         if (!result.logLines.isEmpty()) {
             info.firstLogTime = getDate(result.logLines.get(0).time);

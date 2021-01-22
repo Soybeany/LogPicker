@@ -4,7 +4,6 @@ import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.service.common.BytesRangeService;
 import com.soybeany.log.collector.service.common.LogLoaderService;
 import com.soybeany.log.collector.service.common.model.FileRange;
-import com.soybeany.log.collector.service.common.model.ILogReceiver;
 import com.soybeany.log.collector.service.common.model.LogIndexes;
 import com.soybeany.log.collector.service.query.exporter.LogExporter;
 import com.soybeany.log.collector.service.query.filter.LogFilter;
@@ -38,8 +37,6 @@ class QueryServiceImpl implements QueryService {
 
     private static final String PREFIX = "query";
     private static final String P_KEY_FILES = "files"; // 需要查询文件的路径，使用“;”分隔，String
-
-    private static final List<FileRange> FULL_RANGES = Collections.singletonList(new FileRange(0, Long.MAX_VALUE));
 
     @Autowired
     private AppConfig appConfig;
@@ -103,7 +100,7 @@ class QueryServiceImpl implements QueryService {
     private List<FileRange> getRanges(LogIndexes indexes, QueryParam param) {
         // 如果没有指定标签，则进行全文查询
         if (!tagInfoService.hasTags(param)) {
-            return FULL_RANGES;
+            return Collections.singletonList(new FileRange(0, indexes.logFile.length()));
         }
         // 否则返回使用tag筛选后的范围列表
         return tagInfoService.getIntersectedRanges(indexes, param);
@@ -112,12 +109,24 @@ class QueryServiceImpl implements QueryService {
     private String query(QueryContext context) throws IOException {
         List<LogPack> results = new LinkedList<>();
         // 如果还有查询范围，则继续查询
+        if (!context.pathMap.isEmpty()) {
+            queryByScan(context, results);
+        }
+        // 否则遍历临时列表弹出记录
+        else {
+            queryByPopUidMap(context, results);
+        }
+        // 返回结果
+        return exportLogs(context, results);
+    }
+
+    private void queryByScan(QueryContext context, List<LogPack> results) throws IOException {
         for (String path : context.pathMap.keySet()) {
             List<FileRange> ranges = context.pathMap.get(path);
             // 在范围中查找
             LogPackReceiver receiver = new LogPackReceiver(context, results);
             LogReceiverAdapter adapter = new LogReceiverAdapter(appConfig.maxLinesPerResultWithNullUid, context.uidMap, receiver);
-            int status = logLoaderService.load(new File(path), ranges, adapter);
+            boolean canStop = logLoaderService.load(new File(path), ranges, adapter);
             // 使用已查询到的字节，再次进行范围合并，若合并后范围为空，则移除此范围
             List<FileRange> nextRange = Collections.singletonList(new FileRange(receiver.actualEndPointer, Long.MAX_VALUE));
             ranges = bytesRangeService.intersect(Arrays.asList(ranges, nextRange));
@@ -127,19 +136,22 @@ class QueryServiceImpl implements QueryService {
                 context.pathMap.put(path, ranges);
             }
             // 如果状态不为继续，则中断
-            if (ILogReceiver.STATE_CONTINUE != status) {
-                return exportLogs(context, results);
-            }
-        }
-        // 遍历临时列表弹出记录
-        for (String key : context.uidMap.keySet()) {
-            boolean canStop = tryAddToList(context, results, context.uidMap.get(key));
             if (canStop) {
-                return exportLogs(context, results);
+                return;
             }
         }
-        // 返回结果
-        return exportLogs(context, results);
+    }
+
+    private void queryByPopUidMap(QueryContext context, List<LogPack> results) {
+        Iterator<LogPack> iterator = context.uidMap.values().iterator();
+        while (iterator.hasNext()) {
+            LogPack logPack = iterator.next();
+            iterator.remove();
+            boolean canStop = tryAddToList(context, results, logPack);
+            if (canStop) {
+                return;
+            }
+        }
     }
 
     /**
@@ -182,8 +194,8 @@ class QueryServiceImpl implements QueryService {
     }
 
     private void setPageable(QueryContext context) {
-        // 若查询范围、临时列表均为空，则不需要分页
-        if (context.pathMap.isEmpty() && context.uidMap.isEmpty()) {
+        // 若查询范围为空，则不需要分页
+        if (context.pathMap.isEmpty()) {
             return;
         }
         // 创建并绑定下一分页

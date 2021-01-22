@@ -25,7 +25,7 @@ public class LogPack implements Serializable {
     /**
      * 自定义标签，如url、user、param等
      */
-    public List<LogTag> tags;
+    public final List<LogTag> tags = new LinkedList<>();
 
     /**
      * 全局唯一号

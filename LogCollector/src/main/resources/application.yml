@@ -17,14 +17,14 @@ config:
   # 用于存放索引的目录
   dir-for-indexes: E:\logIndexes
   # 日志的字符集
-  log-charset: GBK
+  log-charset: utf-8
   # 行解析的正则
-  #  line-parse-regex: (?<time>.{10} .{8})\.\d{3}\s+(?<level>INFO|WARN|ERROR) (?<uid>.+?) --- \[\s*(?<thread>.+?)] : (?<content>.*)
-  line-parse-regex: ^\[(?<time>.{17})] \[(?<level>INFO|WARN|ERROR)] \[(?<thread>.+?)] \{(?<pos>.+?)}-(?<content>.*)
+  line-parse-regex: ^(?<time>.{10} .{8})\.\d{3}\s+(?<level>INFO|WARN|ERROR) (?<uid>.+?) --- \[\s*(?<thread>.+?)] :\s{1}(?<content>.*)
+  #  line-parse-regex: ^\[(?<time>.{17})] \[(?<level>INFO|WARN|ERROR)] \[(?<thread>.+?)] \{(?<pos>.+?)}-(?<content>.*)
   # 标签解析的正则
   tag-parse-regex: ^FLAG-(?<key>.+?)-(?<value>.*)
   # 行的时间格式
-  line-time-format: "yy-MM-dd HH:mm:ss"
+  line-time-format: "yyyy-MM-dd HH:mm:ss"
   # 需要建立索引的标签，多个使用“;”进行分隔
   tags-to-index: url;user
   # 当新记录与旧记录间不超过指定字节数时，将新记录合并至旧记录

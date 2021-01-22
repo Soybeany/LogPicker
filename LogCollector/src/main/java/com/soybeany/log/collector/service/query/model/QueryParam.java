@@ -29,7 +29,7 @@ public class QueryParam {
 
     private String fromTime;
     private String toTime;
-    private int countLimit;
+    private Integer countLimit;
 
     static {
         initFormatterMap();
@@ -59,7 +59,9 @@ public class QueryParam {
         }
         // 后处理参数
         postHandleTime();
-        countLimit = appConfig.defaultMaxResultCount;
+        if (null == countLimit) {
+            countLimit = appConfig.defaultMaxResultCount;
+        }
     }
 
     // ********************公开方法********************

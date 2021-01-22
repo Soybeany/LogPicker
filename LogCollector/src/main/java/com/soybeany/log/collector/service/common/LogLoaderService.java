@@ -18,7 +18,10 @@ import java.util.List;
  */
 public interface LogLoaderService {
 
-    int load(File file, List<FileRange> ranges, ILogReceiver receiver) throws IOException;
+    /**
+     * @return 是否应该中断
+     */
+    boolean load(File file, List<FileRange> ranges, ILogReceiver receiver) throws IOException;
 
 }
 
@@ -31,7 +34,7 @@ class LogLoaderServiceImpl implements LogLoaderService {
     private LogParserService logParserService;
 
     @Override
-    public int load(File file, List<FileRange> ranges, ILogReceiver receiver) throws IOException {
+    public boolean load(File file, List<FileRange> ranges, ILogReceiver receiver) throws IOException {
         if (!file.exists()) {
             throw new LogException("找不到名称为“" + file.getName() + "”的日志文件");
         }
@@ -46,14 +49,14 @@ class LogLoaderServiceImpl implements LogLoaderService {
                 endPointer = range.from + callback.bytesRead;
                 // 按需提前中断
                 if (ILogReceiver.STATE_CONTINUE != callback.status) {
-                    return callback.status;
+                    return true;
                 }
             }
         } finally {
             logParserService.afterBatchParse(receiver);
             receiver.onFinish(bytesRead, endPointer);
         }
-        return ILogReceiver.STATE_CONTINUE;
+        return false;
     }
 
     // ********************内部类********************
