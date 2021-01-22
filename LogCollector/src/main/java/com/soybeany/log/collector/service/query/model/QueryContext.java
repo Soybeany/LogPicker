@@ -35,11 +35,14 @@ public class QueryContext {
     public final Map<String, Object> data;
     public final Map<String, Object> tempData = new HashMap<>();
 
+    public ITagChecker tagChecker = ITagChecker.WITHOUT;
+
     public String lastId;
     public String nextId;
     public String endReason = "已搜索全部日志";
     public String result;
 
+    @SuppressWarnings("CopyConstructorMissesField")
     public QueryContext(QueryContext context) {
         this.queryParam = context.queryParam;
         this.pathMap = context.pathMap;

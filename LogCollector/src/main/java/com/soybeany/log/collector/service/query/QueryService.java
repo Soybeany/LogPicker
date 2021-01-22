@@ -92,14 +92,15 @@ class QueryServiceImpl implements QueryService {
             // 更新索引
             LogIndexes indexes = indexesUpdater.updateAndGet(new File(filePath));
             // 保存待查询的范围
-            context.pathMap.put(filePath, getRanges(indexes, queryParam));
+            context.pathMap.put(filePath, getRanges(context, indexes, queryParam));
         }
         return context;
     }
 
-    private List<FileRange> getRanges(LogIndexes indexes, QueryParam param) {
+    private List<FileRange> getRanges(QueryContext context, LogIndexes indexes, QueryParam param) {
         // 如果没有指定标签，则进行全文查询
-        if (!tagInfoService.hasTags(param)) {
+        if (!tagInfoService.initTags(param)) {
+            context.tagChecker = tagInfoService;
             return Collections.singletonList(new FileRange(0, indexes.logFile.length()));
         }
         // 否则返回使用tag筛选后的范围列表
@@ -176,6 +177,9 @@ class QueryServiceImpl implements QueryService {
     }
 
     private boolean shouldFilter(QueryContext context, LogPack logPack) {
+        // todo 标签过滤器
+
+        // 普通过滤器
         for (LogFilter filter : logFilters) {
             if (filter.shouldFilter(context, logPack)) {
                 return true;

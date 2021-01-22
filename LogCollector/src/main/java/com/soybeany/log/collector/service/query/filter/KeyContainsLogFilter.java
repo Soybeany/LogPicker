@@ -15,14 +15,14 @@ class KeyContainsLogFilter implements LogFilter {
     private static final String P_KEY_CONTAINS_KEY = "containsKey";
 
     @Override
-    public boolean shouldFilter(QueryContext context, LogPack result) {
+    public boolean shouldFilter(QueryContext context, LogPack logPack) {
         // 若没有配置，则不作过滤
         String key = context.getParam(PREFIX, P_KEY_CONTAINS_KEY);
         if (null == key) {
             return false;
         }
         // 遍历日志，若包含指定关键词则保留该条记录
-        for (LogLine logLine : result.logLines) {
+        for (LogLine logLine : logPack.logLines) {
             if (logLine.content.contains(key)) {
                 return false;
             }

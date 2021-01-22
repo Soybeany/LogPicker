@@ -12,10 +12,10 @@ public interface LogFilter {
     String PREFIX = "filter";
 
     /**
-     * 是否应该将指定的result过滤掉
+     * 是否应该将指定的logPack过滤掉
      *
-     * @return true则过滤指定的result
+     * @return true则过滤指定的logPack
      */
-    boolean shouldFilter(QueryContext context, LogPack result);
+    boolean shouldFilter(QueryContext context, LogPack logPack);
 
 }
