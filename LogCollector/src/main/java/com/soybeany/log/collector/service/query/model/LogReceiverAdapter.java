@@ -33,9 +33,6 @@ public class LogReceiverAdapter implements ILogReceiver {
 
     @Override
     public void onFinish(long bytesRead, long actualEndPointer) {
-        for (LogPack logPack : uidMap.values()) {
-            invokeOnReceive(logPack, false);
-        }
         receiver.onFinish(bytesRead, actualEndPointer);
     }
 
@@ -45,7 +42,7 @@ public class LogReceiverAdapter implements ILogReceiver {
         // 若是无uid的pack且其包含的行数已达指定数目，则先发送
         boolean needSend = null == logLine.uid && logPack.logLines.size() + 1 > maxLinesPerResultWithNullUid;
         if (needSend) {
-            invokeOnReceive(logPack, true);
+            invokeOnReceive(logPack);
             logPack = getLogPackHolder(logLine.uid, logLine.thread);
         }
         logPack.logLines.add(logLine);
@@ -60,7 +57,7 @@ public class LogReceiverAdapter implements ILogReceiver {
                 break;
             case Constants.TAG_BORDER_END:
                 logPack.endTag = logTag;
-                invokeOnReceive(logPack, true);
+                invokeOnReceive(logPack);
                 break;
             default:
                 logPack.tags.add(logTag);
@@ -78,10 +75,8 @@ public class LogReceiverAdapter implements ILogReceiver {
         return uidMap.computeIfAbsent(getUidMapKey(uid, thread), k -> getNewLogPack(uid, thread));
     }
 
-    private void invokeOnReceive(LogPack logPack, boolean needRemove) {
-        if (needRemove) {
-            uidMap.remove(getUidMapKey(logPack.uid, logPack.thread));
-        }
+    private void invokeOnReceive(LogPack logPack) {
+        uidMap.remove(getUidMapKey(logPack.uid, logPack.thread));
         status = receiver.onReceive(logPack) ? STATE_CONTINUE : STATE_ABORT;
     }
 

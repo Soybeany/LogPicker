@@ -109,18 +109,19 @@ class QueryServiceImpl implements QueryService {
     private String query(QueryContext context) throws IOException {
         List<LogPack> results = new LinkedList<>();
         // 如果还有查询范围，则继续查询
-        if (!context.pathMap.isEmpty()) {
-            queryByScan(context, results);
-        }
-        // 否则遍历临时列表弹出记录
-        else {
+        boolean needMoreResults = queryByScan(context, results);
+        // 如果记录数不够，则继续遍历临时列表并弹出记录
+        if (needMoreResults) {
             queryByPopUidMap(context, results);
         }
         // 返回结果
         return exportLogs(context, results);
     }
 
-    private void queryByScan(QueryContext context, List<LogPack> results) throws IOException {
+    /**
+     * 是否需要继续添加记录
+     */
+    private boolean queryByScan(QueryContext context, List<LogPack> results) throws IOException {
         for (String path : context.pathMap.keySet()) {
             List<FileRange> ranges = context.pathMap.get(path);
             // 在范围中查找
@@ -137,9 +138,10 @@ class QueryServiceImpl implements QueryService {
             }
             // 如果状态不为继续，则中断
             if (canStop) {
-                return;
+                return false;
             }
         }
+        return true;
     }
 
     private void queryByPopUidMap(QueryContext context, List<LogPack> results) {
@@ -194,8 +196,8 @@ class QueryServiceImpl implements QueryService {
     }
 
     private void setPageable(QueryContext context) {
-        // 若查询范围为空，则不需要分页
-        if (context.pathMap.isEmpty()) {
+        // 若查询范围、临时列表均为空，则不需要分页
+        if (context.pathMap.isEmpty() && context.uidMap.isEmpty()) {
             return;
         }
         // 创建并绑定下一分页
