@@ -2,6 +2,7 @@ package com.soybeany.log.collector.service.query.filter;
 
 import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.service.common.BytesRangeService;
+import com.soybeany.log.collector.service.common.LogIndexService;
 import com.soybeany.log.collector.service.common.model.FileRange;
 import com.soybeany.log.collector.service.common.model.LogIndexes;
 import com.soybeany.log.collector.service.query.model.ILogFilter;
@@ -27,6 +28,8 @@ class TagContainsLogFilter implements LogFilterFactory {
     @Autowired
     private AppConfig appConfig;
     @Autowired
+    private LogIndexService logIndexService;
+    @Autowired
     private BytesRangeService bytesRangeService;
 
     @Override
@@ -36,6 +39,7 @@ class TagContainsLogFilter implements LogFilterFactory {
         if (tags.isEmpty()) {
             return null;
         }
+        tags = logIndexService.getTreatedTagMap(tags);
         return new FilterImpl(appConfig, bytesRangeService, tags, context.queryParam);
     }
 
@@ -45,16 +49,14 @@ class TagContainsLogFilter implements LogFilterFactory {
 
         private final AppConfig appConfig;
         private final BytesRangeService bytesRangeService;
-        private final Map<String, String> tags = new HashMap<>();
+        private final Map<String, String> tags;
         private final String fromTime;
         private final String toTime;
 
         public FilterImpl(AppConfig appConfig, BytesRangeService bytesRangeService, Map<String, String> tags, QueryParam param) {
             this.appConfig = appConfig;
             this.bytesRangeService = bytesRangeService;
-            tags.forEach((k, v) -> {
-                this.tags.put(k, v.toLowerCase());
-            });
+            this.tags = tags;
             this.fromTime = param.getFromTime();
             this.toTime = param.getToTime();
         }

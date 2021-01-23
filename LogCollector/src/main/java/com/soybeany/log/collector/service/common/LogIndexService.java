@@ -72,7 +72,11 @@ class LogIndexServiceImpl implements LogIndexService {
 
     @Override
     public Map<String, String> getTreatedTagMap(Map<String, String> tags) {
-        return null;
+        Map<String, String> result = new HashMap<>();
+        tags.forEach((k, v) -> {
+            result.put(k, v.toLowerCase());
+        });
+        return result;
     }
 
     // ********************内部方法********************
