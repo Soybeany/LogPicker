@@ -3,11 +3,9 @@ package com.soybeany.log.collector.service.query.model;
 import com.soybeany.log.collector.service.common.model.FileRange;
 import com.soybeany.log.core.model.LogPack;
 import com.soybeany.log.core.util.UidUtils;
+import org.springframework.lang.Nullable;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
@@ -31,11 +29,13 @@ public class QueryContext {
      * 使用uid作为key
      */
     public final Map<String, LogPack> uidMap;
+    /**
+     * 使用的日志过滤器
+     */
+    public final List<ILogFilter> filters;
 
     public final Map<String, Object> data;
     public final Map<String, Object> tempData = new HashMap<>();
-
-    public ITagChecker tagChecker = ITagChecker.WITHOUT;
 
     public String lastId;
     public String nextId;
@@ -47,6 +47,7 @@ public class QueryContext {
         this.queryParam = context.queryParam;
         this.pathMap = context.pathMap;
         this.uidMap = context.uidMap;
+        this.filters = context.filters;
         this.data = context.data;
     }
 
@@ -54,6 +55,7 @@ public class QueryContext {
         this.queryParam = queryParam;
         this.pathMap = new LinkedHashMap<>();
         this.uidMap = new HashMap<>();
+        this.filters = new LinkedList<>();
         this.data = new HashMap<>();
     }
 
@@ -86,6 +88,7 @@ public class QueryContext {
         tempData.clear();
     }
 
+    @Nullable
     public String getParam(String prefix, String key) {
         return queryParam.getParams(prefix).get(key);
     }

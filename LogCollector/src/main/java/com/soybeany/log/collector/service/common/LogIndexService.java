@@ -28,7 +28,7 @@ public interface LogIndexService {
     LogIndexes updateAndGetIndexes(File file) throws IOException, ClassNotFoundException;
 
     @NonNull
-    List<FileRange> getRangesOfTag(LogIndexes indexes, String tagKey, String tagValue);
+    Map<String, String> getTreatedTagMap(@NonNull Map<String, String> tags);
 
 }
 
@@ -71,14 +71,8 @@ class LogIndexServiceImpl implements LogIndexService {
     }
 
     @Override
-    public List<FileRange> getRangesOfTag(LogIndexes indexes, String tagKey, String tagValue) {
-        List<FileRange> ranges = new LinkedList<>();
-        indexes.tagsIndexMap.get(tagKey).forEach((value, r) -> {
-            if (value.contains(tagValue.toLowerCase())) {
-                ranges.addAll(r);
-            }
-        });
-        return ranges;
+    public Map<String, String> getTreatedTagMap(Map<String, String> tags) {
+        return null;
     }
 
     // ********************内部方法********************

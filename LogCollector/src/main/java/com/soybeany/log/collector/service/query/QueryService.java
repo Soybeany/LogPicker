@@ -6,11 +6,8 @@ import com.soybeany.log.collector.service.common.LogLoaderService;
 import com.soybeany.log.collector.service.common.model.FileRange;
 import com.soybeany.log.collector.service.common.model.LogIndexes;
 import com.soybeany.log.collector.service.query.exporter.LogExporter;
-import com.soybeany.log.collector.service.query.filter.LogFilter;
-import com.soybeany.log.collector.service.query.model.ILogPackReceiver;
-import com.soybeany.log.collector.service.query.model.LogReceiverAdapter;
-import com.soybeany.log.collector.service.query.model.QueryContext;
-import com.soybeany.log.collector.service.query.model.QueryParam;
+import com.soybeany.log.collector.service.query.filter.LogFilterFactory;
+import com.soybeany.log.collector.service.query.model.*;
 import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.core.model.LogPack;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,9 +44,7 @@ class QueryServiceImpl implements QueryService {
     @Autowired
     private BytesRangeService bytesRangeService;
     @Autowired
-    private TagInfoService tagInfoService;
-    @Autowired
-    private List<LogFilter> logFilters;
+    private List<LogFilterFactory> logFilterFactories;
     @Autowired
     private LogExporter logExporter;
     @Autowired
@@ -88,23 +83,31 @@ class QueryServiceImpl implements QueryService {
         QueryParam queryParam = new QueryParam(appConfig, param);
         context = new QueryContext(queryParam);
         queryContextService.registerContext(context);
+        for (LogFilterFactory factory : logFilterFactories) {
+            ILogFilter filter = factory.getNewLogFilterIfInNeed(context);
+            if (null != filter) {
+                context.filters.add(filter);
+            }
+        }
         for (String filePath : context.getParam(PREFIX, P_KEY_FILES).split(";")) {
             // 更新索引
             LogIndexes indexes = indexesUpdater.updateAndGet(new File(filePath));
             // 保存待查询的范围
-            context.pathMap.put(filePath, getRanges(context, indexes, queryParam));
+            context.pathMap.put(filePath, getRanges(context, indexes));
         }
         return context;
     }
 
-    private List<FileRange> getRanges(QueryContext context, LogIndexes indexes, QueryParam param) {
-        // 如果没有指定标签，则进行全文查询
-        if (!tagInfoService.initTags(param)) {
-            context.tagChecker = tagInfoService;
-            return Collections.singletonList(new FileRange(0, indexes.logFile.length()));
+    private List<FileRange> getRanges(QueryContext context, LogIndexes indexes) {
+        List<List<FileRange>> rangesList = new LinkedList<>();
+        // 添加默认的全文查找
+        rangesList.add(Collections.singletonList(new FileRange(0, indexes.logFile.length())));
+        // 添加各过滤器指定的范围
+        for (ILogFilter filter : context.filters) {
+            rangesList.add(filter.getFilteredRanges(indexes));
         }
-        // 否则返回使用tag筛选后的范围列表
-        return tagInfoService.getIntersectedRanges(indexes, param);
+        // 得到交集
+        return bytesRangeService.intersect(rangesList);
     }
 
     private String query(QueryContext context) throws IOException {
@@ -162,8 +165,7 @@ class QueryServiceImpl implements QueryService {
      */
     private boolean tryAddToList(QueryContext context, List<LogPack> results, LogPack candidate) {
         // 筛选
-        boolean filtered = shouldFilter(context, candidate);
-        if (filtered) {
+        if (shouldFilter(context, candidate)) {
             return false;
         }
         // 添加到结果列表
@@ -177,11 +179,8 @@ class QueryServiceImpl implements QueryService {
     }
 
     private boolean shouldFilter(QueryContext context, LogPack logPack) {
-        // todo 标签过滤器
-
-        // 普通过滤器
-        for (LogFilter filter : logFilters) {
-            if (filter.shouldFilter(context, logPack)) {
+        for (ILogFilter filter : context.filters) {
+            if (filter.filterLogPack(logPack)) {
                 return true;
             }
         }
