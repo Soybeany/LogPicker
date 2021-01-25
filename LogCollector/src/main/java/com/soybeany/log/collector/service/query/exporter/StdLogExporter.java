@@ -2,7 +2,7 @@ package com.soybeany.log.collector.service.query.exporter;
 
 import com.google.gson.Gson;
 import com.soybeany.log.collector.config.AppConfig;
-import com.soybeany.log.collector.service.query.model.QueryContext;
+import com.soybeany.log.collector.service.query.data.QueryContext;
 import com.soybeany.log.core.model.*;
 import com.soybeany.log.core.util.TimeUtils;
 import com.soybeany.util.HexUtils;

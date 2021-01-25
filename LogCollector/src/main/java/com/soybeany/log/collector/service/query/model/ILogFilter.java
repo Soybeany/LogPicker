@@ -1,7 +1,7 @@
 package com.soybeany.log.collector.service.query.model;
 
-import com.soybeany.log.collector.service.common.model.FileRange;
-import com.soybeany.log.collector.service.common.model.LogIndexes;
+import com.soybeany.log.collector.service.common.data.FileRange;
+import com.soybeany.log.collector.service.common.data.LogIndexes;
 import com.soybeany.log.core.model.LogPack;
 import org.springframework.lang.NonNull;
 

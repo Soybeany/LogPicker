@@ -2,12 +2,16 @@ package com.soybeany.log.collector.service.query;
 
 import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.service.common.BytesRangeService;
-import com.soybeany.log.collector.service.common.LogLoaderService;
-import com.soybeany.log.collector.service.common.model.FileRange;
-import com.soybeany.log.collector.service.common.model.LogIndexes;
+import com.soybeany.log.collector.service.common.data.FileRange;
+import com.soybeany.log.collector.service.common.data.LogIndexes;
+import com.soybeany.log.collector.service.common.model.loader.ILogLineLoader;
+import com.soybeany.log.collector.service.common.model.loader.RangesLogLineLoader;
+import com.soybeany.log.collector.service.query.data.QueryContext;
+import com.soybeany.log.collector.service.query.data.QueryParam;
 import com.soybeany.log.collector.service.query.exporter.LogExporter;
 import com.soybeany.log.collector.service.query.filter.LogFilterFactory;
-import com.soybeany.log.collector.service.query.model.*;
+import com.soybeany.log.collector.service.query.model.ILogFilter;
+import com.soybeany.log.collector.service.query.model.LogPackLoader;
 import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.core.model.LogPack;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,8 +43,6 @@ class QueryServiceImpl implements QueryService {
     private AppConfig appConfig;
     @Autowired
     private QueryContextService queryContextService;
-    @Autowired
-    private LogLoaderService logLoaderService;
     @Autowired
     private BytesRangeService bytesRangeService;
     @Autowired
@@ -128,17 +130,25 @@ class QueryServiceImpl implements QueryService {
     private boolean queryByScan(QueryContext context, List<LogPack> results) throws IOException {
         for (String path : context.pathMap.keySet()) {
             List<FileRange> ranges = context.pathMap.get(path);
+            boolean canStop = false;
+            long readPointer;
             // 在范围中查找
-            LogPackReceiver receiver = new LogPackReceiver(context, results);
-            LogReceiverAdapter adapter = new LogReceiverAdapter(appConfig.maxLinesPerResultWithNullUid, context.uidMap, receiver);
-            boolean canStop = logLoaderService.load(new File(path), ranges, adapter);
+            try (ILogLineLoader lineLoader = new RangesLogLineLoader(new File(path), appConfig.logCharset,
+                    appConfig.lineParsePattern, appConfig.tagParsePattern, ranges);
+                 LogPackLoader packLoader = new LogPackLoader(lineLoader, appConfig.maxLinesPerResultWithNullUid, context.uidMap)) {
+                LogPack logPack;
+                while (null != (logPack = packLoader.loadNextCompleteLogPack())) {
+                    canStop = tryAddToList(context, results, logPack);
+                }
+                readPointer = lineLoader.getReadPointer();
+            }
             // 使用已查询到的字节，再次进行范围合并，若合并后范围为空，则移除此范围
-            List<FileRange> nextRange = Collections.singletonList(new FileRange(receiver.actualEndPointer, Long.MAX_VALUE));
-            ranges = bytesRangeService.intersect(Arrays.asList(ranges, nextRange));
-            if (ranges.isEmpty()) {
+            List<FileRange> nextRange = Collections.singletonList(new FileRange(readPointer, Long.MAX_VALUE));
+            List<FileRange> newRanges = bytesRangeService.intersect(Arrays.asList(ranges, nextRange));
+            if (newRanges.isEmpty()) {
                 context.pathMap.remove(path);
             } else {
-                context.pathMap.put(path, ranges);
+                context.pathMap.put(path, newRanges);
             }
             // 如果状态不为继续，则中断
             if (canStop) {
@@ -210,26 +220,4 @@ class QueryServiceImpl implements QueryService {
         queryContextService.registerContext(nextContext);
     }
 
-    // ********************内部类********************
-
-    private class LogPackReceiver implements ILogPackReceiver {
-        private final QueryContext context;
-        private final List<LogPack> logPacks;
-        public long actualEndPointer = 0;
-
-        public LogPackReceiver(QueryContext context, List<LogPack> logPacks) {
-            this.context = context;
-            this.logPacks = logPacks;
-        }
-
-        @Override
-        public void onFinish(long bytesRead, long actualEndPointer) {
-            this.actualEndPointer = actualEndPointer;
-        }
-
-        @Override
-        public boolean onReceive(LogPack logPack) {
-            return !tryAddToList(context, logPacks, logPack);
-        }
-    }
 }

@@ -1,6 +1,6 @@
 package com.soybeany.log.collector.service.query.exporter;
 
-import com.soybeany.log.collector.service.query.model.QueryContext;
+import com.soybeany.log.collector.service.query.data.QueryContext;
 import com.soybeany.log.core.model.LogPack;
 
 import java.util.List;

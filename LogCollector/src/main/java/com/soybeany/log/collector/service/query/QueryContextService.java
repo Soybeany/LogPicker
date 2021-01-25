@@ -1,7 +1,7 @@
 package com.soybeany.log.collector.service.query;
 
-import com.soybeany.log.collector.service.query.model.QueryContext;
-import com.soybeany.log.collector.service.query.model.QueryParam;
+import com.soybeany.log.collector.service.query.data.QueryContext;
+import com.soybeany.log.collector.service.query.data.QueryParam;
 import com.soybeany.log.core.model.LogException;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;

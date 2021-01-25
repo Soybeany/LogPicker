@@ -1,4 +1,4 @@
-package com.soybeany.log.collector.service.common.model;
+package com.soybeany.log.collector.service.common.data;
 
 import java.io.Serializable;
 

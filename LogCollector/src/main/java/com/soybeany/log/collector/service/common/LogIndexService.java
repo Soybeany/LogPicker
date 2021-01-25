@@ -1,9 +1,10 @@
 package com.soybeany.log.collector.service.common;
 
 import com.soybeany.log.collector.config.AppConfig;
-import com.soybeany.log.collector.service.common.model.FileRange;
-import com.soybeany.log.collector.service.common.model.ILogReceiver;
-import com.soybeany.log.collector.service.common.model.LogIndexes;
+import com.soybeany.log.collector.service.common.data.FileRange;
+import com.soybeany.log.collector.service.common.data.LogIndexes;
+import com.soybeany.log.collector.service.common.model.loader.ILogLineLoader;
+import com.soybeany.log.collector.service.common.model.loader.SimpleLogLineLoader;
 import com.soybeany.log.core.model.LogLine;
 import com.soybeany.log.core.model.LogTag;
 import com.soybeany.util.file.BdFileUtils;
@@ -38,8 +39,6 @@ class LogIndexServiceImpl implements LogIndexService {
     @Autowired
     private AppConfig appConfig;
     @Autowired
-    private LogLoaderService logLoaderService;
-    @Autowired
     private BytesRangeService bytesRangeService;
 
     @Override
@@ -62,9 +61,16 @@ class LogIndexServiceImpl implements LogIndexService {
             return indexes;
         }
         // 更新索引
-        logLoaderService.load(indexes.logFile,
-                Collections.singletonList(new FileRange(indexes.scannedBytes, Long.MAX_VALUE)),
-                new LogReceiver(indexes));
+        SimpleLogLineLoader loader = new SimpleLogLineLoader(indexes.logFile, appConfig.logCharset, appConfig.lineParsePattern, appConfig.tagParsePattern);
+        ILogLineLoader.ResultHolder holder = new ILogLineLoader.ResultHolder();
+        loader.seek(indexes.scannedBytes);
+        while (loader.loadNextLogLine(holder)) {
+            indexTime(indexes, holder.fromByte, holder.logLine);
+            if (holder.isTag) {
+                indexTag(indexes, holder.fromByte, holder.toByte, holder.logTag);
+            }
+        }
+        indexes.scannedBytes = loader.getReadPointer();
         // 保存并返回索引
         saveIndexes(indexes);
         return indexes;
@@ -101,48 +107,23 @@ class LogIndexServiceImpl implements LogIndexService {
         }
     }
 
+    private void indexTag(LogIndexes indexes, long fromByte, long toByte, LogTag logTag) {
+        if (!appConfig.tagsToIndex.contains(logTag.key)) {
+            return;
+        }
+        // 将tag的值转成小写再保存
+        LinkedList<FileRange> ranges = indexes.tagsIndexMap.computeIfAbsent(logTag.key, k -> new HashMap<>())
+                .computeIfAbsent(logTag.value.toLowerCase(), k -> new LinkedList<>());
+        bytesRangeService.append(ranges, fromByte, toByte);
+    }
+
+    private void indexTime(LogIndexes indexes, long fromByte, LogLine logLine) {
+        indexes.timeIndexMap.putIfAbsent(logLine.time, fromByte);
+    }
+
     private File getLogIndexesFile(File logFile) {
         String logFilePath = logFile.getAbsolutePath();
         return new File(appConfig.dirForIndexes, logFilePath.replaceAll(":", ""));
     }
 
-    // ********************内部类********************
-
-    private class LogReceiver implements ILogReceiver {
-        private final LogIndexes indexes;
-
-        public LogReceiver(LogIndexes indexes) {
-            this.indexes = indexes;
-        }
-
-        @Override
-        public void onReceiveLogLine(long fromByte, long toByte, LogLine logLine) {
-            handleTime(fromByte, logLine);
-        }
-
-        @Override
-        public void onReceiveLogTag(long fromByte, long toByte, LogLine logLine, LogTag logTag) {
-            handleTime(fromByte, logLine);
-            handleTag(fromByte, toByte, logTag);
-        }
-
-        @Override
-        public void onFinish(long bytesRead, long actualEndPointer) {
-            indexes.scannedBytes = actualEndPointer;
-        }
-
-        private void handleTag(long fromByte, long toByte, LogTag logTag) {
-            if (!appConfig.tagsToIndex.contains(logTag.key)) {
-                return;
-            }
-            // 将tag的值转成小写再保存
-            LinkedList<FileRange> ranges = indexes.tagsIndexMap.computeIfAbsent(logTag.key, k -> new HashMap<>())
-                    .computeIfAbsent(logTag.value.toLowerCase(), k -> new LinkedList<>());
-            bytesRangeService.append(ranges, fromByte, toByte);
-        }
-
-        private void handleTime(long fromByte, LogLine logLine) {
-            indexes.timeIndexMap.putIfAbsent(logLine.time, fromByte);
-        }
-    }
 }

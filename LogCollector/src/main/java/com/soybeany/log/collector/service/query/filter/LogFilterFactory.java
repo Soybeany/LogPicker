@@ -1,7 +1,7 @@
 package com.soybeany.log.collector.service.query.filter;
 
+import com.soybeany.log.collector.service.query.data.QueryContext;
 import com.soybeany.log.collector.service.query.model.ILogFilter;
-import com.soybeany.log.collector.service.query.model.QueryContext;
 import org.springframework.lang.Nullable;
 
 /**

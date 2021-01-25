@@ -1,4 +1,4 @@
-package com.soybeany.log.collector.service.query.model;
+package com.soybeany.log.collector.service.query.data;
 
 import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.core.model.LogException;

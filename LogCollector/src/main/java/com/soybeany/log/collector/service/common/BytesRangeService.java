@@ -1,7 +1,7 @@
 package com.soybeany.log.collector.service.common;
 
 import com.soybeany.log.collector.config.AppConfig;
-import com.soybeany.log.collector.service.common.model.FileRange;
+import com.soybeany.log.collector.service.common.data.FileRange;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;

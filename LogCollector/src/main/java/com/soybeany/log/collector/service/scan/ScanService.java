@@ -2,7 +2,7 @@ package com.soybeany.log.collector.service.scan;
 
 import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.service.common.LogIndexService;
-import com.soybeany.log.collector.service.common.model.LogIndexes;
+import com.soybeany.log.collector.service.common.data.LogIndexes;
 import com.soybeany.log.core.model.LogException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
