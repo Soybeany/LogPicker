@@ -1,16 +1,6 @@
 server:
   port: 8384
 
-spring:
-  datasource:
-    # 本地db文件的路径
-    url: jdbc:sqlite:d:/logCollector.db
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: false
-    open-in-view: false
-
 config:
   # 待扫描的目录，多个使用“;”进行分隔
   dirs-to-scan: E:\logDir

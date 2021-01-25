@@ -29,6 +29,7 @@ class QueryContextServiceImpl implements QueryContextService {
 
     private static final String P_KEY_ID = "id"; // 关联context的id，string
 
+    // todo 修改为定时器自动删除
     private final Map<String, QueryContext> contextMap = new WeakHashMap<>();
 
     @Override
