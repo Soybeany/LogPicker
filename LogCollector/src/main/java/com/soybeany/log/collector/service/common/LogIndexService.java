@@ -79,9 +79,8 @@ class LogIndexServiceImpl implements LogIndexService {
     @Override
     public Map<String, String> getTreatedTagMap(Map<String, String> tags) {
         Map<String, String> result = new HashMap<>();
-        tags.forEach((k, v) -> {
-            result.put(k, v.toLowerCase());
-        });
+        // 将tag的值转成小写
+        tags.forEach((k, v) -> result.put(k, v.toLowerCase()));
         return result;
     }
 

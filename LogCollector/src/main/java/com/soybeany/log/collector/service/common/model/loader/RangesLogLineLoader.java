@@ -17,7 +17,7 @@ public class RangesLogLineLoader implements ILogLineLoader {
 
     private final SimpleLogLineLoader delegate;
     private final List<FileRange> ranges;
-    private int rangeIndex;
+    private int rangeIndex = -1;
     private long targetPointer = DEFAULT_POINTER;
     private long readPointer = DEFAULT_POINTER;
 

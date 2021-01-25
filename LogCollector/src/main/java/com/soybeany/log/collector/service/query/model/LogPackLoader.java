@@ -42,15 +42,16 @@ public class LogPackLoader implements Closeable {
     public LogPack loadNextCompleteLogPack() throws IOException {
         while (logLineLoader.loadNextLogLine(holder)) {
             LogLine logLine = holder.logLine;
-            LogPack logPack = getLogPack(logLine.uid, logLine.thread);
+            String uidMapKey = getUidMapKey(logLine.uid, logLine.thread);
+            LogPack logPack = getLogPack(uidMapKey, logLine.uid, logLine.thread);
             boolean isComplete;
             // 处理标签
             if (holder.isTag) {
-                isComplete = handleTag(logPack, holder.logTag);
+                isComplete = handleTag(uidMapKey, logPack, holder.logTag);
             }
             // 处理行
             else {
-                isComplete = handleLine(logPack, logLine);
+                isComplete = handleLine(uidMapKey, logPack, logLine);
             }
             // 若可返回结果则返回结果
             if (isComplete) {
@@ -62,13 +63,14 @@ public class LogPackLoader implements Closeable {
 
     // ********************内部方法********************
 
-    private boolean handleTag(LogPack logPack, LogTag logTag) {
+    private boolean handleTag(String uidMapKey, LogPack logPack, LogTag logTag) {
         switch (logTag.key) {
             case Constants.TAG_BORDER_START:
                 logPack.startTag = logTag;
                 break;
             case Constants.TAG_BORDER_END:
                 logPack.endTag = logTag;
+                uidMap.remove(uidMapKey);
                 return true;
             default:
                 logPack.tags.add(logTag);
@@ -76,22 +78,18 @@ public class LogPackLoader implements Closeable {
         return false;
     }
 
-    private boolean handleLine(LogPack logPack, LogLine logLine) {
+    private boolean handleLine(String uidMapKey, LogPack logPack, LogLine logLine) {
         boolean isComplete = (null == logLine.uid && logPack.logLines.size() + 1 > maxLinesPerResultWithNullUid);
         if (isComplete) {
-            logPack = removeAndGetNewLogPack(logLine.uid, logLine.thread);
+            uidMap.remove(uidMapKey);
+            logPack = getLogPack(uidMapKey, logLine.uid, logLine.thread);
         }
         logPack.logLines.add(logLine);
         return isComplete;
     }
 
-    private LogPack getLogPack(String uid, String thread) {
-        return uidMap.computeIfAbsent(getUidMapKey(uid, thread), k -> getNewLogPack(uid, thread));
-    }
-
-    private LogPack removeAndGetNewLogPack(String uid, String thread) {
-        uidMap.remove(getUidMapKey(uid, thread));
-        return getLogPack(uid, thread);
+    private LogPack getLogPack(String uidMapKey, String uid, String thread) {
+        return uidMap.computeIfAbsent(uidMapKey, k -> getNewLogPack(uid, thread));
     }
 
     private String getUidMapKey(String uid, String thread) {
