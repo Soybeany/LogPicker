@@ -26,6 +26,7 @@
 
     <properties>
         <packaging.type>jar</packaging.type>
+        <bdlib.version>2.5.13</bdlib.version>
     </properties>
 
     <profiles>
@@ -78,6 +79,21 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.github.Soybeany.bdlib-server</groupId>
+                <artifactId>bd-config</artifactId>
+                <version>${bdlib.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.Soybeany.bdlib-server</groupId>
+                <artifactId>bd-util</artifactId>
+                <version>${bdlib.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <repositories>
         <repository>

@@ -1,10 +1,12 @@
 package com.soybeany.log.collector.service.common;
 
+import com.soybeany.config.BDCipherUtils;
 import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.service.common.data.FileRange;
 import com.soybeany.log.collector.service.common.data.LogIndexes;
 import com.soybeany.log.collector.service.common.model.loader.ILogLineLoader;
 import com.soybeany.log.collector.service.common.model.loader.SimpleLogLineLoader;
+import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.core.model.LogLine;
 import com.soybeany.log.core.model.LogTag;
 import com.soybeany.util.file.BdFileUtils;
@@ -121,8 +123,12 @@ class LogIndexServiceImpl implements LogIndexService {
     }
 
     private File getLogIndexesFile(File logFile) {
-        String logFilePath = logFile.getAbsolutePath();
-        return new File(appConfig.dirForIndexes, logFilePath.replaceAll(":", ""));
+        try {
+            String fileName = BDCipherUtils.calculateMd5(logFile.getAbsolutePath());
+            return new File(appConfig.dirForIndexes, fileName);
+        } catch (Exception e) {
+            throw new LogException(e.getMessage());
+        }
     }
 
 }

@@ -21,8 +21,11 @@
 
         <dependency>
             <groupId>com.github.Soybeany.bdlib-server</groupId>
+            <artifactId>bd-config</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.github.Soybeany.bdlib-server</groupId>
             <artifactId>bd-util</artifactId>
-            <version>2.5.11</version>
         </dependency>
 
         <dependency>
