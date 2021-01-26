@@ -2,10 +2,7 @@ package com.soybeany.log.collector.service.query.model;
 
 import com.soybeany.log.collector.service.common.model.loader.ILogLineLoader;
 import com.soybeany.log.collector.service.common.model.loader.SimpleLogLineLoader;
-import com.soybeany.log.core.model.Constants;
-import com.soybeany.log.core.model.LogLine;
-import com.soybeany.log.core.model.LogPack;
-import com.soybeany.log.core.model.LogTag;
+import com.soybeany.log.core.model.*;
 import org.springframework.lang.Nullable;
 
 import java.io.Closeable;
@@ -23,6 +20,8 @@ public class LogPackLoader implements Closeable {
     private final Map<String, LogPack> uidMap;
 
     private final ILogLineLoader.ResultHolder holder = new SimpleLogLineLoader.ResultHolder();
+    @Nullable
+    private IListener listener;
 
     public LogPackLoader(ILogLineLoader logLineLoader, int maxLinesPerResultWithNullUid, Map<String, LogPack> uidMap) {
         this.logLineLoader = logLineLoader;
@@ -33,6 +32,10 @@ public class LogPackLoader implements Closeable {
     @Override
     public void close() throws IOException {
         logLineLoader.close();
+    }
+
+    public void setListener(IListener listener) {
+        this.listener = listener;
     }
 
     /**
@@ -52,6 +55,12 @@ public class LogPackLoader implements Closeable {
             // 处理行
             else {
                 isComplete = handleLine(uidMapKey, logPack, logLine);
+            }
+            // 添加下标
+            logPack.ranges.add(new FileRange(holder.fromByte, holder.toByte));
+            // 执行监听器回调
+            if (null != listener) {
+                listener.onReadLine(holder);
             }
             // 若可返回结果则返回结果
             if (isComplete) {
@@ -101,6 +110,12 @@ public class LogPackLoader implements Closeable {
         logPack.uid = uid;
         logPack.thread = thread;
         return logPack;
+    }
+
+    // ********************内部类********************
+
+    public interface IListener {
+        void onReadLine(ILogLineLoader.ResultHolder holder);
     }
 
 }

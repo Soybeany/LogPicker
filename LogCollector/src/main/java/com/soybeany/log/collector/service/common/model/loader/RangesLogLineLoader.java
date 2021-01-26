@@ -1,6 +1,6 @@
 package com.soybeany.log.collector.service.common.model.loader;
 
-import com.soybeany.log.collector.service.common.data.FileRange;
+import com.soybeany.log.core.model.FileRange;
 
 import java.io.File;
 import java.io.IOException;

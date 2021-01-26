@@ -2,7 +2,6 @@ package com.soybeany.log.collector.service.query;
 
 import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.service.common.BytesRangeService;
-import com.soybeany.log.collector.service.common.data.FileRange;
 import com.soybeany.log.collector.service.common.data.LogIndexes;
 import com.soybeany.log.collector.service.common.model.loader.ILogLineLoader;
 import com.soybeany.log.collector.service.common.model.loader.RangesLogLineLoader;
@@ -12,6 +11,7 @@ import com.soybeany.log.collector.service.query.exporter.LogExporter;
 import com.soybeany.log.collector.service.query.filter.LogFilterFactory;
 import com.soybeany.log.collector.service.query.model.ILogFilter;
 import com.soybeany.log.collector.service.query.model.LogPackLoader;
+import com.soybeany.log.core.model.FileRange;
 import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.core.model.LogPack;
 import org.springframework.beans.factory.annotation.Autowired;

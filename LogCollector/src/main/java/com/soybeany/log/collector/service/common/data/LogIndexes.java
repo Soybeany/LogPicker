@@ -1,5 +1,8 @@
 package com.soybeany.log.collector.service.common.data;
 
+import com.soybeany.log.core.model.FileRange;
+import com.soybeany.log.core.model.LogPack;
+
 import java.io.File;
 import java.io.Serializable;
 import java.util.HashMap;
@@ -22,6 +25,11 @@ public class LogIndexes implements Serializable {
      * 已扫描的字节数
      */
     public long scannedBytes;
+
+    /**
+     * 使用uid作为key
+     */
+    public final Map<String, LogPack> uidMap = new HashMap<>();
 
     /**
      * 时间索引(开始时间使用匹配的值；结束时间使用匹配的下一值，若无则使用文件大小值)

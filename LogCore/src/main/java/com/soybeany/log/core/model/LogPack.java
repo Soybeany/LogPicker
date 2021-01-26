@@ -42,4 +42,9 @@ public class LogPack implements Serializable {
      */
     public final List<LogLine> logLines = new LinkedList<>();
 
+    /**
+     * 在文件中出现的范围
+     */
+    public final List<FileRange> ranges = new LinkedList<>();
+
 }

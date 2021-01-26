@@ -2,13 +2,10 @@ package com.soybeany.log.collector.service.common;
 
 import com.soybeany.config.BDCipherUtils;
 import com.soybeany.log.collector.config.AppConfig;
-import com.soybeany.log.collector.service.common.data.FileRange;
 import com.soybeany.log.collector.service.common.data.LogIndexes;
-import com.soybeany.log.collector.service.common.model.loader.ILogLineLoader;
 import com.soybeany.log.collector.service.common.model.loader.SimpleLogLineLoader;
-import com.soybeany.log.core.model.LogException;
-import com.soybeany.log.core.model.LogLine;
-import com.soybeany.log.core.model.LogTag;
+import com.soybeany.log.collector.service.query.model.LogPackLoader;
+import com.soybeany.log.core.model.*;
 import com.soybeany.util.file.BdFileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
@@ -63,16 +60,17 @@ class LogIndexServiceImpl implements LogIndexService {
             return indexes;
         }
         // 更新索引
-        SimpleLogLineLoader loader = new SimpleLogLineLoader(indexes.logFile, appConfig.logCharset, appConfig.lineParsePattern, appConfig.tagParsePattern);
-        ILogLineLoader.ResultHolder holder = new ILogLineLoader.ResultHolder();
-        loader.seek(indexes.scannedBytes);
-        while (loader.loadNextLogLine(holder)) {
-            indexTime(indexes, holder.fromByte, holder.logLine);
-            if (holder.isTag) {
-                indexTag(indexes, holder.fromByte, holder.toByte, holder.logTag);
+        SimpleLogLineLoader lineLoader = new SimpleLogLineLoader(indexes.logFile, appConfig.logCharset, appConfig.lineParsePattern, appConfig.tagParsePattern);
+        lineLoader.seek(indexes.scannedBytes);
+        LogPackLoader packLoader = new LogPackLoader(lineLoader, appConfig.maxLinesPerResultWithNullUid, indexes.uidMap);
+        packLoader.setListener(holder -> indexTime(indexes, holder.fromByte, holder.logLine));
+        LogPack logPack;
+        while (null != (logPack = packLoader.loadNextCompleteLogPack())) {
+            for (LogTag tag : logPack.tags) {
+                indexTag(indexes, tag, logPack.ranges);
             }
         }
-        indexes.scannedBytes = loader.getReadPointer();
+        indexes.scannedBytes = lineLoader.getReadPointer();
         // 保存并返回索引
         saveIndexes(indexes);
         return indexes;
@@ -107,14 +105,14 @@ class LogIndexServiceImpl implements LogIndexService {
         }
     }
 
-    private void indexTag(LogIndexes indexes, long fromByte, long toByte, LogTag logTag) {
+    private void indexTag(LogIndexes indexes, LogTag logTag, List<FileRange> ranges) {
         if (!appConfig.tagsToIndex.contains(logTag.key)) {
             return;
         }
         // 将tag的值转成小写再保存
-        LinkedList<FileRange> ranges = indexes.tagsIndexMap.computeIfAbsent(logTag.key, k -> new HashMap<>())
+        LinkedList<FileRange> totalRanges = indexes.tagsIndexMap.computeIfAbsent(logTag.key, k -> new HashMap<>())
                 .computeIfAbsent(logTag.value.toLowerCase(), k -> new LinkedList<>());
-        bytesRangeService.append(ranges, fromByte, toByte);
+        totalRanges.addAll(ranges);
     }
 
     private void indexTime(LogIndexes indexes, long fromByte, LogLine logLine) {

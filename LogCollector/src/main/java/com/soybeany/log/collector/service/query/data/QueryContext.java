@@ -1,7 +1,7 @@
 package com.soybeany.log.collector.service.query.data;
 
-import com.soybeany.log.collector.service.common.data.FileRange;
 import com.soybeany.log.collector.service.query.model.ILogFilter;
+import com.soybeany.log.core.model.FileRange;
 import com.soybeany.log.core.model.LogPack;
 import com.soybeany.log.core.util.UidUtils;
 import org.springframework.lang.Nullable;

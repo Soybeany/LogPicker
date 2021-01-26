@@ -1,8 +1,6 @@
 package com.soybeany.log.collector.service.common;
 
-import com.soybeany.log.collector.config.AppConfig;
-import com.soybeany.log.collector.service.common.data.FileRange;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.soybeany.log.core.model.FileRange;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
@@ -18,11 +16,6 @@ import java.util.List;
 public interface BytesRangeService {
 
     /**
-     * 拼接
-     */
-    void append(LinkedList<FileRange> ranges, long fromByte, long toByte);
-
-    /**
      * 计算出多个指定范围列表的交集
      */
     @NonNull
@@ -32,21 +25,6 @@ public interface BytesRangeService {
 
 @Service
 class BytesRangeServiceImpl implements BytesRangeService {
-
-    @Autowired
-    private AppConfig appConfig;
-
-    @Override
-    public void append(LinkedList<FileRange> ranges, long fromByte, long toByte) {
-        FileRange lastRange = ranges.peekLast();
-        // 存在范围且差距小于指定值，延长结束下标
-        if (null != lastRange && (toByte - lastRange.to) <= appConfig.maxBytesGapToMerge) {
-            lastRange.to = toByte;
-            return;
-        }
-        // 其余情况，创建新范围
-        ranges.add(new FileRange(fromByte, toByte));
-    }
 
     @Override
     public List<FileRange> intersect(List<List<FileRange>> rangeList) {
