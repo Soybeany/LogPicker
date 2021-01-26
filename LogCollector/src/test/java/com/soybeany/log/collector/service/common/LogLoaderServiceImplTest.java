@@ -20,7 +20,7 @@ class LogLoaderServiceImplTest {
     @Test
     void load() throws Exception {
         long start = System.currentTimeMillis();
-        File file = new File("E:\\logDir\\sysAudit.log.2018-10-15.log");
+        File file = new File("E:\\logDir2\\sysAudit.log.2018-10-15.log");
         BdFileUtils.randomReadLine(file, 0, new BdFileUtils.RandomReadLineCallback() {
             @Override
             public String onSetupCharset() {

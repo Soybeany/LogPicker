@@ -6,6 +6,10 @@ config:
   dirs-to-scan: E:\logDir
   # 用于存放索引的目录
   dir-for-indexes: E:\logIndexes
+  # 当天日志文件的命名
+  #  log-:
+  # 历史日志文件的命名
+  #  log-2:
   # 日志的字符集
   log-charset: utf-8
   # 行解析的正则
