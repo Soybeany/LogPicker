@@ -7,9 +7,9 @@ config:
   # 用于存放索引的目录
   dir-for-indexes: E:\logIndexes
   # 当天日志文件的命名
-  #  log-:
-  # 历史日志文件的命名
-  #  log-2:
+  log-today-file-name: test.log
+  # 历史日志文件的命名，使用<?TimeFormat?>作时间占位
+  log-history-file-name: test<?yy-MM-dd?>.log
   # 日志的字符集
   log-charset: utf-8
   # 行解析的正则
@@ -27,3 +27,7 @@ config:
   default-max-result-count: 30
   # 当日志行没有uid时，每条查询结果允许包含的最大行数
   max-lines-per-result-with-null-uid: 20
+  # 定时清理内存context的间隔
+  timer-clear-context-sec: 300
+  # 定时清理本地索引文件的间隔
+  timer-clear-indexes-sec: 172800

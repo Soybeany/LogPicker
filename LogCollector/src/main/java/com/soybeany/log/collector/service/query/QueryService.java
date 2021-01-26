@@ -36,9 +36,6 @@ public interface QueryService {
 @Service
 class QueryServiceImpl implements QueryService {
 
-    private static final String PREFIX = "query";
-    private static final String P_KEY_FILES = "files"; // 需要查询文件的路径，使用“;”分隔，String
-
     @Autowired
     private AppConfig appConfig;
     @Autowired
@@ -91,11 +88,11 @@ class QueryServiceImpl implements QueryService {
                 context.filters.add(filter);
             }
         }
-        for (String filePath : context.getParam(PREFIX, P_KEY_FILES).split(";")) {
+        for (File logFile : queryParam.getLogFiles()) {
             // 更新索引
-            LogIndexes indexes = indexesUpdater.updateAndGet(new File(filePath));
+            LogIndexes indexes = indexesUpdater.updateAndGet(logFile);
             // 保存待查询的范围
-            context.pathMap.put(filePath, getRanges(context, indexes));
+            context.pathMap.put(logFile.getAbsolutePath(), getRanges(context, indexes));
         }
         return context;
     }

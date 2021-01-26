@@ -19,6 +19,8 @@ public class AppConfig {
 
     public String[] dirsToScan;
     public String dirForIndexes;
+    public String logTodayFileName;
+    public String logHistoryFileName;
     public String logCharset;
     public Pattern lineParsePattern;
     public Pattern tagParsePattern;
@@ -35,6 +37,14 @@ public class AppConfig {
 
     public void setDirForIndexes(String dirForIndexes) {
         this.dirForIndexes = dirForIndexes;
+    }
+
+    public void setLogTodayFileName(String logTodayFileName) {
+        this.logTodayFileName = logTodayFileName;
+    }
+
+    public void setLogHistoryFileName(String logHistoryFileName) {
+        this.logHistoryFileName = logHistoryFileName;
     }
 
     public void setLogCharset(String logCharset) {

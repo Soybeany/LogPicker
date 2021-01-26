@@ -40,7 +40,7 @@
     },
     {
       "name": "config.max-bytes-gap-to-merge",
-      "type": "java.lang.String",
+      "type": "java.lang.Integer",
       "description": "当新记录与旧记录间不超过指定字节数时，将新记录合并至旧记录.",
       "defaultValue": 10000
     },
@@ -53,6 +53,28 @@
       "name": "config.tag-parse-regex",
       "type": "java.lang.String",
       "description": "标签解析的正则."
+    },
+    {
+      "name": "config.log-today-file-name",
+      "type": "java.lang.String",
+      "description": "当天日志文件的命名."
+    },
+    {
+      "name": "config.log-history-file-name",
+      "type": "java.lang.String",
+      "description": "历史日志文件的命名，使用<?TimeFormat?>作时间占位."
+    },
+    {
+      "name": "config.timer-clear-context-sec",
+      "type": "java.lang.Integer",
+      "description": "定时清理内存context的间隔.",
+      "defaultValue": 300
+    },
+    {
+      "name": "config.timer-clear-indexes-sec",
+      "type": "java.lang.String",
+      "description": "定时清理本地索引文件的间隔.",
+      "defaultValue": 172800
     }
   ]
 }
