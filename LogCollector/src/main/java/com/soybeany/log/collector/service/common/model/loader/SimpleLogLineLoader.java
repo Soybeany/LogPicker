@@ -27,6 +27,7 @@ public class SimpleLogLineLoader implements ILogLineLoader {
 
     private final LastLogLineHolder lastLogLineHolder = new LastLogLineHolder();
     private long nextFromByte;
+    private long readPointer;
 
     public SimpleLogLineLoader(File file, String charset, Pattern linePattern, Pattern tagPattern) throws IOException {
         if (!file.exists()) {
@@ -106,8 +107,8 @@ public class SimpleLogLineLoader implements ILogLineLoader {
     }
 
     @Override
-    public long getReadPointer() throws IOException {
-        return raf.getFilePointer();
+    public long getReadPointer() {
+        return readPointer;
     }
 
     @Override
@@ -143,7 +144,7 @@ public class SimpleLogLineLoader implements ILogLineLoader {
     private void setupResult(ResultHolder resultHolder) {
         lastLogLineHolder.mergeTempContent();
         resultHolder.fromByte = lastLogLineHolder.fromByte;
-        resultHolder.toByte = lastLogLineHolder.toByte;
+        resultHolder.toByte = readPointer = lastLogLineHolder.toByte;
         resultHolder.logLine = lastLogLineHolder.logLine;
         resultHolder.logTag = parseLogLineToLogTag(tagPattern, resultHolder.logLine);
         resultHolder.isTag = (null != resultHolder.logTag);

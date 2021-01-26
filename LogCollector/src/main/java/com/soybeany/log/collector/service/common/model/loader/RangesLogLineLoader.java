@@ -13,13 +13,10 @@ import java.util.regex.Pattern;
  */
 public class RangesLogLineLoader implements ILogLineLoader {
 
-    private static final long DEFAULT_POINTER = -1;
-
     private final SimpleLogLineLoader delegate;
     private final List<FileRange> ranges;
     private int rangeIndex = -1;
-    private long targetPointer = DEFAULT_POINTER;
-    private long readPointer = DEFAULT_POINTER;
+    private long targetPointer = -1;
 
     public RangesLogLineLoader(File file, String charset, Pattern linePattern, Pattern tagPattern, List<FileRange> ranges) throws IOException {
         this.delegate = new SimpleLogLineLoader(file, charset, linePattern, tagPattern);
@@ -39,8 +36,7 @@ public class RangesLogLineLoader implements ILogLineLoader {
                 return false;
             }
             // 已超出当前范围，则进入下一范围查找
-            readPointer = resultHolder.toByte;
-            if (targetPointer <= readPointer) {
+            if (targetPointer < resultHolder.toByte) {
                 continue;
             }
             return true;
@@ -48,7 +44,7 @@ public class RangesLogLineLoader implements ILogLineLoader {
     }
 
     @Override
-    public long getReadPointer() throws IOException {
+    public long getReadPointer() {
         return delegate.getReadPointer();
     }
 
@@ -64,7 +60,7 @@ public class RangesLogLineLoader implements ILogLineLoader {
      */
     private boolean adjustPointer() throws IOException {
         // 若未到达当前范围的末尾，则不作处理
-        if (readPointer < targetPointer) {
+        if (getReadPointer() < targetPointer) {
             return false;
         }
         // 若无更多的范围，则返回EOR
@@ -72,7 +68,6 @@ public class RangesLogLineLoader implements ILogLineLoader {
             return true;
         }
         // 切换到下一范围
-        readPointer = DEFAULT_POINTER;
         FileRange newRange = ranges.get(rangeIndex);
         targetPointer = newRange.to;
         delegate.seek(newRange.from);

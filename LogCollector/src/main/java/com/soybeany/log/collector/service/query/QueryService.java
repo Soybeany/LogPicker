@@ -61,7 +61,7 @@ class QueryServiceImpl implements QueryService {
             }
             return context.result = query(context);
         } catch (Exception e) {
-            throw new LogException(e.getMessage());
+            throw new LogException(e);
         } finally {
             context.clearTempData();
             // 释放锁
@@ -125,7 +125,9 @@ class QueryServiceImpl implements QueryService {
      * 是否需要继续添加记录
      */
     private boolean queryByScan(QueryContext context, List<LogPack> results) throws IOException {
-        for (String path : context.pathMap.keySet()) {
+        Iterator<String> iterator = context.pathMap.keySet().iterator();
+        while (iterator.hasNext()) {
+            String path = iterator.next();
             List<FileRange> ranges = context.pathMap.get(path);
             boolean canStop = false;
             long readPointer;
@@ -134,7 +136,7 @@ class QueryServiceImpl implements QueryService {
                     appConfig.lineParsePattern, appConfig.tagParsePattern, ranges);
                  LogPackLoader packLoader = new LogPackLoader(lineLoader, appConfig.maxLinesPerResultWithNullUid, context.uidMap)) {
                 LogPack logPack;
-                while (null != (logPack = packLoader.loadNextCompleteLogPack())) {
+                while (!canStop && null != (logPack = packLoader.loadNextCompleteLogPack())) {
                     canStop = tryAddToList(context, results, logPack);
                 }
                 readPointer = lineLoader.getReadPointer();
@@ -143,7 +145,7 @@ class QueryServiceImpl implements QueryService {
             List<FileRange> nextRange = Collections.singletonList(new FileRange(readPointer, Long.MAX_VALUE));
             List<FileRange> newRanges = bytesRangeService.intersect(Arrays.asList(ranges, nextRange));
             if (newRanges.isEmpty()) {
-                context.pathMap.remove(path);
+                iterator.remove();
             } else {
                 context.pathMap.put(path, newRanges);
             }

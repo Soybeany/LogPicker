@@ -101,8 +101,7 @@ class LogIndexServiceImpl implements LogIndexService {
             File indexFile = getLogIndexesFile(indexes.logFile);
             indexFile.delete();
             BdFileUtils.mkParentDirs(indexFile);
-            boolean success = tempFile.renameTo(indexFile);
-            System.out.println("索引持久化:" + success);
+            tempFile.renameTo(indexFile);
         } finally {
             tempFile.delete();
         }
@@ -124,10 +123,11 @@ class LogIndexServiceImpl implements LogIndexService {
 
     private File getLogIndexesFile(File logFile) {
         try {
-            String fileName = BDCipherUtils.calculateMd5(logFile.getAbsolutePath());
+            String md5 = BDCipherUtils.calculateMd5(logFile.getAbsolutePath());
+            String fileName = logFile.getName() + " - " + md5.substring(0, 8);
             return new File(appConfig.dirForIndexes, fileName);
         } catch (Exception e) {
-            throw new LogException(e.getMessage());
+            throw new LogException(e);
         }
     }
 

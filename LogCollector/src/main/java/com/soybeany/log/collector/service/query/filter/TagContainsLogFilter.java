@@ -103,11 +103,11 @@ class TagContainsLogFilter implements LogFilterFactory {
 
         private List<FileRange> getRangesOfTag(LogIndexes indexes, String tagKey, String tagValue) {
             List<FileRange> ranges = new LinkedList<>();
-            indexes.tagsIndexMap.get(tagKey).forEach((value, range) -> {
+            Optional.ofNullable(indexes.tagsIndexMap.get(tagKey)).ifPresent(map -> map.forEach((value, range) -> {
                 if (value.contains(tagValue)) {
                     ranges.addAll(range);
                 }
-            });
+            }));
             return ranges;
         }
     }

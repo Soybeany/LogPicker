@@ -14,7 +14,7 @@ public interface ILogLineLoader extends Closeable {
 
     boolean loadNextLogLine(ResultHolder resultHolder) throws IOException;
 
-    long getReadPointer() throws IOException;
+    long getReadPointer();
 
     class ResultHolder {
         public long fromByte;
