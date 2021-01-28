@@ -5,10 +5,7 @@ import com.soybeany.log.core.model.LogPack;
 
 import java.io.File;
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * @author Soybeany
@@ -27,19 +24,24 @@ public class LogIndexes implements Serializable {
     public long scannedBytes;
 
     /**
-     * 使用uid作为key
+     * 使用uid作为key，存放未组装完成的临时记录
      */
-    public final Map<String, LogPack> uidMap = new HashMap<>();
+    public final Map<String, LogPack> uidTempMap = new HashMap<>();
 
     /**
-     * 时间索引(开始时间使用匹配的值；结束时间使用匹配的下一值，若无则使用文件大小值)
+     * 使用uid作为key，存放该uid出现的模糊范围(包含但不全是)
+     */
+    public final Map<String, LinkedList<FileRange>> uidRanges = new HashMap<>();
+
+    /**
+     * 时间下标索引(开始时间使用匹配的值；结束时间使用匹配的下一值，若无则使用文件大小值)
      */
     public final TreeMap<String, Long> timeIndexMap = new TreeMap<>();
 
     /**
-     * 自定义标签索引
+     * 自定义标签索引，第一个key为tagName，第二个key为tagValue，value为uid集合
      */
-    public final Map<String, Map<String, LinkedList<FileRange>>> tagsIndexMap = new HashMap<>();
+    public final Map<String, Map<String, Set<String>>> tagUidMap = new HashMap<>();
 
     public LogIndexes(File logFile) {
         this.logFile = logFile;

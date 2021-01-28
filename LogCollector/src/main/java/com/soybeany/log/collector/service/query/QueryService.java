@@ -3,21 +3,22 @@ package com.soybeany.log.collector.service.query;
 import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.service.common.BytesRangeService;
 import com.soybeany.log.collector.service.common.data.LogIndexes;
-import com.soybeany.log.collector.service.common.model.loader.ILogLineLoader;
+import com.soybeany.log.collector.service.common.model.LogFilter;
+import com.soybeany.log.collector.service.common.model.loader.LogPackLoader;
 import com.soybeany.log.collector.service.common.model.loader.RangesLogLineLoader;
 import com.soybeany.log.collector.service.query.data.QueryContext;
 import com.soybeany.log.collector.service.query.data.QueryParam;
 import com.soybeany.log.collector.service.query.exporter.LogExporter;
 import com.soybeany.log.collector.service.query.filter.LogFilterFactory;
-import com.soybeany.log.collector.service.query.model.ILogFilter;
-import com.soybeany.log.collector.service.query.model.LogPackLoader;
 import com.soybeany.log.core.model.FileRange;
 import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.core.model.LogPack;
+import com.soybeany.util.file.BdFileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -83,7 +84,7 @@ class QueryServiceImpl implements QueryService {
         context = new QueryContext(queryParam);
         queryContextService.registerContext(context);
         for (LogFilterFactory factory : logFilterFactories) {
-            ILogFilter filter = factory.getNewLogFilterIfInNeed(context);
+            LogFilter filter = factory.getNewLogFilterIfInNeed(context);
             if (null != filter) {
                 context.filters.add(filter);
             }
@@ -91,28 +92,29 @@ class QueryServiceImpl implements QueryService {
         for (File logFile : queryParam.getLogFiles()) {
             // 更新索引
             LogIndexes indexes = indexesUpdater.updateAndGet(logFile);
-            // 保存待查询的范围
-            context.pathMap.put(logFile.getAbsolutePath(), getRanges(context, indexes));
+            // 设置待查询的范围
+            FileRange timeRange = getTimeRange(indexes, queryParam.getFromTime(), queryParam.getToTime());
+            for (LogFilter filter : context.filters) {
+                filter.onSetupRanges(context.uidMap, timeRange, indexes);
+            }
         }
         return context;
-    }
-
-    private List<FileRange> getRanges(QueryContext context, LogIndexes indexes) {
-        List<List<FileRange>> rangesList = new LinkedList<>();
-        // 添加默认的全文查找
-        rangesList.add(Collections.singletonList(new FileRange(0, indexes.logFile.length())));
-        // 添加各过滤器指定的范围
-        for (ILogFilter filter : context.filters) {
-            rangesList.add(filter.getFilteredRanges(indexes));
-        }
-        // 得到交集
-        return bytesRangeService.intersect(rangesList);
     }
 
     private String query(QueryContext context) throws IOException {
         List<LogPack> results = new LinkedList<>();
         // 如果还有查询范围，则继续查询
-        boolean needMoreResults = queryByScan(context, results);
+        boolean needMoreResults;
+        // 创建可复用的加载器持有器，遇到相同file时不需重新创建
+        Map<File, LoaderHolder> holderMap = new HashMap<>();
+        try {
+            needMoreResults = queryByScan(context, results, holderMap);
+        } finally {
+            // 释放加载器持有器
+            for (LoaderHolder holder : holderMap.values()) {
+                BdFileUtils.closeStream(holder);
+            }
+        }
         // 如果记录数不够，则继续遍历临时列表并弹出记录
         if (needMoreResults) {
             queryByPopUidMap(context, results);
@@ -124,41 +126,28 @@ class QueryServiceImpl implements QueryService {
     /**
      * 是否需要继续添加记录
      */
-    private boolean queryByScan(QueryContext context, List<LogPack> results) throws IOException {
-        Iterator<String> iterator = context.pathMap.keySet().iterator();
-        while (iterator.hasNext()) {
-            String path = iterator.next();
-            List<FileRange> ranges = context.pathMap.get(path);
-            boolean canStop = false;
-            long readPointer;
-            // 在范围中查找
-            try (ILogLineLoader lineLoader = new RangesLogLineLoader(new File(path), appConfig.logCharset,
-                    appConfig.lineParsePattern, appConfig.tagParsePattern, ranges);
-                 LogPackLoader packLoader = new LogPackLoader(lineLoader, appConfig.maxLinesPerResultWithNullUid, context.uidMap)) {
-                LogPack logPack;
-                while (!canStop && null != (logPack = packLoader.loadNextCompleteLogPack())) {
-                    canStop = tryAddToList(context, results, logPack);
+    private boolean queryByScan(QueryContext context, List<LogPack> results, Map<File, LoaderHolder> holderMap) throws IOException {
+        Iterator<String> uidIterator = context.uidMap.keySet().iterator();
+        // uid的遍历
+        while (uidIterator.hasNext()) {
+            String uid = uidIterator.next();
+            Map<File, List<FileRange>> fileRangeMap = context.uidMap.get(uid);
+            Iterator<File> fileIterator = fileRangeMap.keySet().iterator();
+            // 不同文件的遍历
+            while (fileIterator.hasNext()) {
+                boolean canStop = executeScanQuery(context, results, holderMap,
+                        uidIterator, fileIterator, uid, fileRangeMap);
+                // 如果可以停止，则中断
+                if (canStop) {
+                    return false;
                 }
-                readPointer = lineLoader.getReadPointer();
-            }
-            // 使用已查询到的字节，再次进行范围合并，若合并后范围为空，则移除此范围
-            List<FileRange> nextRange = Collections.singletonList(new FileRange(readPointer, Long.MAX_VALUE));
-            List<FileRange> newRanges = bytesRangeService.intersect(Arrays.asList(ranges, nextRange));
-            if (newRanges.isEmpty()) {
-                iterator.remove();
-            } else {
-                context.pathMap.put(path, newRanges);
-            }
-            // 如果状态不为继续，则中断
-            if (canStop) {
-                return false;
             }
         }
         return true;
     }
 
     private void queryByPopUidMap(QueryContext context, List<LogPack> results) {
-        Iterator<LogPack> iterator = context.uidMap.values().iterator();
+        Iterator<LogPack> iterator = context.uidTempMap.values().iterator();
         while (iterator.hasNext()) {
             LogPack logPack = iterator.next();
             iterator.remove();
@@ -167,6 +156,47 @@ class QueryServiceImpl implements QueryService {
                 return;
             }
         }
+    }
+
+    private boolean executeScanQuery(QueryContext context, List<LogPack> results,
+                                     Map<File, LoaderHolder> holderMap, Iterator<String> uidIterator, Iterator<File> fileIterator,
+                                     String uid, Map<File, List<FileRange>> fileRangeMap) throws IOException {
+        boolean canStop = false;
+        File file = fileIterator.next();
+        List<FileRange> ranges = fileRangeMap.get(file);
+        LoaderHolder holder = holderMap.get(file);
+        // 按需创建持有器
+        if (null == holder) {
+            RangesLogLineLoader lineLoader = new RangesLogLineLoader(file, appConfig.logCharset,
+                    appConfig.lineParsePattern, appConfig.tagParsePattern);
+            LogPackLoader packLoader = new LogPackLoader(lineLoader, appConfig.maxLinesPerResultWithNullUid, context.uidTempMap);
+            holderMap.put(file, holder = new LoaderHolder(lineLoader, packLoader));
+        }
+        // 切换范围后查找
+        holder.logLineLoader.switchRanges(ranges);
+        LogPack logPack;
+        while (!canStop && null != (logPack = holder.logPackLoader.loadNextCompleteLogPack())) {
+            // 若不是待查找的uid记录，则不作处理
+            if (!uid.equals(logPack.uid)) {
+                continue;
+            }
+            canStop = tryAddToList(context, results, logPack);
+        }
+        long readPointer = holder.logLineLoader.getReadPointer();
+        // 使用已查询到的字节，再次进行范围合并
+        List<FileRange> nextRange = Collections.singletonList(new FileRange(readPointer, Long.MAX_VALUE));
+        List<FileRange> newRanges = bytesRangeService.intersect(Arrays.asList(ranges, nextRange));
+        // 合并后范围为空，则移除该范围
+        if (newRanges.isEmpty()) {
+            fileIterator.remove();
+        } else {
+            fileRangeMap.put(file, newRanges);
+        }
+        // 若全部范围为空，则移除该uid
+        if (fileRangeMap.isEmpty()) {
+            uidIterator.remove();
+        }
+        return canStop;
     }
 
     /**
@@ -188,7 +218,7 @@ class QueryServiceImpl implements QueryService {
     }
 
     private boolean shouldFilter(QueryContext context, LogPack logPack) {
-        for (ILogFilter filter : context.filters) {
+        for (LogFilter filter : context.filters) {
             if (filter.filterLogPack(logPack)) {
                 return true;
             }
@@ -207,9 +237,18 @@ class QueryServiceImpl implements QueryService {
         return logExporter.export(context, formalList);
     }
 
+    private FileRange getTimeRange(LogIndexes indexes, String fromTime, String toTime) {
+        TreeMap<String, Long> timeIndexMap = indexes.timeIndexMap;
+        long startByte = Optional.ofNullable(timeIndexMap.floorEntry(fromTime))
+                .map(Map.Entry::getValue).orElse(0L);
+        long endByte = Optional.ofNullable(timeIndexMap.ceilingEntry(toTime))
+                .map(Map.Entry::getValue).orElse(indexes.scannedBytes);
+        return new FileRange(startByte, endByte);
+    }
+
     private void setPageable(QueryContext context) {
         // 若查询范围、临时列表均为空，则不需要分页
-        if (context.pathMap.isEmpty() && context.uidMap.isEmpty()) {
+        if (context.uidMap.isEmpty() && context.uidTempMap.isEmpty()) {
             return;
         }
         // 创建并绑定下一分页
@@ -217,6 +256,24 @@ class QueryServiceImpl implements QueryService {
         context.nextId = nextContext.id;
         nextContext.lastId = context.id;
         queryContextService.registerContext(nextContext);
+    }
+
+    // ********************内部类********************
+
+    private static class LoaderHolder implements Closeable {
+        RangesLogLineLoader logLineLoader;
+        LogPackLoader logPackLoader;
+
+        public LoaderHolder(RangesLogLineLoader logLineLoader, LogPackLoader logPackLoader) {
+            this.logLineLoader = logLineLoader;
+            this.logPackLoader = logPackLoader;
+        }
+
+        @Override
+        public void close() {
+            BdFileUtils.closeStream(logLineLoader);
+            BdFileUtils.closeStream(logPackLoader);
+        }
     }
 
 }

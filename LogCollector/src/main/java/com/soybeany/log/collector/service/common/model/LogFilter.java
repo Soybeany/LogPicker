@@ -1,27 +1,25 @@
-package com.soybeany.log.collector.service.query.model;
+package com.soybeany.log.collector.service.common.model;
 
 import com.soybeany.log.collector.service.common.data.LogIndexes;
 import com.soybeany.log.core.model.FileRange;
 import com.soybeany.log.core.model.LogPack;
 import org.springframework.lang.NonNull;
 
-import java.util.Collections;
+import java.io.File;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Soybeany
  * @date 2021/1/5
  */
-public interface ILogFilter {
-
-    List<FileRange> DEFAULT_RANGES = Collections.singletonList(new FileRange(0, Long.MAX_VALUE));
+public interface LogFilter {
 
     /**
-     * 对查询范围进行过滤
+     * 对设置查询范围
      */
     @NonNull
-    default List<FileRange> getFilteredRanges(LogIndexes indexes) {
-        return DEFAULT_RANGES;
+    default void onSetupRanges(Map<String, Map<File, List<FileRange>>> uidMap, FileRange timeRange, LogIndexes indexes) {
     }
 
     /**

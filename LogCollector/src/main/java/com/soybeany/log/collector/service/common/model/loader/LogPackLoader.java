@@ -1,7 +1,5 @@
-package com.soybeany.log.collector.service.query.model;
+package com.soybeany.log.collector.service.common.model.loader;
 
-import com.soybeany.log.collector.service.common.model.loader.ILogLineLoader;
-import com.soybeany.log.collector.service.common.model.loader.SimpleLogLineLoader;
 import com.soybeany.log.core.model.*;
 import org.springframework.lang.Nullable;
 

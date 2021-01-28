@@ -101,11 +101,6 @@ public class SimpleLogLineLoader implements ILogLineLoader {
         }
     }
 
-    private void updateInfo(long toByte, LogLine logLine) {
-        lastLogLineHolder.updateToNext(nextFromByte, toByte, logLine);
-        nextFromByte = toByte;
-    }
-
     @Override
     public long getReadPointer() {
         return readPointer;
@@ -121,6 +116,11 @@ public class SimpleLogLineLoader implements ILogLineLoader {
     }
 
     // ********************内部方法********************
+
+    private void updateInfo(long toByte, LogLine logLine) {
+        lastLogLineHolder.updateToNext(nextFromByte, toByte, logLine);
+        nextFromByte = toByte;
+    }
 
     private void appendLogToLastLogLine(long toByte, String lineString) {
         // 舍弃无法拼接的日志

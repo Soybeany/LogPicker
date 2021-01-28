@@ -1,8 +1,7 @@
 package com.soybeany.log.collector.service.query.filter;
 
+import com.soybeany.log.collector.service.common.model.LogFilter;
 import com.soybeany.log.collector.service.query.data.QueryContext;
-import com.soybeany.log.collector.service.query.model.ILogFilter;
-import org.springframework.lang.Nullable;
 
 /**
  * @author Soybeany
@@ -15,7 +14,6 @@ public interface LogFilterFactory {
     /**
      * 若有需要，则返回新的日志过滤器
      */
-    @Nullable
-    ILogFilter getNewLogFilterIfInNeed(QueryContext context);
+    LogFilter getNewLogFilterIfInNeed(QueryContext context);
 
 }

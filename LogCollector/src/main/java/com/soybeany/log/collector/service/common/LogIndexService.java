@@ -3,8 +3,8 @@ package com.soybeany.log.collector.service.common;
 import com.soybeany.config.BDCipherUtils;
 import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.service.common.data.LogIndexes;
+import com.soybeany.log.collector.service.common.model.loader.LogPackLoader;
 import com.soybeany.log.collector.service.common.model.loader.SimpleLogLineLoader;
-import com.soybeany.log.collector.service.query.model.LogPackLoader;
 import com.soybeany.log.core.model.*;
 import com.soybeany.util.file.BdFileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,7 +62,7 @@ class LogIndexServiceImpl implements LogIndexService {
         // 更新索引
         SimpleLogLineLoader lineLoader = new SimpleLogLineLoader(indexes.logFile, appConfig.logCharset, appConfig.lineParsePattern, appConfig.tagParsePattern);
         lineLoader.seek(indexes.scannedBytes);
-        LogPackLoader packLoader = new LogPackLoader(lineLoader, appConfig.maxLinesPerResultWithNullUid, indexes.uidMap);
+        LogPackLoader packLoader = new LogPackLoader(lineLoader, appConfig.maxLinesPerResultWithNullUid, indexes.uidTempMap);
         packLoader.setListener(holder -> indexTime(indexes, holder.fromByte, holder.logLine));
         LogPack logPack;
         while (null != (logPack = packLoader.loadNextCompleteLogPack())) {
@@ -109,10 +109,15 @@ class LogIndexServiceImpl implements LogIndexService {
         if (!appConfig.tagsToIndex.contains(logTag.key)) {
             return;
         }
-        // 将tag的值转成小写再保存
-        LinkedList<FileRange> totalRanges = indexes.tagsIndexMap.computeIfAbsent(logTag.key, k -> new HashMap<>())
-                .computeIfAbsent(logTag.value.toLowerCase(), k -> new LinkedList<>());
-        totalRanges.addAll(ranges);
+        // 将tag的值转成小写，并保存到tagUidMap中
+        Set<String> totalUidList = indexes.tagUidMap.computeIfAbsent(logTag.key, k -> new HashMap<>())
+                .computeIfAbsent(logTag.value.toLowerCase(), k -> new HashSet<>());
+        totalUidList.add(logTag.uid);
+        // 更新uid范围
+        LinkedList<FileRange> totalRanges = indexes.uidRanges.computeIfAbsent(logTag.uid, k -> new LinkedList<>());
+        for (FileRange range : ranges) {
+            bytesRangeService.append(totalRanges, range.from, range.to);
+        }
     }
 
     private void indexTime(LogIndexes indexes, long fromByte, LogLine logLine) {

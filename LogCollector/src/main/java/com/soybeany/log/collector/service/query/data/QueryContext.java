@@ -1,11 +1,12 @@
 package com.soybeany.log.collector.service.query.data;
 
-import com.soybeany.log.collector.service.query.model.ILogFilter;
+import com.soybeany.log.collector.service.common.model.LogFilter;
 import com.soybeany.log.core.model.FileRange;
 import com.soybeany.log.core.model.LogPack;
 import com.soybeany.log.core.util.UidUtils;
 import org.springframework.lang.Nullable;
 
+import java.io.File;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -23,17 +24,17 @@ public class QueryContext {
 
     public final QueryParam queryParam;
     /**
-     * 使用文件路径作为key，记录每一个文件待查询的范围
+     * 第一个key为uid，第二个key为文件，value为文件范围列表
      */
-    public final Map<String, List<FileRange>> pathMap;
+    public final Map<String, Map<File, List<FileRange>>> uidMap;
     /**
-     * 使用uid作为key
+     * 使用uid作为key，存放未组装完成的临时记录
      */
-    public final Map<String, LogPack> uidMap;
+    public final Map<String, LogPack> uidTempMap;
     /**
      * 使用的日志过滤器
      */
-    public final List<ILogFilter> filters;
+    public final List<LogFilter> filters;
 
     public final Map<String, Object> data;
     public final Map<String, Object> tempData = new HashMap<>();
@@ -46,16 +47,16 @@ public class QueryContext {
     @SuppressWarnings("CopyConstructorMissesField")
     public QueryContext(QueryContext context) {
         this.queryParam = context.queryParam;
-        this.pathMap = context.pathMap;
         this.uidMap = context.uidMap;
+        this.uidTempMap = context.uidTempMap;
         this.filters = context.filters;
         this.data = context.data;
     }
 
     public QueryContext(QueryParam queryParam) {
         this.queryParam = queryParam;
-        this.pathMap = new LinkedHashMap<>();
-        this.uidMap = new HashMap<>();
+        this.uidMap = new LinkedHashMap<>();
+        this.uidTempMap = new HashMap<>();
         this.filters = new LinkedList<>();
         this.data = new HashMap<>();
     }

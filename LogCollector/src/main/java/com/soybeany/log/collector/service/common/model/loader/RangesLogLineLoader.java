@@ -14,13 +14,18 @@ import java.util.regex.Pattern;
 public class RangesLogLineLoader implements ILogLineLoader {
 
     private final SimpleLogLineLoader delegate;
-    private final List<FileRange> ranges;
-    private int rangeIndex = -1;
-    private long targetPointer = -1;
+    private List<? extends FileRange> ranges;
+    private int rangeIndex;
+    private long targetPointer;
 
-    public RangesLogLineLoader(File file, String charset, Pattern linePattern, Pattern tagPattern, List<FileRange> ranges) throws IOException {
+    public RangesLogLineLoader(File file, String charset, Pattern linePattern, Pattern tagPattern) throws IOException {
         this.delegate = new SimpleLogLineLoader(file, charset, linePattern, tagPattern);
+    }
+
+    public void switchRanges(List<? extends FileRange> ranges) {
         this.ranges = ranges;
+        rangeIndex = -1;
+        targetPointer = -1;
     }
 
     @Override
