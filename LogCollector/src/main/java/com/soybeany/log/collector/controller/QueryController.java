@@ -26,7 +26,7 @@ public class QueryController {
         try {
             return queryService.simpleQuery(param);
         } catch (LogException e) {
-            return "异常:" + e.getMessage();
+            return "出现异常:" + e.getMessage();
         }
     }
 

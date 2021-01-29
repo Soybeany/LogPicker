@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -206,7 +207,11 @@ public class QueryParam {
         if (null == parser) {
             throw new LogException("使用了不支持的时间格式");
         }
-        return parser.parse(string).format(appConfig.lineTimeFormatter);
+        try {
+            return parser.parse(string).format(appConfig.lineTimeFormatter);
+        } catch (DateTimeParseException e) {
+            throw new LogException("“" + string + "”时间解析异常");
+        }
     }
 
     private void parseAndAddLogFiles(String string) {
