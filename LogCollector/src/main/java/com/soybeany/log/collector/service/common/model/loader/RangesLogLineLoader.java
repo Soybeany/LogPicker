@@ -1,6 +1,7 @@
 package com.soybeany.log.collector.service.common.model.loader;
 
 import com.soybeany.log.core.model.FileRange;
+import org.springframework.lang.NonNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,7 +15,7 @@ import java.util.regex.Pattern;
 public class RangesLogLineLoader implements ILogLineLoader {
 
     private final SimpleLogLineLoader delegate;
-    private List<? extends FileRange> ranges;
+    private List<FileRange> ranges;
     private int rangeIndex;
     private long targetPointer;
 
@@ -22,7 +23,7 @@ public class RangesLogLineLoader implements ILogLineLoader {
         this.delegate = new SimpleLogLineLoader(file, charset, linePattern, tagPattern);
     }
 
-    public void switchRanges(List<? extends FileRange> ranges) {
+    public void switchRanges(@NonNull List<FileRange> ranges) {
         this.ranges = ranges;
         rangeIndex = -1;
         targetPointer = -1;

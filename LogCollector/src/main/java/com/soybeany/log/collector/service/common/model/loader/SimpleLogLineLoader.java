@@ -48,6 +48,7 @@ public class SimpleLogLineLoader implements ILogLineLoader {
         }
         LogLine logLine = new LogLine();
         logLine.time = matcher.group(PARSER_KEY_TIME);
+        // todo 待核实uid是否能为null
         logLine.uid = matcher.group(PARSER_KEY_UID);
         logLine.thread = matcher.group(PARSER_KEY_THREAD);
         logLine.level = matcher.group(PARSER_KEY_LEVEL);
