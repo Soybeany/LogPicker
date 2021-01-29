@@ -79,6 +79,8 @@ class StdLogExporter implements LogExporter {
         for (LogPack pack : packs) {
             vo.packs.add(toLogItem(pack));
         }
+        // 排序
+        vo.packs.sort(Comparator.comparing(o -> ((LogPackForRead) o).time));
         return vo;
     }
 
@@ -102,7 +104,7 @@ class StdLogExporter implements LogExporter {
         // 设置标签集
         result.tags.putAll(getTags(pack));
         // 设置日志
-        result.logs.addAll(getLogs(pack));
+        result.logs.addAll(getLogs(earliestTime, pack));
         // 设置其它简易信息
         result.server = ipAddress;
         result.uid = pack.uid;
@@ -110,11 +112,12 @@ class StdLogExporter implements LogExporter {
         return result;
     }
 
-    private List<String> getLogs(LogPack logPack) {
-        // todo 拼装时间时，在日期右侧显示+n代表跨天，如:00:02(+1)
+    private List<String> getLogs(LocalDateTime earliestTime, LogPack logPack) {
         List<String> logs = new LinkedList<>();
         for (LogLine line : logPack.logLines) {
-            String time = LocalDateTime.parse(line.time, appConfig.lineTimeFormatter).format(FORMATTER2);
+            LocalDateTime dateTime = LocalDateTime.parse(line.time, appConfig.lineTimeFormatter);
+            long deltaDays = dateTime.toLocalDate().toEpochDay() - earliestTime.toLocalDate().toEpochDay();
+            String time = dateTime.format(FORMATTER2) + (0 != deltaDays ? "(+" + deltaDays + ")" : "");
             String log = time + " " + line.level + " " + line.content;
             logs.add(log);
         }

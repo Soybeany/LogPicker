@@ -33,6 +33,9 @@ public interface QueryService {
     @NonNull
     String simpleQuery(Map<String, String> param);
 
+    @NonNull
+    String queryByUid(String uid);
+
 }
 
 @Service
@@ -71,6 +74,12 @@ class QueryServiceImpl implements QueryService {
             // 释放锁
             context.lock.unlock();
         }
+    }
+
+    @Override
+    public String queryByUid(String uid) {
+        // todo 待实现
+        return null;
     }
 
     // ********************内部方法********************
@@ -156,6 +165,9 @@ class QueryServiceImpl implements QueryService {
         while (iterator.hasNext()) {
             LogPack logPack = iterator.next();
             iterator.remove();
+            if (context.usedUidSet.contains(logPack.uid)) {
+                continue;
+            }
             boolean needMore = filterAndAddToResults(context, results, logPack);
             if (!needMore) {
                 return;
@@ -252,7 +264,7 @@ class QueryServiceImpl implements QueryService {
     private List<LogPack> uidToLogPacks(QueryContext context, String uid, Map<File, LogPackLoader> loaderMap) throws IOException {
         List<LogPack> result = new LinkedList<>();
         Map<String, LogPack> uidMap = new HashMap<>();
-        // 收集完整的记录
+        // 收集有结束标签的记录
         for (Map.Entry<File, LogIndexes> entry : context.indexesMap.entrySet()) {
             File file = entry.getKey();
             LogIndexes indexes = entry.getValue();
@@ -269,7 +281,7 @@ class QueryServiceImpl implements QueryService {
                 }
             }
         }
-        // 收集不完整的记录
+        // 收集无结束标签的记录
         for (LogPack logPack : uidMap.values()) {
             if (uid.equals(logPack.uid)) {
                 result.add(logPack);
