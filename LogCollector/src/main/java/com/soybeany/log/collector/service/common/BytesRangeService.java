@@ -23,6 +23,11 @@ public interface BytesRangeService {
     void append(LinkedList<FileRange> ranges, long fromByte, long toByte);
 
     /**
+     * 合并范围
+     */
+    LinkedList<FileRange> merge(LinkedList<FileRange> ranges);
+
+    /**
      * 计算出多个指定范围列表的交集
      */
     @NonNull
@@ -46,6 +51,38 @@ class BytesRangeServiceImpl implements BytesRangeService {
         }
         // 其余情况，创建新范围
         ranges.add(new FileRange(fromByte, toByte));
+    }
+
+    @Override
+    public LinkedList<FileRange> merge(LinkedList<FileRange> ranges) {
+        // 转换为位点
+        List<Point> points = new ArrayList<>();
+        for (FileRange range : ranges) {
+            points.add(new Point(range.from, true));
+            points.add(new Point(range.to, false));
+        }
+        // 排序
+        Collections.sort(points);
+        // 得到范围
+        LinkedList<FileRange> result = new LinkedList<>();
+        int curLevel = 0;
+        Point lastStartPoint = null;
+        for (Point point : points) {
+            if (point.isStart) {
+                FileRange lastRange = result.peekLast();
+                if (null != lastRange && (point.index - lastRange.to <= appConfig.maxBytesGapToMerge)) {
+                    result.pollLast();
+                } else if (curLevel == 0) {
+                    lastStartPoint = point;
+                }
+                curLevel++;
+                continue;
+            }
+            if (--curLevel == 0 && null != lastStartPoint && lastStartPoint.index != point.index) {
+                result.add(new FileRange(lastStartPoint.index, point.index));
+            }
+        }
+        return result;
     }
 
     @Override

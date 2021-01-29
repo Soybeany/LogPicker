@@ -2,6 +2,7 @@ package com.soybeany.log.collector.service.query;
 
 import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.service.common.BytesRangeService;
+import com.soybeany.log.collector.service.common.LogIndexService;
 import com.soybeany.log.collector.service.common.data.LogIndexes;
 import com.soybeany.log.collector.service.common.model.loader.LogPackLoader;
 import com.soybeany.log.collector.service.common.model.loader.RangesLogLineLoader;
@@ -49,6 +50,8 @@ class QueryServiceImpl implements QueryService {
     @Autowired
     private LogExporter logExporter;
     @Autowired
+    private LogIndexService logIndexService;
+    @Autowired
     private LogIndexes.Updater indexesUpdater;
 
     @Override
@@ -81,8 +84,12 @@ class QueryServiceImpl implements QueryService {
             return context;
         }
         // 若还没有，则创建新context
+        return getNewContext(param);
+    }
+
+    private QueryContext getNewContext(Map<String, String> param) {
         QueryParam queryParam = new QueryParam(appConfig, param);
-        context = new QueryContext(queryParam);
+        QueryContext context = new QueryContext(queryParam);
         queryContextService.registerContext(context);
         List<RangeLimiter> limiters = new LinkedList<>();
         for (ModuleFactory factory : moduleFactories) {
@@ -96,8 +103,9 @@ class QueryServiceImpl implements QueryService {
             }
         }
         for (File logFile : queryParam.getLogFiles()) {
-            // 更新索引
+            // 更新并稳固索引
             LogIndexes indexes = indexesUpdater.updateAndGet(logFile);
+            logIndexService.stabilize(indexes);
             context.indexesMap.put(logFile, indexes);
             // 设置待查询的范围
             FileRange timeRange = getTimeRange(indexes, queryParam.getFromTime(), queryParam.getToTime());
@@ -209,13 +217,13 @@ class QueryServiceImpl implements QueryService {
      * 是否需要继续添加记录
      */
     private boolean queryByUnfilteredUidSet(QueryContext context, List<LogPack> results, Map<File, LoaderHolder> holderMap) throws IOException {
-        boolean canStop;
+        boolean needMore;
         Iterator<String> iterator = context.unfilteredUidSet.iterator();
         while (iterator.hasNext()) {
             String uid = iterator.next();
             iterator.remove();
-            canStop = addResultsByUid(context, uid, results, holderMap);
-            if (canStop) {
+            needMore = addResultsByUid(context, uid, results, holderMap);
+            if (!needMore) {
                 return false;
             }
         }
@@ -247,6 +255,7 @@ class QueryServiceImpl implements QueryService {
     private List<LogPack> uidToLogPacks(QueryContext context, String uid, Map<File, LoaderHolder> holderMap) throws IOException {
         List<LogPack> result = new LinkedList<>();
         Map<String, LogPack> uidMap = new HashMap<>();
+        // 收集完整的记录
         for (Map.Entry<File, LogIndexes> entry : context.indexesMap.entrySet()) {
             File file = entry.getKey();
             LogIndexes indexes = entry.getValue();
@@ -261,6 +270,12 @@ class QueryServiceImpl implements QueryService {
                 if (uid.equals(logPack.uid)) {
                     result.add(logPack);
                 }
+            }
+        }
+        // 收集不完整的记录
+        for (LogPack logPack : uidMap.values()) {
+            if (uid.equals(logPack.uid)) {
+                result.add(logPack);
             }
         }
         return result;

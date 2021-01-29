@@ -22,10 +22,12 @@ import java.util.*;
 public interface LogIndexService {
 
     @Nullable
-    LogIndexes getIndexes(File file) throws IOException, ClassNotFoundException;
+    LogIndexes getIndexes(File file) throws IOException;
 
     @NonNull
-    LogIndexes updateAndGetIndexes(File file) throws IOException, ClassNotFoundException;
+    LogIndexes updateAndGetIndexes(File file) throws IOException;
+
+    void stabilize(LogIndexes indexes);
 
     @NonNull
     Map<String, String> getTreatedTagMap(@NonNull Map<String, String> tags);
@@ -41,18 +43,25 @@ class LogIndexServiceImpl implements LogIndexService {
     private BytesRangeService bytesRangeService;
 
     @Override
-    public LogIndexes getIndexes(File file) throws IOException, ClassNotFoundException {
+    public LogIndexes getIndexes(File file) throws IOException {
         File indexFile = getLogIndexesFile(file);
         if (!indexFile.exists()) {
             return null;
         }
         try (ObjectInputStream is = new ObjectInputStream(new FileInputStream(indexFile))) {
             return (LogIndexes) is.readObject();
+        } catch (IOException | ClassNotFoundException ignored) {
         }
+        // 后续为异常时的处理
+        boolean deleted = indexFile.delete();
+        if (!deleted) {
+            throw new IOException("无法删除索引文件“" + indexFile.getName() + "”");
+        }
+        return null;
     }
 
     @Override
-    public LogIndexes updateAndGetIndexes(File file) throws IOException, ClassNotFoundException {
+    public LogIndexes updateAndGetIndexes(File file) throws IOException {
         // 得到索引
         LogIndexes indexes = Optional.ofNullable(getIndexes(file)).orElseGet(() -> new LogIndexes(file));
         // 若索引已是最新，则不再更新
@@ -66,14 +75,22 @@ class LogIndexServiceImpl implements LogIndexService {
         packLoader.setListener(holder -> indexTime(indexes, holder.fromByte, holder.logLine));
         LogPack logPack;
         while (null != (logPack = packLoader.loadNextCompleteLogPack())) {
-            for (LogTag tag : logPack.tags) {
-                indexTag(indexes, tag, logPack.ranges);
-            }
+            indexTagAndUid(indexes, logPack, true);
         }
         indexes.scannedBytes = lineLoader.getReadPointer();
         // 保存并返回索引
         saveIndexes(indexes);
         return indexes;
+    }
+
+    @Override
+    public void stabilize(LogIndexes indexes) {
+        Iterator<LogPack> iterator = indexes.uidTempMap.values().iterator();
+        while (iterator.hasNext()) {
+            LogPack logPack = iterator.next();
+            iterator.remove();
+            indexTagAndUid(indexes, logPack, false);
+        }
     }
 
     @Override
@@ -105,7 +122,14 @@ class LogIndexServiceImpl implements LogIndexService {
         }
     }
 
-    private void indexTag(LogIndexes indexes, LogTag logTag, List<FileRange> ranges) {
+    private void indexTagAndUid(LogIndexes indexes, LogPack logPack, boolean append) {
+        for (LogTag tag : logPack.tags) {
+            indexTag(indexes, tag);
+        }
+        indexUid(indexes, logPack, append);
+    }
+
+    private void indexTag(LogIndexes indexes, LogTag logTag) {
         if (!appConfig.tagsToIndex.contains(logTag.key)) {
             return;
         }
@@ -113,10 +137,18 @@ class LogIndexServiceImpl implements LogIndexService {
         Set<String> totalUidList = indexes.tagUidMap.computeIfAbsent(logTag.key, k -> new HashMap<>())
                 .computeIfAbsent(logTag.value.toLowerCase(), k -> new HashSet<>());
         totalUidList.add(logTag.uid);
-        // 更新uid范围
-        LinkedList<FileRange> totalRanges = indexes.uidRanges.computeIfAbsent(logTag.uid, k -> new LinkedList<>());
-        for (FileRange range : ranges) {
-            bytesRangeService.append(totalRanges, range.from, range.to);
+    }
+
+    private void indexUid(LogIndexes indexes, LogPack logPack, boolean append) {
+        LinkedList<FileRange> totalRanges = indexes.uidRanges.computeIfAbsent(logPack.uid, k -> new LinkedList<>());
+        if (append) {
+            for (FileRange range : logPack.ranges) {
+                bytesRangeService.append(totalRanges, range.from, range.to);
+            }
+        } else {
+            totalRanges.addAll(logPack.ranges);
+            LinkedList<FileRange> newRanges = bytesRangeService.merge(totalRanges);
+            indexes.uidRanges.put(logPack.uid, newRanges);
         }
     }
 
