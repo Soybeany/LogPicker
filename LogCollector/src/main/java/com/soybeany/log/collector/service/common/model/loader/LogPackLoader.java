@@ -15,7 +15,7 @@ public class LogPackLoader implements Closeable {
 
     private final ILogLineLoader logLineLoader;
     private final int maxLinesPerResultWithNullUid;
-    private final Map<String, LogPack> uidMap;
+    private Map<String, LogPack> uidMap;
 
     private final ILogLineLoader.ResultHolder holder = new SimpleLogLineLoader.ResultHolder();
     @Nullable
@@ -24,7 +24,7 @@ public class LogPackLoader implements Closeable {
     public LogPackLoader(ILogLineLoader logLineLoader, int maxLinesPerResultWithNullUid, Map<String, LogPack> uidMap) {
         this.logLineLoader = logLineLoader;
         this.maxLinesPerResultWithNullUid = maxLinesPerResultWithNullUid;
-        this.uidMap = uidMap;
+        switchUidMap(uidMap);
     }
 
     @Override
@@ -32,8 +32,16 @@ public class LogPackLoader implements Closeable {
         logLineLoader.close();
     }
 
+    public void switchUidMap(Map<String, LogPack> uidMap) {
+        this.uidMap = uidMap;
+    }
+
     public void setListener(IListener listener) {
         this.listener = listener;
+    }
+
+    public ILogLineLoader getLogLineLoader() {
+        return logLineLoader;
     }
 
     /**

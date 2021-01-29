@@ -23,10 +23,11 @@ public class RangesLogLineLoader implements ILogLineLoader {
         this.delegate = new SimpleLogLineLoader(file, charset, linePattern, tagPattern);
     }
 
-    public void switchRanges(@NonNull List<FileRange> ranges) {
+    public void switchRanges(@NonNull List<FileRange> ranges) throws IOException {
         this.ranges = ranges;
         rangeIndex = -1;
         targetPointer = -1;
+        delegate.seek(ranges.get(0).from);
     }
 
     @Override

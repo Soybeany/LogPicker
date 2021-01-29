@@ -20,7 +20,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -130,18 +129,18 @@ class QueryServiceImpl implements QueryService {
         // 如果有未使用的结果，则直接使用
         needMore = queryByUnusedResults(context, results);
         // 创建可复用的加载器持有器，遇到相同file时不需重新创建
-        Map<File, LoaderHolder> holderMap = new HashMap<>();
+        Map<File, LogPackLoader> loaderMap = new HashMap<>();
         try {
             if (needMore) {
-                needMore = queryByUnfilteredUidSet(context, results, holderMap);
+                needMore = queryByUnfilteredUidSet(context, results, loaderMap);
             }
             if (needMore) {
-                needMore = queryByRanges(context, results, holderMap);
+                needMore = queryByRanges(context, results, loaderMap);
             }
         } finally {
             // 释放加载器持有器
-            for (LoaderHolder holder : holderMap.values()) {
-                BdFileUtils.closeStream(holder);
+            for (LogPackLoader loader : loaderMap.values()) {
+                BdFileUtils.closeStream(loader);
             }
         }
         // 如果记录数不够，则继续遍历临时列表并弹出记录
@@ -164,37 +163,36 @@ class QueryServiceImpl implements QueryService {
         }
     }
 
-    private boolean queryByRanges(QueryContext context, List<LogPack> results, Map<File, LoaderHolder> holderMap) throws IOException {
-        Map<File, LoaderHolder> holderMapForUid = new HashMap<>();
+    private boolean queryByRanges(QueryContext context, List<LogPack> results, Map<File, LogPackLoader> loaderMap) throws IOException {
+        Map<File, LogPackLoader> loaderMapForUid = new HashMap<>();
         boolean needMore = true;
         try {
-            Iterator<File> fileIterator = context.queryRanges.keySet().iterator();
-            while (fileIterator.hasNext()) {
-                File file = fileIterator.next();
-                LoaderHolder holder = getHolder(holderMap, file, context.uidTempMap);
-                List<FileRange> ranges = context.queryRanges.get(file);
-                if (null == ranges) {
-                    continue;
-                }
-                holder.logLineLoader.switchRanges(ranges);
+            Iterator<Map.Entry<File, List<FileRange>>> iterator = context.queryRanges.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<File, List<FileRange>> entry = iterator.next();
+                File file = entry.getKey();
+                List<FileRange> ranges = entry.getValue();
+                LogPackLoader loader = getLoader(loaderMap, file, context.uidTempMap);
+                RangesLogLineLoader rangesLogLineLoader = (RangesLogLineLoader) loader.getLogLineLoader();
+                rangesLogLineLoader.switchRanges(ranges);
                 LogPack logPack;
-                while (needMore && null != (logPack = holder.logPackLoader.loadNextCompleteLogPack())) {
+                while (needMore && null != (logPack = loader.loadNextCompleteLogPack())) {
                     if (isFiltered(context, logPack)) {
                         continue;
                     }
                     if (null != logPack.uid) {
-                        needMore = addResultsByUid(context, logPack.uid, results, holderMapForUid);
+                        needMore = addResultsByUid(context, logPack.uid, results, loaderMapForUid);
                     } else {
                         needMore = filterAndAddToResults(context, results, logPack);
                     }
                 }
-                long readPointer = holder.logLineLoader.getReadPointer();
+                long readPointer = rangesLogLineLoader.getReadPointer();
                 // 使用已查询到的字节，再次进行范围合并
                 List<FileRange> nextRange = Collections.singletonList(new FileRange(readPointer, Long.MAX_VALUE));
                 List<FileRange> newRanges = bytesRangeService.intersect(Arrays.asList(ranges, nextRange));
                 // 合并后范围为空，则移除该范围
                 if (newRanges.isEmpty()) {
-                    fileIterator.remove();
+                    iterator.remove();
                 } else {
                     context.queryRanges.put(file, newRanges);
                 }
@@ -205,24 +203,23 @@ class QueryServiceImpl implements QueryService {
             }
         } finally {
             // 释放加载器持有器
-            for (LoaderHolder holder : holderMapForUid.values()) {
-                BdFileUtils.closeStream(holder);
+            for (LogPackLoader loader : loaderMapForUid.values()) {
+                BdFileUtils.closeStream(loader);
             }
         }
         return true;
     }
 
-
     /**
      * 是否需要继续添加记录
      */
-    private boolean queryByUnfilteredUidSet(QueryContext context, List<LogPack> results, Map<File, LoaderHolder> holderMap) throws IOException {
+    private boolean queryByUnfilteredUidSet(QueryContext context, List<LogPack> results, Map<File, LogPackLoader> loaderMap) throws IOException {
         boolean needMore;
         Iterator<String> iterator = context.unfilteredUidSet.iterator();
         while (iterator.hasNext()) {
             String uid = iterator.next();
             iterator.remove();
-            needMore = addResultsByUid(context, uid, results, holderMap);
+            needMore = addResultsByUid(context, uid, results, loaderMap);
             if (!needMore) {
                 return false;
             }
@@ -230,19 +227,19 @@ class QueryServiceImpl implements QueryService {
         return true;
     }
 
-    private boolean addResultsByUid(QueryContext context, String uid, List<LogPack> results, Map<File, LoaderHolder> holderMap) throws IOException {
+    private boolean addResultsByUid(QueryContext context, String uid, List<LogPack> results, Map<File, LogPackLoader> loaderMap) throws IOException {
         if (context.usedUidSet.contains(uid)) {
             return true;
         }
         context.usedUidSet.add(uid);
-        List<LogPack> packs = getFilteredLogPacksByUid(context, uid, holderMap);
+        List<LogPack> packs = getFilteredLogPacksByUid(context, uid, loaderMap);
         context.unusedFilteredResults.addAll(packs);
         return queryByUnusedResults(context, results);
     }
 
     @NonNull
-    private List<LogPack> getFilteredLogPacksByUid(QueryContext context, String uid, Map<File, LoaderHolder> holderMap) throws IOException {
-        List<LogPack> packs = uidToLogPacks(context, uid, holderMap);
+    private List<LogPack> getFilteredLogPacksByUid(QueryContext context, String uid, Map<File, LogPackLoader> loaderMap) throws IOException {
+        List<LogPack> packs = uidToLogPacks(context, uid, loaderMap);
         for (LogPack pack : packs) {
             if (!isFiltered(context, pack)) {
                 return packs;
@@ -252,21 +249,21 @@ class QueryServiceImpl implements QueryService {
     }
 
     @NonNull
-    private List<LogPack> uidToLogPacks(QueryContext context, String uid, Map<File, LoaderHolder> holderMap) throws IOException {
+    private List<LogPack> uidToLogPacks(QueryContext context, String uid, Map<File, LogPackLoader> loaderMap) throws IOException {
         List<LogPack> result = new LinkedList<>();
         Map<String, LogPack> uidMap = new HashMap<>();
         // 收集完整的记录
         for (Map.Entry<File, LogIndexes> entry : context.indexesMap.entrySet()) {
             File file = entry.getKey();
             LogIndexes indexes = entry.getValue();
-            LoaderHolder holder = getHolder(holderMap, file, uidMap);
+            LogPackLoader loader = getLoader(loaderMap, file, uidMap);
             List<FileRange> ranges = indexes.uidRanges.get(uid);
             if (null == ranges) {
                 continue;
             }
-            holder.logLineLoader.switchRanges(ranges);
+            ((RangesLogLineLoader) loader.getLogLineLoader()).switchRanges(ranges);
             LogPack logPack;
-            while (null != (logPack = holder.logPackLoader.loadNextCompleteLogPack())) {
+            while (null != (logPack = loader.loadNextCompleteLogPack())) {
                 if (uid.equals(logPack.uid)) {
                     result.add(logPack);
                 }
@@ -291,15 +288,17 @@ class QueryServiceImpl implements QueryService {
     }
 
     @NonNull
-    private LoaderHolder getHolder(Map<File, LoaderHolder> holderMap, File file, Map<String, LogPack> uidMap) throws IOException {
-        LoaderHolder holder = holderMap.get(file);
-        if (null == holder) {
+    private LogPackLoader getLoader(Map<File, LogPackLoader> holderMap, File file, Map<String, LogPack> uidMap) throws IOException {
+        LogPackLoader loader = holderMap.get(file);
+        if (null == loader) {
             RangesLogLineLoader lineLoader = new RangesLogLineLoader(file, appConfig.logCharset,
                     appConfig.lineParsePattern, appConfig.tagParsePattern);
-            LogPackLoader packLoader = new LogPackLoader(lineLoader, appConfig.maxLinesPerResultWithNullUid, uidMap);
-            holderMap.put(file, holder = new LoaderHolder(lineLoader, packLoader));
+            loader = new LogPackLoader(lineLoader, appConfig.maxLinesPerResultWithNullUid, uidMap);
+            holderMap.put(file, loader);
+        } else {
+            loader.switchUidMap(uidMap);
         }
-        return holder;
+        return loader;
     }
 
     private boolean addToResults(QueryContext context, List<LogPack> results, LogPack candidate) {
@@ -366,24 +365,6 @@ class QueryServiceImpl implements QueryService {
         context.nextId = nextContext.id;
         nextContext.lastId = context.id;
         queryContextService.registerContext(nextContext);
-    }
-
-    // ********************内部类********************
-
-    private static class LoaderHolder implements Closeable {
-        RangesLogLineLoader logLineLoader;
-        LogPackLoader logPackLoader;
-
-        public LoaderHolder(RangesLogLineLoader logLineLoader, LogPackLoader logPackLoader) {
-            this.logLineLoader = logLineLoader;
-            this.logPackLoader = logPackLoader;
-        }
-
-        @Override
-        public void close() {
-            BdFileUtils.closeStream(logLineLoader);
-            BdFileUtils.closeStream(logPackLoader);
-        }
     }
 
 }

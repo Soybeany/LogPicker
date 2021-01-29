@@ -91,13 +91,13 @@ public class SimpleLogLineLoader implements ILogLineLoader {
             }
             // 还没有上一行，则继续读取
             if (null == lastLogLineHolder.logLine) {
-                updateInfo(toByte, curLogLine);
+                updateLastHolderAndNextFrom(toByte, curLogLine);
                 continue;
             }
             // 设置结果
             setupResult(resultHolder);
             // 更新holder
-            updateInfo(toByte, curLogLine);
+            updateLastHolderAndNextFrom(toByte, curLogLine);
             return true;
         }
     }
@@ -114,12 +114,14 @@ public class SimpleLogLineLoader implements ILogLineLoader {
 
     public void seek(long pointer) throws IOException {
         raf.seek(nextFromByte = pointer);
+        lastLogLineHolder.reset();
+        readPointer = 0;
     }
 
     // ********************内部方法********************
 
-    private void updateInfo(long toByte, LogLine logLine) {
-        lastLogLineHolder.updateToNext(nextFromByte, toByte, logLine);
+    private void updateLastHolderAndNextFrom(long toByte, LogLine logLine) {
+        lastLogLineHolder.update(nextFromByte, toByte, logLine);
         nextFromByte = toByte;
     }
 
@@ -138,7 +140,7 @@ public class SimpleLogLineLoader implements ILogLineLoader {
         }
         // 返回并重置
         setupResult(resultHolder);
-        lastLogLineHolder.updateToNext(0, 0, null);
+        lastLogLineHolder.reset();
         return true;
     }
 
@@ -167,11 +169,15 @@ public class SimpleLogLineLoader implements ILogLineLoader {
             this.toByte = toByte;
         }
 
-        void updateToNext(long fromByte, long toByte, LogLine logLine) {
+        void update(long fromByte, long toByte, LogLine logLine) {
             this.fromByte = fromByte;
             this.toByte = toByte;
             this.logLine = logLine;
             tempContent = null;
+        }
+
+        void reset() {
+            update(0, 0, null);
         }
 
         void mergeTempContent() {
