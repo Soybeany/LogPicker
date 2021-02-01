@@ -1,9 +1,10 @@
 package com.soybeany.log.collector.service.query.factory;
 
 import com.soybeany.log.collector.service.query.data.QueryContext;
-import com.soybeany.log.collector.service.query.model.LogFilter;
-import com.soybeany.log.collector.service.query.model.RangeLimiter;
-import org.springframework.lang.Nullable;
+import com.soybeany.log.collector.service.query.processor.Preprocessor;
+import org.springframework.lang.NonNull;
+
+import java.util.List;
 
 /**
  * @author Soybeany
@@ -12,15 +13,9 @@ import org.springframework.lang.Nullable;
 public interface ModuleFactory {
 
     /**
-     * 若有需要，则返回新的范围限制器
+     * 设置预处理器
      */
-    @Nullable
-    RangeLimiter getNewRangeLimiterIfInNeed(QueryContext context);
-
-    /**
-     * 若有需要，则返回新的日志过滤器
-     */
-    @Nullable
-    LogFilter getNewLogFilterIfInNeed(QueryContext context);
+    @NonNull
+    void onSetupPreprocessors(QueryContext context, List<Preprocessor> preprocessors);
 
 }

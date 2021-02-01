@@ -1,11 +1,13 @@
 package com.soybeany.log.collector.service.query.factory;
 
 import com.soybeany.log.collector.service.query.data.QueryContext;
-import com.soybeany.log.collector.service.query.model.LogFilter;
-import com.soybeany.log.collector.service.query.model.RangeLimiter;
+import com.soybeany.log.collector.service.query.processor.LogFilter;
+import com.soybeany.log.collector.service.query.processor.Preprocessor;
 import com.soybeany.log.core.model.LogLine;
 import com.soybeany.log.core.model.LogPack;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 /**
  * @author Soybeany
@@ -14,23 +16,17 @@ import org.springframework.stereotype.Component;
 @Component
 class KeyContainsModuleFactory implements ModuleFactory {
 
-    private static final String PREFIX = "filter";
     private static final String P_KEY_CONTAINS_KEY = "containsKey";
 
     @Override
-    public RangeLimiter getNewRangeLimiterIfInNeed(QueryContext context) {
-        return null;
-    }
-
-    @Override
-    public LogFilter getNewLogFilterIfInNeed(QueryContext context) {
-        String key = context.getParam(PREFIX, P_KEY_CONTAINS_KEY);
-        // 若没有配置，则不作过滤
+    public void onSetupPreprocessors(QueryContext context, List<Preprocessor> preprocessors) {
+        String key = context.getParam(LogFilter.PREFIX, P_KEY_CONTAINS_KEY);
+        // 若没有配置，则不作预处理
         if (null == key) {
-            return null;
+            return;
         }
-        // 返回新的过滤器
-        return new FilterImpl(key);
+        // 设置新的过滤器
+        preprocessors.add(new FilterImpl(key));
     }
 
     // ********************内部类********************

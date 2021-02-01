@@ -1,4 +1,4 @@
-package com.soybeany.log.collector.service.query.model;
+package com.soybeany.log.collector.service.query.processor;
 
 import com.soybeany.log.collector.service.common.data.LogIndexes;
 import com.soybeany.log.core.model.FileRange;
@@ -11,7 +11,7 @@ import java.util.Set;
  * @author Soybeany
  * @date 2021/1/28
  */
-public interface RangeLimiter {
+public interface RangeLimiter extends Preprocessor {
 
     /**
      * 设置未过滤的uid集合

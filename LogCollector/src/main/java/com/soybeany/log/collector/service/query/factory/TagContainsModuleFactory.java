@@ -5,10 +5,12 @@ import com.soybeany.log.collector.service.common.BytesRangeService;
 import com.soybeany.log.collector.service.common.LogIndexService;
 import com.soybeany.log.collector.service.common.data.LogIndexes;
 import com.soybeany.log.collector.service.query.data.QueryContext;
-import com.soybeany.log.collector.service.query.model.LogFilter;
-import com.soybeany.log.collector.service.query.model.RangeLimiter;
+import com.soybeany.log.collector.service.query.processor.LogFilter;
+import com.soybeany.log.collector.service.query.processor.Preprocessor;
+import com.soybeany.log.collector.service.query.processor.RangeLimiter;
 import com.soybeany.log.core.model.FileRange;
-import com.soybeany.log.core.model.LogException;
+import com.soybeany.log.core.model.LogPack;
+import com.soybeany.log.core.model.LogTag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -33,30 +35,45 @@ class TagContainsModuleFactory implements ModuleFactory {
     private BytesRangeService bytesRangeService;
 
     @Override
-    public RangeLimiter getNewRangeLimiterIfInNeed(QueryContext context) {
+    public void onSetupPreprocessors(QueryContext context, List<Preprocessor> preprocessors) {
         Map<String, String> tags = context.queryParam.getParams(PREFIX);
-        // 若没有指定tag，则不需要tag范围过滤
+        // 若没有指定tag，则不需要tag预处理
         if (tags.isEmpty()) {
-            return null;
+            return;
         }
+        // tag预处理并分类
         tags = logIndexService.getTreatedTagMap(tags);
-        return new LimiterImpl(appConfig, bytesRangeService, tags);
+        Map<String, String> indexedTagsReceiver = new HashMap<>();
+        Map<String, String> ordinaryTagsReceiver = new HashMap<>();
+        sortTags(tags, indexedTagsReceiver, ordinaryTagsReceiver);
+        // 按需创建处理器
+        if (!indexedTagsReceiver.isEmpty()) {
+            preprocessors.add(new LimiterImpl(bytesRangeService, indexedTagsReceiver));
+        }
+        if (!ordinaryTagsReceiver.isEmpty()) {
+            preprocessors.add(new FilterImpl(ordinaryTagsReceiver));
+        }
     }
 
-    @Override
-    public LogFilter getNewLogFilterIfInNeed(QueryContext context) {
-        return null;
+    // ********************内部方法********************
+
+    private void sortTags(Map<String, String> unsortedTags, @Nullable Map<String, String> indexedTagsReceiver, @Nullable Map<String, String> ordinaryTagsReceiver) {
+        unsortedTags.forEach((k, v) -> {
+            if (appConfig.tagsToIndex.contains(k)) {
+                Optional.ofNullable(indexedTagsReceiver).ifPresent(m -> m.put(k, v));
+            } else {
+                Optional.ofNullable(ordinaryTagsReceiver).ifPresent(m -> m.put(k, v));
+            }
+        });
     }
 
     // ********************内部类********************
 
     private static class LimiterImpl implements RangeLimiter {
-        private final AppConfig appConfig;
         private final BytesRangeService bytesRangeService;
         private final Map<String, String> tags;
 
-        public LimiterImpl(AppConfig appConfig, BytesRangeService bytesRangeService, Map<String, String> tags) {
-            this.appConfig = appConfig;
+        public LimiterImpl(BytesRangeService bytesRangeService, Map<String, String> tags) {
             this.bytesRangeService = bytesRangeService;
             this.tags = tags;
         }
@@ -72,10 +89,6 @@ class TagContainsModuleFactory implements ModuleFactory {
             Set<String> uidSet = null, tempUidSet;
             // 筛选出符合值限制的uid
             for (Map.Entry<String, String> entry : tags.entrySet()) {
-                // 只允许查询中使用支持索引的标签
-                if (!appConfig.tagsToIndex.contains(entry.getKey())) {
-                    throw new LogException("使用了未索引的标签:" + entry.getKey());
-                }
                 // 得到uid交集
                 tempUidSet = getUidSet(indexes, entry.getKey(), entry.getValue());
                 if (null == uidSet) {
@@ -127,4 +140,34 @@ class TagContainsModuleFactory implements ModuleFactory {
             return result;
         }
     }
+
+    private static class FilterImpl implements LogFilter {
+
+        private final Map<String, String> tags;
+
+        public FilterImpl(Map<String, String> tags) {
+            this.tags = tags;
+        }
+
+        @Override
+        public boolean filterLogPack(LogPack logPack) {
+            for (Map.Entry<String, String> entry : tags.entrySet()) {
+                String value = getValue(logPack, entry.getKey());
+                if (null == value || !value.contains(entry.getValue())) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private String getValue(LogPack logPack, String tagKey) {
+            for (LogTag tag : logPack.tags) {
+                if (tagKey.equals(tag.key)) {
+                    return tag.value;
+                }
+            }
+            return null;
+        }
+    }
+
 }

@@ -10,8 +10,9 @@ import com.soybeany.log.collector.service.query.data.QueryContext;
 import com.soybeany.log.collector.service.query.data.QueryParam;
 import com.soybeany.log.collector.service.query.exporter.LogExporter;
 import com.soybeany.log.collector.service.query.factory.ModuleFactory;
-import com.soybeany.log.collector.service.query.model.LogFilter;
-import com.soybeany.log.collector.service.query.model.RangeLimiter;
+import com.soybeany.log.collector.service.query.processor.LogFilter;
+import com.soybeany.log.collector.service.query.processor.Preprocessor;
+import com.soybeany.log.collector.service.query.processor.RangeLimiter;
 import com.soybeany.log.core.model.FileRange;
 import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.core.model.LogPack;
@@ -99,15 +100,16 @@ class QueryServiceImpl implements QueryService {
         QueryParam queryParam = new QueryParam(appConfig, param);
         QueryContext context = new QueryContext(queryParam);
         queryContextService.registerContext(context);
+        List<Preprocessor> preprocessors = new LinkedList<>();
+        moduleFactories.forEach(factory -> factory.onSetupPreprocessors(context, preprocessors));
         List<RangeLimiter> limiters = new LinkedList<>();
-        for (ModuleFactory factory : moduleFactories) {
-            RangeLimiter limiter = factory.getNewRangeLimiterIfInNeed(context);
-            if (null != limiter) {
-                limiters.add(limiter);
-            }
-            LogFilter filter = factory.getNewLogFilterIfInNeed(context);
-            if (null != filter) {
-                context.filters.add(filter);
+        for (Preprocessor processor : preprocessors) {
+            if (processor instanceof RangeLimiter) {
+                limiters.add((RangeLimiter) processor);
+            } else if (processor instanceof LogFilter) {
+                context.filters.add((LogFilter) processor);
+            } else {
+                throw new LogException("使用了未知的Preprocessor");
             }
         }
         for (File logFile : queryParam.getLogFiles()) {
@@ -118,7 +120,7 @@ class QueryServiceImpl implements QueryService {
             // 设置待查询的范围
             FileRange timeRange = getTimeRange(indexes, queryParam.getFromTime(), queryParam.getToTime());
             List<List<FileRange>> rangeList = new LinkedList<>();
-            rangeList.add(Collections.singletonList(new FileRange(0, indexes.scannedBytes)));
+            rangeList.add(Collections.singletonList(timeRange));
             for (RangeLimiter limiter : limiters) {
                 Optional.ofNullable(limiter.onSetupUnfilteredUidSet(timeRange, indexes)).ifPresent(context.unfilteredUidSet::addAll);
                 Optional.ofNullable(limiter.onSetupQueryRanges(timeRange, indexes)).ifPresent(rangeList::add);

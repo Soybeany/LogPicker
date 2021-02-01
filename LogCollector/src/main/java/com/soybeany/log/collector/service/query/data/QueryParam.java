@@ -26,6 +26,7 @@ public class QueryParam {
     private static final String P_KEY_TO_TIME = "toTime";
     private static final String P_KEY_COUNT_LIMIT = "countLimit";
     private static final String P_KEY_LOG_FILES = "logFiles";
+    private static final String P_KEY_UID_LIST = "uidList";
 
     private static final Pattern LOG_FILE_TIME_PATTERN = Pattern.compile("<\\?(.+)\\?>");
 
@@ -38,6 +39,7 @@ public class QueryParam {
     private String toTime;
     private Integer countLimit;
     private final Set<File> logFiles = new LinkedHashSet<>();
+    private final Set<String> uidSet = new LinkedHashSet<>();
 
     static {
         initFormatterMap();
@@ -91,6 +93,10 @@ public class QueryParam {
         return logFiles;
     }
 
+    public Set<String> getUidSet() {
+        return uidSet;
+    }
+
     @NonNull
     public Map<String, String> getParams(String prefix) {
         return Optional.ofNullable(params.get(prefix)).orElseGet(HashMap::new);
@@ -116,6 +122,9 @@ public class QueryParam {
                 break;
             case P_KEY_LOG_FILES:
                 parseAndAddLogFiles(value);
+                break;
+            case P_KEY_UID_LIST:
+                parseAndAddUidList(value);
                 break;
             default:
         }
@@ -222,6 +231,10 @@ public class QueryParam {
             }
             logFiles.add(file);
         }
+    }
+
+    private void parseAndAddUidList(String string) {
+        uidSet.addAll(Arrays.asList(string.split("[;,]")));
     }
 
     // ********************内部类********************

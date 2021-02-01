@@ -1,7 +1,7 @@
 package com.soybeany.log.collector.service.query.data;
 
 import com.soybeany.log.collector.service.common.data.LogIndexes;
-import com.soybeany.log.collector.service.query.model.LogFilter;
+import com.soybeany.log.collector.service.query.processor.LogFilter;
 import com.soybeany.log.core.model.FileRange;
 import com.soybeany.log.core.model.LogPack;
 import com.soybeany.log.core.util.UidUtils;
