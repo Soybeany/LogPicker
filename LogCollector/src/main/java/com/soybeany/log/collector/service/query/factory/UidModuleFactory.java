@@ -7,6 +7,7 @@ import com.soybeany.log.collector.service.query.processor.RangeLimiter;
 import com.soybeany.log.core.model.FileRange;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -33,6 +34,12 @@ public class UidModuleFactory implements ModuleFactory {
 
         public LimiterImpl(Set<String> uidSet) {
             this.uidSet = uidSet;
+        }
+
+        @Override
+        public List<FileRange> onSetupQueryRanges(FileRange timeRange, LogIndexes indexes) {
+            // 不再需要额外查询
+            return Collections.emptyList();
         }
 
         @Override
