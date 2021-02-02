@@ -3,6 +3,8 @@ package com.soybeany.log.collector.service.scan;
 import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.service.common.LogIndexService;
 import com.soybeany.log.collector.service.common.data.LogIndexes;
+import com.soybeany.log.collector.service.common.model.IndexesUpdater;
+import com.soybeany.log.collector.service.common.model.MsgRecorder;
 import com.soybeany.log.core.model.LogException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +37,7 @@ public interface ScanService {
 }
 
 @Service
-class ScanServiceImpl implements ScanService, LogIndexes.Updater {
+class ScanServiceImpl implements ScanService, IndexesUpdater {
 
     private static final Logger LOG = LoggerFactory.getLogger(Object.class);
 
@@ -50,13 +52,16 @@ class ScanServiceImpl implements ScanService, LogIndexes.Updater {
 
     @Override
     public void fullScan() {
+        MsgRecorder recorder = msg -> {
+            // todo 修改为写日志
+        };
         for (String dir : appConfig.dirsToScan) {
             File[] files = new File(dir).listFiles();
             if (null == files) {
                 throw new LogException("指定的日志目录不存在");
             }
             for (File file : files) {
-                scanFile(file);
+                scanFile(recorder, file);
             }
         }
     }
@@ -67,15 +72,15 @@ class ScanServiceImpl implements ScanService, LogIndexes.Updater {
     }
 
     @Override
-    public LogIndexes updateAndGet(File logFile) {
-        return scanFile(logFile);
+    public LogIndexes updateAndGet(MsgRecorder recorder, File logFile) {
+        return scanFile(recorder, logFile);
     }
 
     // ********************内部方法********************
 
-    private LogIndexes scanFile(File file) {
+    private LogIndexes scanFile(MsgRecorder recorder, File file) {
         try {
-            return logIndexService.updateAndGetIndexes(file);
+            return logIndexService.updateAndGetIndexes(recorder, file);
         } catch (Exception e) {
             throw new LogException("日志文件扫描异常:" + e.getMessage());
         }

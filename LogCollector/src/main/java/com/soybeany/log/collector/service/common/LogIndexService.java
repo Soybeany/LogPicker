@@ -3,6 +3,7 @@ package com.soybeany.log.collector.service.common;
 import com.soybeany.config.BDCipherUtils;
 import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.service.common.data.LogIndexes;
+import com.soybeany.log.collector.service.common.model.MsgRecorder;
 import com.soybeany.log.collector.service.common.model.loader.LogPackLoader;
 import com.soybeany.log.collector.service.common.model.loader.SimpleLogLineLoader;
 import com.soybeany.log.core.model.*;
@@ -22,10 +23,10 @@ import java.util.*;
 public interface LogIndexService {
 
     @Nullable
-    LogIndexes getIndexes(File file) throws IOException;
+    LogIndexes getIndexes(MsgRecorder recorder, File file) throws IOException;
 
     @NonNull
-    LogIndexes updateAndGetIndexes(File file) throws IOException;
+    LogIndexes updateAndGetIndexes(MsgRecorder recorder, File file) throws IOException;
 
     void stabilize(LogIndexes indexes);
 
@@ -43,7 +44,7 @@ class LogIndexServiceImpl implements LogIndexService {
     private BytesRangeService bytesRangeService;
 
     @Override
-    public LogIndexes getIndexes(File file) throws IOException {
+    public LogIndexes getIndexes(MsgRecorder recorder, File file) throws IOException {
         File indexFile = getLogIndexesFile(file);
         if (!indexFile.exists()) {
             return null;
@@ -54,6 +55,7 @@ class LogIndexServiceImpl implements LogIndexService {
         }
         // 后续为异常时的处理
         boolean deleted = indexFile.delete();
+        recorder.write("“" + file.getName() + "”的异常索引文件，删除" + (deleted ? "成功" : "失败"));
         if (!deleted) {
             throw new IOException("无法删除索引文件“" + indexFile.getName() + "”");
         }
@@ -61,16 +63,18 @@ class LogIndexServiceImpl implements LogIndexService {
     }
 
     @Override
-    public LogIndexes updateAndGetIndexes(File file) throws IOException {
+    public LogIndexes updateAndGetIndexes(MsgRecorder recorder, File file) throws IOException {
         // 得到索引
-        LogIndexes indexes = Optional.ofNullable(getIndexes(file)).orElseGet(() -> new LogIndexes(file));
+        LogIndexes indexes = Optional.ofNullable(getIndexes(recorder, file)).orElseGet(() -> new LogIndexes(file));
+        long startByte = indexes.scannedBytes;
         // 若索引已是最新，则不再更新
-        if (file.length() == indexes.scannedBytes) {
+        if (file.length() == startByte) {
+            recorder.write("“" + file.getName() + "”的索引已是最新，不需更新(" + startByte + ")");
             return indexes;
         }
         // 更新索引
         SimpleLogLineLoader lineLoader = new SimpleLogLineLoader(indexes.logFile, appConfig.logCharset, appConfig.lineParsePattern, appConfig.tagParsePattern);
-        lineLoader.seek(indexes.scannedBytes);
+        lineLoader.seek(startByte);
         LogPackLoader packLoader = new LogPackLoader(lineLoader, appConfig.maxLinesPerResultWithNullUid, indexes.uidTempMap);
         packLoader.setListener(holder -> indexTime(indexes, holder.fromByte, holder.logLine));
         LogPack logPack;
@@ -78,6 +82,7 @@ class LogIndexServiceImpl implements LogIndexService {
             indexTagAndUid(indexes, logPack, true);
         }
         indexes.scannedBytes = lineLoader.getReadPointer();
+        recorder.write("“" + file.getName() + "”的索引更新:" + startByte + "~" + indexes.scannedBytes);
         // 保存并返回索引
         saveIndexes(indexes);
         return indexes;

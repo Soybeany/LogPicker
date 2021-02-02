@@ -18,6 +18,7 @@ public class RangesLogLineLoader implements ILogLineLoader {
     private List<FileRange> ranges;
     private int rangeIndex;
     private long targetPointer;
+    private long totalReadBytes;
 
     public RangesLogLineLoader(File file, String charset, Pattern linePattern, Pattern tagPattern) throws IOException {
         this.delegate = new SimpleLogLineLoader(file, charset, linePattern, tagPattern);
@@ -27,6 +28,7 @@ public class RangesLogLineLoader implements ILogLineLoader {
         this.ranges = ranges;
         rangeIndex = -1;
         targetPointer = -1;
+        totalReadBytes = 0;
         delegate.seek(ranges.get(0).from);
     }
 

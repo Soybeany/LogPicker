@@ -49,8 +49,4 @@ public class LogIndexes implements Serializable {
 
     // ********************内部类********************
 
-    public interface Updater {
-        LogIndexes updateAndGet(File logFile);
-    }
-
 }

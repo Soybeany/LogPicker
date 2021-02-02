@@ -56,7 +56,7 @@ public class QueryContext {
     /**
      * 查询过程中的一些信息
      */
-    public final Map<String, String> msgMap = new LinkedHashMap<>();
+    public final List<String> msgList = new LinkedList<>();
 
     public QueryContext(QueryParam queryParam) {
         this.queryParam = queryParam;
@@ -67,6 +67,16 @@ public class QueryContext {
     @Nullable
     public String getParam(String prefix, String key) {
         return queryParam.getParams(prefix).get(key);
+    }
+
+    public long getQueryRangeBytes() {
+        long bytes = 0;
+        for (List<FileRange> ranges : queryRanges.values()) {
+            for (FileRange range : ranges) {
+                bytes += (range.to - range.from);
+            }
+        }
+        return bytes;
     }
 
     // ********************内部方法********************

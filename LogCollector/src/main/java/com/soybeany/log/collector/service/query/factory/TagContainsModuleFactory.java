@@ -49,9 +49,11 @@ class TagContainsModuleFactory implements ModuleFactory {
         // 按需创建处理器
         if (!indexedTagsReceiver.isEmpty()) {
             preprocessors.add(new LimiterImpl(bytesRangeService, indexedTagsReceiver));
+            context.msgList.add("使用索引的tags:" + indexedTagsReceiver.keySet());
         }
         if (!ordinaryTagsReceiver.isEmpty()) {
             preprocessors.add(new FilterImpl(ordinaryTagsReceiver));
+            context.msgList.add("使用过滤的tags:" + ordinaryTagsReceiver.keySet());
         }
     }
 

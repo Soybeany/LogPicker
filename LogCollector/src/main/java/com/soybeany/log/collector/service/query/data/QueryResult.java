@@ -2,6 +2,9 @@ package com.soybeany.log.collector.service.query.data;
 
 import com.soybeany.log.core.util.UidUtils;
 
+import java.util.LinkedList;
+import java.util.List;
+
 /**
  * @author Soybeany
  * @date 2021/2/2
@@ -21,6 +24,11 @@ public class QueryResult {
 
     public String endReason = "已搜索全部日志";
 
+    /**
+     * 查询过程中的一些信息
+     */
+    public final List<String> msgList = new LinkedList<>();
+
     public QueryResult(QueryContext context) {
         this.context = context;
     }
@@ -38,4 +46,12 @@ public class QueryResult {
     public void unlock() {
         context.lock.unlock();
     }
+
+    public List<String> getTotalMsg() {
+        List<String> totalMsg = new LinkedList<>();
+        totalMsg.addAll(context.msgList);
+        totalMsg.addAll(msgList);
+        return totalMsg;
+    }
+
 }

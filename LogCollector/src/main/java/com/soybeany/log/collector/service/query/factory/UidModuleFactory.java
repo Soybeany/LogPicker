@@ -23,7 +23,7 @@ public class UidModuleFactory implements ModuleFactory {
     public void onSetupPreprocessors(QueryContext context, List<Preprocessor> preprocessors) {
         Set<String> uidSet = context.queryParam.getUidSet();
         if (!uidSet.isEmpty()) {
-            preprocessors.add(new LimiterImpl(uidSet));
+            preprocessors.add(new LimiterImpl(uidSet, context.msgList));
         }
     }
 
@@ -31,9 +31,11 @@ public class UidModuleFactory implements ModuleFactory {
 
     private static class LimiterImpl implements RangeLimiter {
         private final Set<String> uidSet;
+        private final List<String> msgList;
 
-        public LimiterImpl(Set<String> uidSet) {
+        public LimiterImpl(Set<String> uidSet, List<String> msgList) {
             this.uidSet = uidSet;
+            this.msgList = msgList;
         }
 
         @Override
@@ -50,6 +52,7 @@ public class UidModuleFactory implements ModuleFactory {
                     result.add(uid);
                 }
             }
+            msgList.add("有效的uid:" + result);
             return result;
         }
     }

@@ -4,6 +4,7 @@ import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.service.common.BytesRangeService;
 import com.soybeany.log.collector.service.common.LogIndexService;
 import com.soybeany.log.collector.service.common.data.LogIndexes;
+import com.soybeany.log.collector.service.common.model.IndexesUpdater;
 import com.soybeany.log.collector.service.common.model.loader.LogPackLoader;
 import com.soybeany.log.collector.service.common.model.loader.RangesLogLineLoader;
 import com.soybeany.log.collector.service.query.data.QueryContext;
@@ -56,7 +57,7 @@ class QueryServiceImpl implements QueryService {
     @Autowired
     private LogIndexService logIndexService;
     @Autowired
-    private LogIndexes.Updater indexesUpdater;
+    private IndexesUpdater indexesUpdater;
 
     @Override
     public String simpleQuery(Map<String, String> param) {
@@ -89,11 +90,11 @@ class QueryServiceImpl implements QueryService {
     @NonNull
     private QueryResult getResult(Map<String, String> param) {
         QueryResult result = queryResultService.loadResultFromParam(param);
-        // 若已有context，则直接使用
+        // 若已有result，则直接使用
         if (null != result) {
             return result;
         }
-        // 若还没有，则创建新context
+        // 若还没有，则创建新result
         return getNewResult(param);
     }
 
@@ -116,7 +117,7 @@ class QueryServiceImpl implements QueryService {
         }
         for (File logFile : queryParam.getLogFiles()) {
             // 更新并稳固索引
-            LogIndexes indexes = indexesUpdater.updateAndGet(logFile);
+            LogIndexes indexes = indexesUpdater.updateAndGet(context.msgList::add, logFile);
             logIndexService.stabilize(indexes);
             context.indexesMap.put(logFile, indexes);
             // 设置待查询的范围
@@ -132,6 +133,12 @@ class QueryServiceImpl implements QueryService {
             if (!intersectedRanges.isEmpty()) {
                 context.queryRanges.put(logFile, intersectedRanges);
             }
+        }
+        if (0 != context.unfilteredUidSet.size()) {
+            context.msgList.add("预处理后的待筛选uid数:" + context.unfilteredUidSet.size());
+        }
+        if (0 != context.getQueryRangeBytes()) {
+            context.msgList.add("预处理后的查询范围字节数:" + context.getQueryRangeBytes());
         }
         return result;
     }
@@ -214,7 +221,7 @@ class QueryServiceImpl implements QueryService {
                 }
                 // 如果不需更多结果，则中断
                 if (!needMore) {
-                    return false;
+                    break;
                 }
             }
         } finally {
@@ -223,24 +230,24 @@ class QueryServiceImpl implements QueryService {
                 BdFileUtils.closeStream(loader);
             }
         }
-        return true;
+        return needMore;
     }
 
     /**
      * 是否需要继续添加记录
      */
     private boolean queryByUnfilteredUidSet(QueryResult result, QueryContext context, List<LogPack> logPacks, Map<File, LogPackLoader> loaderMap) throws IOException {
-        boolean needMore;
+        boolean needMore = true;
         Iterator<String> iterator = context.unfilteredUidSet.iterator();
         while (iterator.hasNext()) {
             String uid = iterator.next();
             iterator.remove();
             needMore = addResultsByUid(result, context, uid, logPacks, loaderMap);
             if (!needMore) {
-                return false;
+                break;
             }
         }
-        return true;
+        return needMore;
     }
 
     private boolean addResultsByUid(QueryResult result, QueryContext context, String uid, List<LogPack> formalLogPacks, Map<File, LogPackLoader> loaderMap) throws IOException {

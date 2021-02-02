@@ -91,7 +91,7 @@ class StdLogExporter implements LogExporter {
         vo.info.lastContextId = result.lastId;
         vo.info.curContextId = result.id;
         vo.info.nextContextId = result.nextId;
-        vo.info.msg = result.context.msgMap.toString();
+        vo.info.msg = result.getTotalMsg().toString();
         vo.info.endReason = result.endReason;
         return vo;
     }
