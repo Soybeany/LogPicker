@@ -3,6 +3,7 @@ package com.soybeany.log.collector.service.query.exporter;
 import com.google.gson.Gson;
 import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.service.query.data.QueryContext;
+import com.soybeany.log.collector.service.query.data.QueryResult;
 import com.soybeany.log.core.model.*;
 import com.soybeany.log.core.util.TimeUtils;
 import com.soybeany.util.HexUtils;
@@ -37,15 +38,16 @@ class StdLogExporter implements LogExporter {
     private final Gson gson = new Gson();
 
     @Override
-    public String export(QueryContext context, List<LogPack> packs) {
+    public String export(QueryResult result, List<LogPack> packs) {
+        QueryContext context = result.context;
         String exportType = Optional.ofNullable(context.getParam(PREFIX, P_KEY_EXPORT_TYPE)).orElse(Constants.EXPORT_FOR_DIRECT_READ);
         switch (exportType) {
             case Constants.EXPORT_FOR_DIRECT_READ:
-                return gson.toJson(toObjectForRead(context, toLogVO(context, packs)));
+                return gson.toJson(toObjectForRead(context, toLogVO(result, packs)));
             case Constants.EXPORT_FOR_READ:
-                return gson.toJson(toLogVO(context, packs));
+                return gson.toJson(toLogVO(result, packs));
             case Constants.EXPORT_IN_SERIALIZE:
-                QueryResultVO vo = getNewResultVO(context);
+                QueryResultVO vo = getNewResultVO(result);
                 vo.packs.addAll(packs);
                 try {
                     return HexUtils.bytesToHex(SerializeUtils.serialize(vo));
@@ -60,21 +62,21 @@ class StdLogExporter implements LogExporter {
     // ********************内部方法********************
 
     private Object toObjectForRead(QueryContext context, QueryResultVO vo) {
-        List<Object> result = new LinkedList<>();
+        List<Object> output = new LinkedList<>();
         // 添加结果信息
-        result.add(vo.info);
+        output.add(vo.info);
         // 添加额外信息
         Map<String, String> exInfo = new LinkedHashMap<>();
         exInfo.put("expectCount", context.queryParam.getCountLimit() + "");
         exInfo.put("actualCount", vo.packs.size() + "");
-        result.add(exInfo);
+        output.add(exInfo);
         // 添加结果列表
-        result.addAll(vo.packs);
-        return result;
+        output.addAll(vo.packs);
+        return output;
     }
 
-    private QueryResultVO toLogVO(QueryContext context, List<LogPack> packs) {
-        QueryResultVO vo = getNewResultVO(context);
+    private QueryResultVO toLogVO(QueryResult result, List<LogPack> packs) {
+        QueryResultVO vo = getNewResultVO(result);
         // 添加结果列表
         for (LogPack pack : packs) {
             vo.packs.add(toLogItem(pack));
@@ -84,12 +86,13 @@ class StdLogExporter implements LogExporter {
         return vo;
     }
 
-    private QueryResultVO getNewResultVO(QueryContext context) {
+    private QueryResultVO getNewResultVO(QueryResult result) {
         QueryResultVO vo = new QueryResultVO();
-        vo.info.lastContextId = context.lastId;
-        vo.info.curContextId = context.id;
-        vo.info.nextContextId = context.nextId;
-        vo.info.endReason = context.endReason;
+        vo.info.lastContextId = result.lastId;
+        vo.info.curContextId = result.id;
+        vo.info.nextContextId = result.nextId;
+        vo.info.msg = result.context.msgMap.toString();
+        vo.info.endReason = result.endReason;
         return vo;
     }
 

@@ -1,6 +1,6 @@
 package com.soybeany.log.collector.service.query.exporter;
 
-import com.soybeany.log.collector.service.query.data.QueryContext;
+import com.soybeany.log.collector.service.query.data.QueryResult;
 import com.soybeany.log.core.model.LogPack;
 
 import java.util.List;
@@ -13,6 +13,6 @@ public interface LogExporter {
 
     String PREFIX = "exporter";
 
-    String export(QueryContext context, List<LogPack> packs);
+    String export(QueryResult result, List<LogPack> packs);
 
 }
