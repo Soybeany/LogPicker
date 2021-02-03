@@ -100,32 +100,15 @@ class TagContainsModuleFactory implements ModuleFactory {
                 }
                 // 若已无交集，提前返回
                 if (uidSet.isEmpty()) {
-                    return null;
+                    return uidSet;
                 }
             }
             // 筛选出时间范围内的记录
-            filterUidSetByTimeRange(uidSet, timeRange, indexes);
+            RangeLimiter.filterUidSetByTimeRange(rangeService, uidSet, timeRange, indexes);
             return uidSet;
         }
 
         // ********************内部方法********************
-
-        private void filterUidSetByTimeRange(@Nullable Set<String> uidSet, FileRange timeRange, LogIndexes indexes) {
-            if (null == uidSet) {
-                return;
-            }
-            List<FileRange> timeRanges = Collections.singletonList(timeRange);
-            Iterator<String> uidIterator = uidSet.iterator();
-            while (uidIterator.hasNext()) {
-                String uid = uidIterator.next();
-                LinkedList<FileRange> uidRanges = indexes.uidRanges.get(uid);
-                List<FileRange> intersect = rangeService.intersect(Arrays.asList(uidRanges, timeRanges));
-                // 若时间无交集，则移除
-                if (intersect.isEmpty()) {
-                    uidIterator.remove();
-                }
-            }
-        }
 
         @NonNull
         private Set<String> getUidSet(LogIndexes indexes, String tagKey, String tagValue) {

@@ -1,10 +1,12 @@
 package com.soybeany.log.collector.service.query.factory;
 
+import com.soybeany.log.collector.service.common.RangeService;
 import com.soybeany.log.collector.service.common.data.LogIndexes;
 import com.soybeany.log.collector.service.query.data.QueryContext;
 import com.soybeany.log.collector.service.query.processor.Preprocessor;
 import com.soybeany.log.collector.service.query.processor.RangeLimiter;
 import com.soybeany.log.core.model.FileRange;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -19,20 +21,25 @@ import java.util.Set;
 @Component
 public class UidModuleFactory implements ModuleFactory {
 
+    @Autowired
+    private RangeService rangeService;
+
     @Override
     public void onSetupPreprocessors(QueryContext context, List<Preprocessor> preprocessors) {
         Set<String> uidSet = context.queryParam.getUidSet();
         if (!uidSet.isEmpty()) {
-            preprocessors.add(new LimiterImpl(uidSet));
+            preprocessors.add(new LimiterImpl(rangeService, uidSet));
         }
     }
 
     // ********************内部类********************
 
     private static class LimiterImpl implements RangeLimiter {
+        private final RangeService rangeService;
         private final Set<String> uidSet;
 
-        public LimiterImpl(Set<String> uidSet) {
+        public LimiterImpl(RangeService rangeService, Set<String> uidSet) {
+            this.rangeService = rangeService;
             this.uidSet = uidSet;
         }
 
@@ -50,6 +57,7 @@ public class UidModuleFactory implements ModuleFactory {
                     result.add(uid);
                 }
             }
+            RangeLimiter.filterUidSetByTimeRange(rangeService, result, timeRange, indexes);
             return result;
         }
     }
