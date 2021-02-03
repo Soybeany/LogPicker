@@ -1,8 +1,8 @@
 package com.soybeany.log.collector.service.query.factory;
 
 import com.soybeany.log.collector.config.AppConfig;
-import com.soybeany.log.collector.service.common.BytesRangeService;
 import com.soybeany.log.collector.service.common.LogIndexService;
+import com.soybeany.log.collector.service.common.RangeService;
 import com.soybeany.log.collector.service.common.data.LogIndexes;
 import com.soybeany.log.collector.service.query.data.QueryContext;
 import com.soybeany.log.collector.service.query.processor.LogFilter;
@@ -32,7 +32,7 @@ class TagContainsModuleFactory implements ModuleFactory {
     @Autowired
     private LogIndexService logIndexService;
     @Autowired
-    private BytesRangeService bytesRangeService;
+    private RangeService rangeService;
 
     @Override
     public void onSetupPreprocessors(QueryContext context, List<Preprocessor> preprocessors) {
@@ -48,7 +48,7 @@ class TagContainsModuleFactory implements ModuleFactory {
         sortTags(tags, indexedTagsReceiver, ordinaryTagsReceiver);
         // 按需创建处理器
         if (!indexedTagsReceiver.isEmpty()) {
-            preprocessors.add(new LimiterImpl(bytesRangeService, indexedTagsReceiver));
+            preprocessors.add(new LimiterImpl(rangeService, indexedTagsReceiver));
             context.msgList.add("使用索引型的tags:" + indexedTagsReceiver.keySet());
         }
         if (!ordinaryTagsReceiver.isEmpty()) {
@@ -72,11 +72,11 @@ class TagContainsModuleFactory implements ModuleFactory {
     // ********************内部类********************
 
     private static class LimiterImpl implements RangeLimiter {
-        private final BytesRangeService bytesRangeService;
+        private final RangeService rangeService;
         private final Map<String, String> tags;
 
-        public LimiterImpl(BytesRangeService bytesRangeService, Map<String, String> tags) {
-            this.bytesRangeService = bytesRangeService;
+        public LimiterImpl(RangeService rangeService, Map<String, String> tags) {
+            this.rangeService = rangeService;
             this.tags = tags;
         }
 
@@ -119,7 +119,7 @@ class TagContainsModuleFactory implements ModuleFactory {
             while (uidIterator.hasNext()) {
                 String uid = uidIterator.next();
                 LinkedList<FileRange> uidRanges = indexes.uidRanges.get(uid);
-                List<FileRange> intersect = bytesRangeService.intersect(Arrays.asList(uidRanges, timeRanges));
+                List<FileRange> intersect = rangeService.intersect(Arrays.asList(uidRanges, timeRanges));
                 // 若时间无交集，则移除
                 if (intersect.isEmpty()) {
                     uidIterator.remove();

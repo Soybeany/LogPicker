@@ -15,7 +15,7 @@ import java.util.List;
  * @author Soybeany
  * @date 2021/1/20
  */
-public interface BytesRangeService {
+public interface RangeService {
 
     /**
      * 拼接
@@ -36,7 +36,7 @@ public interface BytesRangeService {
 }
 
 @Service
-class BytesRangeServiceImpl implements BytesRangeService {
+class RangeServiceImpl implements RangeService {
 
     @Autowired
     private AppConfig appConfig;

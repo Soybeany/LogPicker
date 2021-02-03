@@ -41,7 +41,7 @@ class LogIndexServiceImpl implements LogIndexService {
     @Autowired
     private AppConfig appConfig;
     @Autowired
-    private BytesRangeService bytesRangeService;
+    private RangeService rangeService;
 
     @Override
     public LogIndexes getIndexes(MsgRecorder recorder, File file) throws IOException {
@@ -150,11 +150,11 @@ class LogIndexServiceImpl implements LogIndexService {
         LinkedList<FileRange> totalRanges = indexes.uidRanges.computeIfAbsent(logPack.uid, k -> new LinkedList<>());
         if (append) {
             for (FileRange range : logPack.ranges) {
-                bytesRangeService.append(totalRanges, range.from, range.to);
+                rangeService.append(totalRanges, range.from, range.to);
             }
         } else {
             totalRanges.addAll(logPack.ranges);
-            LinkedList<FileRange> newRanges = bytesRangeService.merge(totalRanges);
+            LinkedList<FileRange> newRanges = rangeService.merge(totalRanges);
             indexes.uidRanges.put(logPack.uid, newRanges);
         }
     }

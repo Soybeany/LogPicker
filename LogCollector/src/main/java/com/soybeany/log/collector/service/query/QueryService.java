@@ -1,8 +1,8 @@
 package com.soybeany.log.collector.service.query;
 
 import com.soybeany.log.collector.config.AppConfig;
-import com.soybeany.log.collector.service.common.BytesRangeService;
 import com.soybeany.log.collector.service.common.LogIndexService;
+import com.soybeany.log.collector.service.common.RangeService;
 import com.soybeany.log.collector.service.common.data.LogIndexes;
 import com.soybeany.log.collector.service.common.model.IndexesUpdater;
 import com.soybeany.log.collector.service.common.model.loader.LogPackLoader;
@@ -51,7 +51,7 @@ class QueryServiceImpl implements QueryService {
     @Autowired
     private QueryResultService queryResultService;
     @Autowired
-    private BytesRangeService bytesRangeService;
+    private RangeService rangeService;
     @Autowired
     private List<ModuleFactory> moduleFactories;
     @Autowired
@@ -120,25 +120,37 @@ class QueryServiceImpl implements QueryService {
             }
         }
         for (File logFile : queryParam.getLogFiles()) {
-            // 更新并稳固索引
-            LogIndexes indexes = indexesUpdater.updateAndGet(context.msgList::add, logFile);
-            logIndexService.stabilize(indexes);
-            context.indexesMap.put(logFile, indexes);
-            // 设置待查询的范围
-            FileRange timeRange = getTimeRange(indexes, queryParam.getFromTime(), queryParam.getToTime());
-            List<List<FileRange>> rangeList = new LinkedList<>();
-            rangeList.add(Collections.singletonList(timeRange));
-            for (RangeLimiter limiter : limiters) {
-                Optional.ofNullable(limiter.onSetupUnfilteredUidSet(timeRange, indexes)).ifPresent(context.unfilteredUidSet::addAll);
-                Optional.ofNullable(limiter.onSetupQueryRanges(timeRange, indexes)).ifPresent(rangeList::add);
-            }
-            // 合并范围并保存到context
-            List<FileRange> intersectedRanges = bytesRangeService.intersect(rangeList);
-            if (!intersectedRanges.isEmpty()) {
-                context.queryRanges.put(logFile, intersectedRanges);
-            }
+            initContextWithFile(queryParam, context, limiters, logFile);
         }
         return result;
+    }
+
+    private void initContextWithFile(QueryParam queryParam, QueryContext context, List<RangeLimiter> limiters, File logFile) {
+        // 更新并稳固索引
+        LogIndexes indexes = indexesUpdater.updateAndGet(context.msgList::add, logFile);
+        logIndexService.stabilize(indexes);
+        context.indexesMap.put(logFile, indexes);
+        // 设置待查询的范围
+        FileRange timeRange = getTimeRange(indexes, queryParam.getFromTime(), queryParam.getToTime());
+        List<List<FileRange>> rangeList = new LinkedList<>();
+        rangeList.add(Collections.singletonList(timeRange));
+        boolean[] shouldInitUidSet = {true};
+        for (RangeLimiter limiter : limiters) {
+            Optional.ofNullable(limiter.onSetupUnfilteredUidSet(timeRange, indexes)).ifPresent(set -> {
+                if (shouldInitUidSet[0]) {
+                    context.unfilteredUidSet.addAll(set);
+                    shouldInitUidSet[0] = false;
+                } else {
+                    context.unfilteredUidSet.retainAll(set);
+                }
+            });
+            Optional.ofNullable(limiter.onSetupQueryRanges(timeRange, indexes)).ifPresent(rangeList::add);
+        }
+        // 合并范围并保存到context
+        List<FileRange> intersectedRanges = rangeService.intersect(rangeList);
+        if (!intersectedRanges.isEmpty()) {
+            context.queryRanges.put(logFile, intersectedRanges);
+        }
     }
 
     private String query(QueryResult result, QueryContext context) throws IOException {
@@ -211,7 +223,7 @@ class QueryServiceImpl implements QueryService {
                 long readPointer = rangesLogLineLoader.getReadPointer();
                 // 使用已查询到的字节，再次进行范围合并
                 List<FileRange> nextRange = Collections.singletonList(new FileRange(readPointer, Long.MAX_VALUE));
-                List<FileRange> newRanges = bytesRangeService.intersect(Arrays.asList(ranges, nextRange));
+                List<FileRange> newRanges = rangeService.intersect(Arrays.asList(ranges, nextRange));
                 // 合并后范围为空，则移除该范围
                 if (newRanges.isEmpty()) {
                     iterator.remove();
