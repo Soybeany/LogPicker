@@ -44,6 +44,8 @@ public interface QueryService {
 @Service
 class QueryServiceImpl implements QueryService {
 
+    private static final ThreadLocal<Long> READ_BYTES_LOCAL = new ThreadLocal<>();
+
     @Autowired
     private AppConfig appConfig;
     @Autowired
@@ -66,6 +68,7 @@ class QueryServiceImpl implements QueryService {
         try {
             // 获取锁
             result.lock();
+            READ_BYTES_LOCAL.set(0L);
             // 如果context中已包含结果，则直接返回
             if (null != result.text) {
                 return result.text;
@@ -74,6 +77,7 @@ class QueryServiceImpl implements QueryService {
         } catch (Exception e) {
             throw new LogException(e);
         } finally {
+            READ_BYTES_LOCAL.remove();
             // 释放锁
             result.unlock();
         }
@@ -133,12 +137,6 @@ class QueryServiceImpl implements QueryService {
             if (!intersectedRanges.isEmpty()) {
                 context.queryRanges.put(logFile, intersectedRanges);
             }
-        }
-        if (0 != context.unfilteredUidSet.size()) {
-            context.msgList.add("预处理后的待筛选uid数:" + context.unfilteredUidSet.size());
-        }
-        if (0 != context.getQueryRangeBytes()) {
-            context.msgList.add("预处理后的查询范围字节数:" + context.getQueryRangeBytes());
         }
         return result;
     }
@@ -209,6 +207,7 @@ class QueryServiceImpl implements QueryService {
                         needMore = filterAndAddToResults(result, context, formalLogPacks, logPack);
                     }
                 }
+                READ_BYTES_LOCAL.set(READ_BYTES_LOCAL.get() + rangesLogLineLoader.getReadBytes());
                 long readPointer = rangesLogLineLoader.getReadPointer();
                 // 使用已查询到的字节，再次进行范围合并
                 List<FileRange> nextRange = Collections.singletonList(new FileRange(readPointer, Long.MAX_VALUE));
@@ -284,13 +283,15 @@ class QueryServiceImpl implements QueryService {
             if (null == ranges) {
                 continue;
             }
-            ((RangesLogLineLoader) loader.getLogLineLoader()).switchRanges(ranges);
+            RangesLogLineLoader rangesLogLineLoader = (RangesLogLineLoader) loader.getLogLineLoader();
+            rangesLogLineLoader.switchRanges(ranges);
             LogPack logPack;
             while (null != (logPack = loader.loadNextCompleteLogPack())) {
                 if (uid.equals(logPack.uid)) {
                     result.add(logPack);
                 }
             }
+            READ_BYTES_LOCAL.set(READ_BYTES_LOCAL.get() + rangesLogLineLoader.getReadBytes());
         }
         // 收集无结束标签的记录
         for (LogPack logPack : uidMap.values()) {
@@ -362,6 +363,10 @@ class QueryServiceImpl implements QueryService {
         for (LogPack logPack : formalLogPacks) {
             Collections.sort(logPack.logLines);
         }
+        // 设置结果
+        result.msgList.add("总查询字节数:" + READ_BYTES_LOCAL.get());
+        result.msgList.add("结果条数:" + formalLogPacks.size() + "(max:" + context.queryParam.getCountLimit() + ")");
+        result.setFinished();
         // 导出日志
         return logExporter.export(result, formalLogPacks);
     }

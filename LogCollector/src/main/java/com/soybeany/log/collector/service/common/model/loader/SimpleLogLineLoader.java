@@ -28,6 +28,7 @@ public class SimpleLogLineLoader implements ILogLineLoader {
     private final LastLogLineHolder lastLogLineHolder = new LastLogLineHolder();
     private long nextFromByte;
     private long readPointer;
+    private long readBytes;
 
     public SimpleLogLineLoader(File file, String charset, Pattern linePattern, Pattern tagPattern) throws IOException {
         if (!file.exists()) {
@@ -108,20 +109,27 @@ public class SimpleLogLineLoader implements ILogLineLoader {
     }
 
     @Override
+    public long getReadBytes() {
+        return readBytes;
+    }
+
+    @Override
     public void close() throws IOException {
         raf.close();
     }
 
-    public void seek(long pointer) throws IOException {
+    public boolean resetTo(long pointer, ResultHolder resultHolder) throws IOException {
         raf.seek(nextFromByte = pointer);
-        lastLogLineHolder.reset();
-        readPointer = 0;
+        boolean isRead = popLastLogLine(resultHolder);
+        readBytes = 0;
+        return isRead;
     }
 
     // ********************内部方法********************
 
     private void updateLastHolderAndNextFrom(long toByte, LogLine logLine) {
         lastLogLineHolder.update(nextFromByte, toByte, logLine);
+        readBytes += (toByte - nextFromByte);
         nextFromByte = toByte;
     }
 

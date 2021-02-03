@@ -18,25 +18,24 @@ public class RangesLogLineLoader implements ILogLineLoader {
     private List<FileRange> ranges;
     private int rangeIndex;
     private long targetPointer;
-    private long totalReadBytes;
+    private long readBytes;
 
     public RangesLogLineLoader(File file, String charset, Pattern linePattern, Pattern tagPattern) throws IOException {
         this.delegate = new SimpleLogLineLoader(file, charset, linePattern, tagPattern);
     }
 
-    public void switchRanges(@NonNull List<FileRange> ranges) throws IOException {
+    public void switchRanges(@NonNull List<FileRange> ranges) {
         this.ranges = ranges;
         rangeIndex = -1;
         targetPointer = -1;
-        totalReadBytes = 0;
-        delegate.seek(ranges.get(0).from);
+        readBytes = 0;
     }
 
     @Override
     public boolean loadNextLogLine(ResultHolder resultHolder) throws IOException {
         while (true) {
             // 检查范围
-            boolean endOfRange = adjustPointer();
+            boolean endOfRange = adjustPointer(resultHolder);
             if (endOfRange) {
                 return false;
             }
@@ -44,6 +43,7 @@ public class RangesLogLineLoader implements ILogLineLoader {
             if (!delegate.loadNextLogLine(resultHolder)) {
                 return false;
             }
+            updateReadBytes(resultHolder);
             // 已超出当前范围，则进入下一范围查找
             if (targetPointer < resultHolder.toByte) {
                 continue;
@@ -58,6 +58,11 @@ public class RangesLogLineLoader implements ILogLineLoader {
     }
 
     @Override
+    public long getReadBytes() {
+        return readBytes;
+    }
+
+    @Override
     public void close() throws IOException {
         delegate.close();
     }
@@ -67,20 +72,32 @@ public class RangesLogLineLoader implements ILogLineLoader {
     /**
      * @return 是否已达全部范围的结尾
      */
-    private boolean adjustPointer() throws IOException {
+    private boolean adjustPointer(ResultHolder resultHolder) throws IOException {
         // 若未到达当前范围的末尾，则不作处理
         if (getReadPointer() < targetPointer) {
             return false;
         }
         // 若无更多的范围，则返回EOR
         if (++rangeIndex >= ranges.size()) {
+            resetAndUpdateReadBytes(0, resultHolder);
             return true;
         }
         // 切换到下一范围
         FileRange newRange = ranges.get(rangeIndex);
         targetPointer = newRange.to;
-        delegate.seek(newRange.from);
+        resetAndUpdateReadBytes(newRange.from, resultHolder);
         return false;
+    }
+
+    private void resetAndUpdateReadBytes(long pointer, ResultHolder resultHolder) throws IOException {
+        boolean isRead = delegate.resetTo(pointer, resultHolder);
+        if (isRead) {
+            updateReadBytes(resultHolder);
+        }
+    }
+
+    private void updateReadBytes(ResultHolder resultHolder) {
+        readBytes += (resultHolder.toByte - resultHolder.fromByte);
     }
 
 }

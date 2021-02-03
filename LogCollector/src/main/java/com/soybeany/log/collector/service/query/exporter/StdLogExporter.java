@@ -43,7 +43,7 @@ class StdLogExporter implements LogExporter {
         String exportType = Optional.ofNullable(context.getParam(PREFIX, P_KEY_EXPORT_TYPE)).orElse(Constants.EXPORT_FOR_DIRECT_READ);
         switch (exportType) {
             case Constants.EXPORT_FOR_DIRECT_READ:
-                return gson.toJson(toObjectForRead(context, toLogVO(result, packs)));
+                return gson.toJson(toObjectForRead(toLogVO(result, packs)));
             case Constants.EXPORT_FOR_READ:
                 return gson.toJson(toLogVO(result, packs));
             case Constants.EXPORT_IN_SERIALIZE:
@@ -61,15 +61,10 @@ class StdLogExporter implements LogExporter {
 
     // ********************内部方法********************
 
-    private Object toObjectForRead(QueryContext context, QueryResultVO vo) {
+    private Object toObjectForRead(QueryResultVO vo) {
         List<Object> output = new LinkedList<>();
         // 添加结果信息
         output.add(vo.info);
-        // 添加额外信息
-        Map<String, String> exInfo = new LinkedHashMap<>();
-        exInfo.put("expectCount", context.queryParam.getCountLimit() + "");
-        exInfo.put("actualCount", vo.packs.size() + "");
-        output.add(exInfo);
         // 添加结果列表
         output.addAll(vo.packs);
         return output;
@@ -91,7 +86,7 @@ class StdLogExporter implements LogExporter {
         vo.info.lastContextId = result.lastId;
         vo.info.curContextId = result.id;
         vo.info.nextContextId = result.nextId;
-        vo.info.msg = result.getTotalMsg().toString();
+        vo.info.msg = result.getAllMsg();
         vo.info.endReason = result.endReason;
         return vo;
     }

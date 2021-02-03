@@ -27,7 +27,3 @@ config:
   default-max-result-count: 30
   # 当日志行没有uid时，每条查询结果允许包含的最大行数
   max-lines-per-result-with-null-uid: 20
-  # 定时清理内存context的间隔
-  timer-clear-context-sec: 300
-  # 定时清理本地索引文件的间隔
-  timer-clear-indexes-sec: 172800

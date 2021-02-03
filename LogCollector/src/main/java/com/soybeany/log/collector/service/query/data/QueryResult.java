@@ -22,7 +22,10 @@ public class QueryResult {
      */
     public String text;
 
-    public String endReason = "已搜索全部日志";
+    public String endReason = "已完成搜索";
+
+    public final long createTime = System.currentTimeMillis();
+    public long finishTime;
 
     /**
      * 查询过程中的一些信息
@@ -47,11 +50,15 @@ public class QueryResult {
         context.lock.unlock();
     }
 
-    public List<String> getTotalMsg() {
+    public void setFinished() {
+        finishTime = System.currentTimeMillis();
+        msgList.add("查询耗时:" + (finishTime - createTime) + "ms");
+    }
+
+    public List<String> getAllMsg() {
         List<String> totalMsg = new LinkedList<>();
         totalMsg.addAll(context.msgList);
         totalMsg.addAll(msgList);
         return totalMsg;
     }
-
 }

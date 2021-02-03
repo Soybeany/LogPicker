@@ -18,7 +18,7 @@ public class QueryResultVO implements Serializable {
         public String lastContextId;
         public String curContextId;
         public String nextContextId;
-        public String msg;
+        public List<String> msg;
         public String endReason;
     }
 

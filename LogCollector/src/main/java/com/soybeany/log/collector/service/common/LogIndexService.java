@@ -69,12 +69,13 @@ class LogIndexServiceImpl implements LogIndexService {
         long startByte = indexes.scannedBytes;
         // 若索引已是最新，则不再更新
         if (file.length() == startByte) {
-            recorder.write("“" + file.getName() + "”的索引已是最新，不需更新(" + startByte + ")");
+            recorder.write("“" + file.getName() + "”的索引不需更新(" + startByte + ")");
             return indexes;
         }
         // 更新索引
+        long startTime = System.currentTimeMillis();
         SimpleLogLineLoader lineLoader = new SimpleLogLineLoader(indexes.logFile, appConfig.logCharset, appConfig.lineParsePattern, appConfig.tagParsePattern);
-        lineLoader.seek(startByte);
+        lineLoader.resetTo(startByte, null); // 因为不会有旧数据，理论上这里不会null异常
         LogPackLoader packLoader = new LogPackLoader(lineLoader, appConfig.maxLinesPerResultWithNullUid, indexes.uidTempMap);
         packLoader.setListener(holder -> indexTime(indexes, holder.fromByte, holder.logLine));
         LogPack logPack;
@@ -82,7 +83,8 @@ class LogIndexServiceImpl implements LogIndexService {
             indexTagAndUid(indexes, logPack, true);
         }
         indexes.scannedBytes = lineLoader.getReadPointer();
-        recorder.write("“" + file.getName() + "”的索引更新:" + startByte + "~" + indexes.scannedBytes);
+        long spendTime = System.currentTimeMillis() - startTime;
+        recorder.write("“" + file.getName() + "”的索引已更新(" + startByte + "~" + indexes.scannedBytes + ")，耗时" + spendTime + "ms");
         // 保存并返回索引
         saveIndexes(indexes);
         return indexes;

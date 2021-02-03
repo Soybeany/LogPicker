@@ -16,6 +16,8 @@ public interface ILogLineLoader extends Closeable {
 
     long getReadPointer();
 
+    long getReadBytes();
+
     class ResultHolder {
         public long fromByte;
         public long toByte;
