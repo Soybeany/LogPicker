@@ -19,7 +19,7 @@
     {
       "name": "config.default-max-result-count",
       "type": "java.lang.Integer",
-      "description": "一次查询，最多返回的结果条数.",
+      "description": "默认一次查询，最多返回的结果条数.",
       "defaultValue": 30
     },
     {

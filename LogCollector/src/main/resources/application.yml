@@ -23,7 +23,7 @@ config:
   tags-to-index: url;user
   # 当新记录与旧记录间不超过指定字节数时，将新记录合并至旧记录
   max-bytes-gap-to-merge: 10000
-  # 一次查询，最多返回的结果条数
+  # 默认一次查询，最多返回的结果条数
   default-max-result-count: 30
   # 当日志行没有uid时，每条查询结果允许包含的最大行数
   max-lines-per-result-with-null-uid: 20
