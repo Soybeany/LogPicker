@@ -10,7 +10,6 @@ import com.soybeany.log.collector.service.query.processor.Preprocessor;
 import com.soybeany.log.collector.service.query.processor.RangeLimiter;
 import com.soybeany.log.core.model.FileRange;
 import com.soybeany.log.core.model.LogPack;
-import com.soybeany.log.core.model.LogTag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -52,7 +51,7 @@ class TagContainsModuleFactory implements ModuleFactory {
             context.msgList.add("使用索引型的tags:" + indexedTagsReceiver.keySet());
         }
         if (!ordinaryTagsReceiver.isEmpty()) {
-            preprocessors.add(new FilterImpl(ordinaryTagsReceiver));
+            preprocessors.add(new FilterImpl(logIndexService, ordinaryTagsReceiver));
             context.msgList.add("使用过滤型的tags:" + ordinaryTagsReceiver.keySet());
         }
     }
@@ -128,30 +127,32 @@ class TagContainsModuleFactory implements ModuleFactory {
 
     private static class FilterImpl implements LogFilter {
 
+        private final LogIndexService logIndexService;
         private final Map<String, String> tags;
 
-        public FilterImpl(Map<String, String> tags) {
+        public FilterImpl(LogIndexService logIndexService, Map<String, String> tags) {
+            this.logIndexService = logIndexService;
             this.tags = tags;
         }
 
         @Override
         public boolean filterLogPack(LogPack logPack) {
+            List<Map.Entry<String, String>> tagList = logIndexService.getTreatedTagList(logPack.tags);
             for (Map.Entry<String, String> entry : tags.entrySet()) {
-                String value = getValue(logPack, entry.getKey());
-                if (null == value || !value.contains(entry.getValue())) {
+                if (!containValue(tagList, entry.getKey(), entry.getValue())) {
                     return true;
                 }
             }
             return false;
         }
 
-        private String getValue(LogPack logPack, String tagKey) {
-            for (LogTag tag : logPack.tags) {
-                if (tagKey.equals(tag.key)) {
-                    return tag.value;
+        private boolean containValue(List<Map.Entry<String, String>> tagList, String tagKey, String tagValue) {
+            for (Map.Entry<String, String> entry : tagList) {
+                if (tagKey.equals(entry.getKey()) && entry.getValue().contains(tagValue)) {
+                    return true;
                 }
             }
-            return null;
+            return false;
         }
     }
 

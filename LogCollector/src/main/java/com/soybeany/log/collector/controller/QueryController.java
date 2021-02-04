@@ -5,10 +5,7 @@ import com.soybeany.log.collector.service.query.QueryService;
 import com.soybeany.log.core.model.LogException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -26,7 +23,7 @@ public class QueryController {
     @Autowired
     private QueryService queryService;
 
-    @GetMapping("/byParam")
+    @PostMapping("/byParam")
     public String byParam(@RequestParam Map<String, String> param) {
         try {
             return queryService.simpleQuery(param);
@@ -35,19 +32,19 @@ public class QueryController {
         }
     }
 
-    @GetMapping(value = "/forDirectRead", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/forDirectRead", produces = MediaType.APPLICATION_JSON_VALUE)
     public String forDirectRead(@RequestParam Map<String, String> param) {
         param.put("exporter-exportType", "forDirectRead");
         return byParam(param);
     }
 
-    @GetMapping(value = "/forRead", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/forRead", produces = MediaType.APPLICATION_JSON_VALUE)
     public String forRead(@RequestParam Map<String, String> param) {
         param.put("exporter-exportType", "forRead");
         return byParam(param);
     }
 
-    @GetMapping(value = "/inSerialize", produces = MediaType.TEXT_PLAIN_VALUE)
+    @PostMapping(value = "/inSerialize", produces = MediaType.TEXT_PLAIN_VALUE)
     public String inSerialize(@RequestParam Map<String, String> param) {
         param.put("exporter-exportType", "inSerialize");
         return byParam(param);

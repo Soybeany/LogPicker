@@ -33,6 +33,9 @@ public interface LogIndexService {
     @NonNull
     Map<String, String> getTreatedTagMap(@NonNull Map<String, String> tags);
 
+    @NonNull
+    List<Map.Entry<String, String>> getTreatedTagList(@NonNull List<LogTag> tags);
+
 }
 
 @Service
@@ -105,6 +108,14 @@ class LogIndexServiceImpl implements LogIndexService {
         Map<String, String> result = new HashMap<>();
         // 将tag的值转成小写
         tags.forEach((k, v) -> result.put(k, v.toLowerCase()));
+        return result;
+    }
+
+    @Override
+    public List<Map.Entry<String, String>> getTreatedTagList(List<LogTag> tags) {
+        List<Map.Entry<String, String>> result = new LinkedList<>();
+        // 将tag的值转成小写
+        tags.forEach(tag -> result.add(new AbstractMap.SimpleEntry<>(tag.key, tag.value.toLowerCase())));
         return result;
     }
 
