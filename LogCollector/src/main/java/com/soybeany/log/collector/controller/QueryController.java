@@ -47,7 +47,7 @@ public class QueryController {
         return byParam(param);
     }
 
-    @GetMapping(value = "/forRead", produces = MediaType.TEXT_PLAIN_VALUE)
+    @GetMapping(value = "/inSerialize", produces = MediaType.TEXT_PLAIN_VALUE)
     public String inSerialize(@RequestParam Map<String, String> param) {
         param.put("exporter-exportType", "inSerialize");
         return byParam(param);
@@ -60,6 +60,12 @@ public class QueryController {
                 + "\n  1.指定时间查询区间"
                 + "\n  2.使用索引型的标签参数"
                 + "\n  3.按需设置结果条数限制"
+                + "\n\n可用接口"
+                + "\n  /query/help: 提供帮助，也就是当前接口"
+                + "\n  /query/byParam: 使用指定参数自由查询"
+                + "\n  /query/forDirectRead: 与/byParam一致，只是返回的数据设置为可直接阅读的json"
+                + "\n  /query/forRead: 与/byParam一致，只是返回的数据设置为json"
+                + "\n  /query/inSerialize: 与/byParam一致，只是返回的数据设置为序列化字符串"
                 + "\n\n标准参数"
                 + "\n  fromTime: 开始时间，支持下方所列的多种时间格式(默认当天00:00)"
                 + "\n  toTime: 结束时间，支持下方所列的多种时间格式(默认当前时间)"

@@ -9,7 +9,7 @@ config:
   # 当天日志文件的命名
   log-today-file-name: sysAudit.log
   # 历史日志文件的命名，使用<?TimeFormat?>作时间占位
-  log-history-file-name: test<?yy-MM-dd?>.log
+  log-history-file-name: sysAudit.log.<?yyyy-MM-dd?>.log
   # 日志的字符集
   log-charset: gbk
   # 行解析的正则
