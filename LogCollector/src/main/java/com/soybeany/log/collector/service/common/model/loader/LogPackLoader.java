@@ -94,7 +94,7 @@ public class LogPackLoader implements Closeable {
     }
 
     private boolean handleLine(String uidMapKey, LogPack logPack, LogLine logLine) {
-        boolean isComplete = (null == logLine.uid && logPack.logLines.size() + 1 > maxLinesPerResultWithNullUid);
+        boolean isComplete = ("".equals(logLine.uid) && logPack.logLines.size() + 1 > maxLinesPerResultWithNullUid);
         if (isComplete) {
             uidMap.remove(uidMapKey);
             logPack = getLogPack(uidMapKey, logLine.uid, logLine.thread);

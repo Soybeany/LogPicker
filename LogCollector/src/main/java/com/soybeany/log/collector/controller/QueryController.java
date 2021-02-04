@@ -66,10 +66,11 @@ public class QueryController {
                 + "\n  countLimit: 一次查询最多返回的结果条数(默认使用配置值)"
                 + "\n  logFiles: 指定待查询的文件全路径，多个时使用“;”或“,”进行分隔(默认根据时间选择文件)"
                 + "\n  uidList: 指定待查询的uid，多个时使用“;”或“,”进行分隔(默认不指定)"
+                + "\n  result-id: 查询指定id的结果，用于分页查询(默认不指定)"
                 + "\n\n标签参数"
                 + "\n  格式为“tag-xxx”，如“tag-url”、“tag-user”等，分为“索引型”与“过滤型”两种，在查询结果的msg中能查看"
                 + "\n  索引型：扫描时会索引该tag，查询前使用索引锁定查询范围，可极大地提高查询速度"
-                + "\n  过滤型：参考过滤参数，速度慢"
+                + "\n  过滤型：参考过滤参数，不能提高查询速度"
                 + "\n  匹配策略为contain，不区分大小写"
                 + "\n\n过滤参数"
                 + "\n  格式为“filter-xxx”，如“filter-containsKey”，查询后才对该结果进行条件筛选"
@@ -90,7 +91,7 @@ public class QueryController {
                 + "\n  行解析的正则: " + appConfig.lineParsePattern
                 + "\n  标签解析的正则: " + appConfig.tagParsePattern
                 + "\n  行的时间格式: " + appConfig.lineTimeFormat
-                + "\n  需要建立索引的标签: " + appConfig.tagsToIndex
+                + "\n  建立索引的标签: " + appConfig.tagsToIndex
                 + "\n  新记录与旧记录的字节数阈值: " + appConfig.maxBytesGapToMerge
                 + "\n  默认一次查询最多返回的结果条数: " + appConfig.defaultMaxResultCount
                 + "\n  没有uid时每条查询结果允许包含的最大行数: " + appConfig.maxLinesPerResultWithNullUid
