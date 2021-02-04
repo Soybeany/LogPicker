@@ -63,7 +63,7 @@ public class QueryController {
                 + "\n\n可用接口"
                 + "\n  /query/help: 提供帮助，也就是当前接口"
                 + "\n  /query/byParam: 使用指定参数自由查询"
-                + "\n  /query/forDirectRead: 与/byParam一致，只是返回的数据设置为可直接阅读的json"
+                + "\n  /query/forDirectRead: 与/byParam一致，只是返回的数据设置为可直接阅读的json(重要，常用)"
                 + "\n  /query/forRead: 与/byParam一致，只是返回的数据设置为json"
                 + "\n  /query/inSerialize: 与/byParam一致，只是返回的数据设置为序列化字符串"
                 + "\n\n标准参数"
