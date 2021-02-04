@@ -76,7 +76,7 @@ class LogIndexServiceImpl implements LogIndexService {
         long startTime = System.currentTimeMillis();
         SimpleLogLineLoader lineLoader = new SimpleLogLineLoader(indexes.logFile, appConfig.logCharset, appConfig.lineParsePattern, appConfig.tagParsePattern);
         lineLoader.resetTo(startByte, null); // 因为不会有旧数据，理论上这里不会null异常
-        LogPackLoader packLoader = new LogPackLoader(lineLoader, appConfig.maxLinesPerResultWithNullUid, indexes.uidTempMap);
+        LogPackLoader packLoader = new LogPackLoader(lineLoader, appConfig.noUidPlaceholder, appConfig.maxLinesPerResultWithNoUid, indexes.uidTempMap);
         packLoader.setListener(holder -> indexTime(indexes, holder.fromByte, holder.logLine));
         LogPack logPack;
         while (null != (logPack = packLoader.loadNextCompleteLogPack())) {

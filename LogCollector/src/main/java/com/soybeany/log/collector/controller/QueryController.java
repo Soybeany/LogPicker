@@ -94,7 +94,7 @@ public class QueryController {
                 + "\n  建立索引的标签: " + appConfig.tagsToIndex
                 + "\n  新记录与旧记录的字节数阈值: " + appConfig.maxBytesGapToMerge
                 + "\n  默认一次查询最多返回的结果条数: " + appConfig.defaultMaxResultCount
-                + "\n  没有uid时每条查询结果允许包含的最大行数: " + appConfig.maxLinesPerResultWithNullUid
+                + "\n  没有uid时每条查询结果允许包含的最大行数: " + appConfig.maxLinesPerResultWithNoUid
                 ;
     }
 

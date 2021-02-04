@@ -1,7 +1,7 @@
 {
   "properties": [
     {
-      "name": "config.max-lines-per-result-with-null-uid",
+      "name": "config.max-lines-per-result-with-no-uid",
       "type": "java.lang.Integer",
       "description": "当日志行没有uid时，每条查询结果允许包含的最大行数.",
       "defaultValue": 20
@@ -63,6 +63,12 @@
       "name": "config.log-history-file-name",
       "type": "java.lang.String",
       "description": "历史日志文件的命名，使用<?TimeFormat?>作时间占位."
+    },
+    {
+      "name": "config.no-uid-placeholder",
+      "type": "java.lang.String",
+      "description": "没有uid时，使用的占位符.",
+      "defaultValue": ""
     }
   ]
 }

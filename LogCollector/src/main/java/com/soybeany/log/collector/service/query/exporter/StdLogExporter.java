@@ -128,7 +128,7 @@ class StdLogExporter implements LogExporter {
         if (logPack.tags.isEmpty()) {
             return result;
         }
-        Map<String, List<String>> temp = new HashMap<>();
+        Map<String, List<String>> temp = new LinkedHashMap<>();
         for (LogTag tag : logPack.tags) {
             temp.computeIfAbsent(tag.key, k -> new ArrayList<>()).add(tag.value);
         }

@@ -14,16 +14,18 @@ import java.util.Map;
 public class LogPackLoader implements Closeable {
 
     private final ILogLineLoader logLineLoader;
-    private final int maxLinesPerResultWithNullUid;
+    private final String noUidPlaceholder;
+    private final int maxLinesPerResultWithNoUid;
     private Map<String, LogPack> uidMap;
 
     private final ILogLineLoader.ResultHolder holder = new SimpleLogLineLoader.ResultHolder();
     @Nullable
     private IListener listener;
 
-    public LogPackLoader(ILogLineLoader logLineLoader, int maxLinesPerResultWithNullUid, Map<String, LogPack> uidMap) {
+    public LogPackLoader(ILogLineLoader logLineLoader, String noUidPlaceholder, int maxLinesPerResultWithNoUid, Map<String, LogPack> uidMap) {
         this.logLineLoader = logLineLoader;
-        this.maxLinesPerResultWithNullUid = maxLinesPerResultWithNullUid;
+        this.noUidPlaceholder = noUidPlaceholder;
+        this.maxLinesPerResultWithNoUid = maxLinesPerResultWithNoUid;
         switchUidMap(uidMap);
     }
 
@@ -94,7 +96,7 @@ public class LogPackLoader implements Closeable {
     }
 
     private boolean handleLine(String uidMapKey, LogPack logPack, LogLine logLine) {
-        boolean isComplete = ("".equals(logLine.uid) && logPack.logLines.size() + 1 > maxLinesPerResultWithNullUid);
+        boolean isComplete = (noUidPlaceholder.equals(logLine.uid) && logPack.logLines.size() + 1 > maxLinesPerResultWithNoUid);
         if (isComplete) {
             uidMap.remove(uidMapKey);
             logPack = getLogPack(uidMapKey, logLine.uid, logLine.thread);

@@ -1,7 +1,7 @@
 package com.soybeany.log.core.model;
 
 import java.io.Serializable;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +27,7 @@ public class LogPackForRead implements Serializable {
     /**
      * 自定义标签，如url、user、param等
      */
-    public final Map<String, String> tags = new HashMap<>();
+    public final Map<String, String> tags = new LinkedHashMap<>();
 
     /**
      * 服务器

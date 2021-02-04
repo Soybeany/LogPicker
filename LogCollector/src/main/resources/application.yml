@@ -3,22 +3,24 @@ server:
 
 config:
   # 待扫描的目录，多个使用“;”进行分隔
-  dirs-to-scan: E:\logDir
+  dirs-to-scan: D:\EFB_Logs\sysAudit
   # 用于存放索引的目录
   dir-for-indexes: E:\logIndexes
   # 当天日志文件的命名
-  log-today-file-name: test.log
+  log-today-file-name: sysAudit.log
   # 历史日志文件的命名，使用<?TimeFormat?>作时间占位
   log-history-file-name: test<?yy-MM-dd?>.log
   # 日志的字符集
-  log-charset: utf-8
+  log-charset: gbk
   # 行解析的正则
-  line-parse-regex: ^(?<time>.{10} .{8})\.\d{3}\s+(?<level>INFO|WARN|ERROR) (?<uid>.+?) --- \[\s*(?<thread>.+?)] :\s{1}(?<content>.*)
-  #  line-parse-regex: ^\[(?<time>.{17})] \[(?<level>INFO|WARN|ERROR)] \[(?<thread>.+?)] \{(?<pos>.+?)}-(?<content>.*)
+  #  line-parse-regex: ^(?<time>.{10} .{8})\.\d{3}\s+(?<level>INFO|WARN|ERROR) (?<uid>.+?) --- \[\s*(?<thread>.+?)] :\s{1}(?<content>.*)
+  line-parse-regex: ^\[(?<time>.{17})] \[(?<level>INFO|WARN|ERROR)] \[(?<uid>.*?)] \[(?<thread>.+?)] \{(?<pos>.+?)}-(?<content>.*)
   # 标签解析的正则
   tag-parse-regex: ^FLAG-(?<key>.+?)-(?<value>.*)
+  # 没有uid时，使用的占位符
+  no-uid-placeholder: ""
   # 行的时间格式
-  line-time-format: "yyyy-MM-dd HH:mm:ss"
+  line-time-format: yy-MM-dd HH:mm:ss
   # 需要建立索引的标签，多个使用“;”进行分隔
   tags-to-index: url;user
   # 当新记录与旧记录间不超过指定字节数时，将新记录合并至旧记录
@@ -26,4 +28,4 @@ config:
   # 默认一次查询，最多返回的结果条数
   default-max-result-count: 30
   # 当日志行没有uid时，每条查询结果允许包含的最大行数
-  max-lines-per-result-with-null-uid: 20
+  max-lines-per-result-with-no-uid: 20

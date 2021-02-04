@@ -24,11 +24,12 @@ public class AppConfig {
     public String logCharset;
     public Pattern lineParsePattern;
     public Pattern tagParsePattern;
+    public String noUidPlaceholder;
     public String lineTimeFormat;
     public DateTimeFormatter lineTimeFormatter;
     public final Set<String> tagsToIndex = new HashSet<>();
     public int maxBytesGapToMerge;
-    public int maxLinesPerResultWithNullUid;
+    public int maxLinesPerResultWithNoUid;
     public int defaultMaxResultCount;
 
     public void setDirsToScan(String dirsToScan) {
@@ -59,6 +60,10 @@ public class AppConfig {
         this.tagParsePattern = Pattern.compile(regex);
     }
 
+    public void setNoUidPlaceholder(String noUidPlaceholder) {
+        this.noUidPlaceholder = noUidPlaceholder;
+    }
+
     public void setLineTimeFormat(String lineTimeFormat) {
         this.lineTimeFormat = lineTimeFormat;
         this.lineTimeFormatter = DateTimeFormatter.ofPattern(lineTimeFormat);
@@ -76,8 +81,8 @@ public class AppConfig {
         this.defaultMaxResultCount = defaultMaxResultCount;
     }
 
-    public void setMaxLinesPerResultWithNullUid(int maxLinesPerResultWithNullUid) {
-        this.maxLinesPerResultWithNullUid = maxLinesPerResultWithNullUid;
+    public void setMaxLinesPerResultWithNoUid(int maxLinesPerResultWithNoUid) {
+        this.maxLinesPerResultWithNoUid = maxLinesPerResultWithNoUid;
     }
 
 }

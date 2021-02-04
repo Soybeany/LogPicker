@@ -329,7 +329,7 @@ class QueryServiceImpl implements QueryService {
         if (null == loader) {
             RangesLogLineLoader lineLoader = new RangesLogLineLoader(file, appConfig.logCharset,
                     appConfig.lineParsePattern, appConfig.tagParsePattern);
-            loader = new LogPackLoader(lineLoader, appConfig.maxLinesPerResultWithNullUid, uidMap);
+            loader = new LogPackLoader(lineLoader, appConfig.noUidPlaceholder, appConfig.maxLinesPerResultWithNoUid, uidMap);
             loaderMap.put(file, loader);
         } else {
             loader.switchUidMap(uidMap);
