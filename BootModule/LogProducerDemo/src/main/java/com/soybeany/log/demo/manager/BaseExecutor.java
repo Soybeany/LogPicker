@@ -1,12 +1,10 @@
 package com.soybeany.log.demo.manager;
 
 import com.google.gson.Gson;
-import okhttp3.OkHttpClient;
-import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
+import okhttp3.*;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -17,9 +15,8 @@ import java.util.concurrent.*;
  */
 public class BaseExecutor {
 
-    private static final String PATH_SEPARATOR = "/";
     private static final OkHttpClient CLIENT_FOR_READ = new OkHttpClient.Builder().readTimeout(5, TimeUnit.MINUTES).build();
-    private static final Gson GSON = new Gson();
+    protected static final Gson GSON = new Gson();
     @SuppressWarnings("AlibabaThreadPoolCreation")
     private static ExecutorService SERVICE;
 
@@ -50,26 +47,24 @@ public class BaseExecutor {
         return result;
     }
 
-    protected <T> T getService(String host, Class<T> service) {
+    protected <T> T request(String host, String path, Map<String, String> param, Type type) throws IOException {
         if (!host.startsWith("http")) {
             host = "http://" + host;
         }
-        if (!host.endsWith(PATH_SEPARATOR)) {
-            host = host + PATH_SEPARATOR;
-        }
-        Retrofit retrofit = new Retrofit.Builder()
-                .client(CLIENT_FOR_READ)
-                .baseUrl(host)
-                .addConverterFactory(GsonConverterFactory.create(GSON))
+        String url = host + path;
+        FormBody.Builder bodyBuilder = new FormBody.Builder();
+        param.forEach(bodyBuilder::add);
+        Request request = new Request.Builder()
+                .post(bodyBuilder.build())
+                .url(url)
                 .build();
-        return retrofit.create(service);
-    }
-
-    protected <T> T getBody(Response<T> response) throws IOException {
-        if (!response.isSuccessful()) {
-            throw new IOException("“" + response.raw().request().url() + "”请求异常(" + response.code() + ")");
+        try (Response response = CLIENT_FOR_READ.newCall(request).execute()) {
+            ResponseBody body;
+            if (!response.isSuccessful() || null == (body = response.body())) {
+                throw new IOException("“" + url + "”请求异常(" + response.code() + ")");
+            }
+            return GSON.fromJson(body.string(), type);
         }
-        return response.body();
     }
 
     // ********************内部类********************
