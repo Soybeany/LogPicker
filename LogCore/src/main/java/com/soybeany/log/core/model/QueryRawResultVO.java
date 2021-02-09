@@ -8,10 +8,10 @@ import java.util.List;
  * @author Soybeany
  * @date 2021/1/11
  */
-public class QueryResultVO implements Serializable {
+public class QueryRawResultVO implements Serializable {
 
     public final ResultInfo info = new ResultInfo();
 
-    public final List<LogPackForRead> packs = new LinkedList<>();
+    public final List<LogPack> packs = new LinkedList<>();
 
 }

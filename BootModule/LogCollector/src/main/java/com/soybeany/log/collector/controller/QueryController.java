@@ -2,6 +2,7 @@ package com.soybeany.log.collector.controller;
 
 import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.collector.service.query.QueryService;
+import com.soybeany.log.core.model.Direction;
 import com.soybeany.log.core.model.LogException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -38,67 +39,38 @@ public class QueryController {
         return byParam(param);
     }
 
-    @PostMapping(value = "/forRead", produces = MediaType.APPLICATION_JSON_VALUE)
-    public String forRead(@RequestParam Map<String, String> param) {
-        param.put("exporter-exportType", "forRead");
+    @PostMapping(value = "/forPack", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String forPack(@RequestParam Map<String, String> param) {
+        param.put("exporter-exportType", "forPack");
         return byParam(param);
     }
 
-    @PostMapping(value = "/inSerialize", produces = MediaType.TEXT_PLAIN_VALUE)
-    public String inSerialize(@RequestParam Map<String, String> param) {
-        param.put("exporter-exportType", "inSerialize");
+    @PostMapping(value = "/forRaw", produces = MediaType.TEXT_PLAIN_VALUE)
+    public String forRaw(@RequestParam Map<String, String> param) {
+        param.put("exporter-exportType", "forRaw");
         return byParam(param);
+    }
+
+    @GetMapping("/config")
+    public String config() {
+        return ""
+                + "待扫描的目录: " + Arrays.toString(appConfig.dirsToScan)
+                + "存放索引的目录: " + appConfig.dirForIndexes
+                + "当天日志文件的命名: " + appConfig.logTodayFileName
+                + "历史日志文件的命名: " + appConfig.logHistoryFileName
+                + "日志的字符集: " + appConfig.logCharset
+                + "行解析的正则: " + appConfig.lineParsePattern
+                + "标签解析的正则: " + appConfig.tagParsePattern
+                + "行的时间格式: " + appConfig.lineTimeFormat
+                + "建立索引的标签: " + appConfig.tagsToIndex
+                + "新记录与旧记录的字节数阈值: " + appConfig.maxBytesGapToMerge
+                + "默认一次查询最多返回的结果条数: " + appConfig.defaultMaxResultCount
+                + "没有uid时每条查询结果允许包含的最大行数: " + appConfig.maxLinesPerResultWithNoUid;
     }
 
     @GetMapping("/help")
     public String help() {
-        return ""
-                + "查询建议"
-                + "\n  1.指定时间查询区间"
-                + "\n  2.使用索引型的标签参数"
-                + "\n  3.按需设置结果条数限制"
-                + "\n\n可用接口"
-                + "\n  /query/help: 提供帮助，也就是当前接口"
-                + "\n  /query/byParam: 使用指定参数自由查询"
-                + "\n  /query/forDirectRead: 与/byParam一致，只是返回的数据设置为可直接阅读的json(重要，常用)"
-                + "\n  /query/forRead: 与/byParam一致，只是返回的数据设置为json"
-                + "\n  /query/inSerialize: 与/byParam一致，只是返回的数据设置为序列化字符串"
-                + "\n\n标准参数"
-                + "\n  fromTime: 开始时间，支持下方所列的多种时间格式(默认当天00:00)"
-                + "\n  toTime: 结束时间，支持下方所列的多种时间格式(默认当前时间)"
-                + "\n  countLimit: 一次查询最多返回的结果条数(默认使用配置值)"
-                + "\n  logFiles: 指定待查询的文件全路径，如“D:\\logs\\xxx.log”，多个时使用“;”或“,”进行分隔(默认根据时间选择文件)"
-                + "\n  uidList: 指定待查询的uid，多个时使用“;”或“,”进行分隔(默认不指定)"
-                + "\n  result-id: 查询指定id的结果，用于分页查询(默认不指定)"
-                + "\n\n标签参数"
-                + "\n  格式为“tag-xxx”，如“tag-url”、“tag-user”等，分为“索引型”与“过滤型”两种，在查询结果的msg中能查看"
-                + "\n  索引型：扫描时会索引该tag，查询前使用索引锁定查询范围，可极大地提高查询速度"
-                + "\n  过滤型：参考过滤参数，不能提高查询速度"
-                + "\n  匹配策略为contain，不区分大小写"
-                + "\n\n过滤参数"
-                + "\n  格式为“filter-xxx”，如“filter-containsKey”，查询后才对该结果进行条件筛选"
-                + "\n  containsKey: key包含，不区分大小写"
-                + "\n\n支持的时间格式"
-                + "\n  1.yyyy-MM-dd HH:mm:ss，最完整"
-                + "\n  2.yyyy-MM-dd HH:mm，不含秒"
-                + "\n  3.yy-MM-dd HH:mm:ss，简写"
-                + "\n  4.yy-MM-dd HH:mm，简写，不含秒"
-                + "\n  5.HH:mm:ss，日期为今天"
-                + "\n  6.HH:mm，日期为今天，不含秒"
-                + "\n\n生效中的配置"
-                + "\n  待扫描的目录: " + Arrays.toString(appConfig.dirsToScan)
-                + "\n  存放索引的目录: " + appConfig.dirForIndexes
-                + "\n  当天日志文件的命名: " + appConfig.logTodayFileName
-                + "\n  历史日志文件的命名: " + appConfig.logHistoryFileName
-                + "\n  日志的字符集: " + appConfig.logCharset
-                + "\n  行解析的正则: " + appConfig.lineParsePattern
-                + "\n  标签解析的正则: " + appConfig.tagParsePattern
-                + "\n  行的时间格式: " + appConfig.lineTimeFormat
-                + "\n  建立索引的标签: " + appConfig.tagsToIndex
-                + "\n  新记录与旧记录的字节数阈值: " + appConfig.maxBytesGapToMerge
-                + "\n  默认一次查询最多返回的结果条数: " + appConfig.defaultMaxResultCount
-                + "\n  没有uid时每条查询结果允许包含的最大行数: " + appConfig.maxLinesPerResultWithNoUid
-                ;
+        return Direction.QUERY;
     }
 
 }

@@ -3,7 +3,6 @@ package com.soybeany.log.collector.service.query.data;
 import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.core.model.LogException;
 import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 
 import java.io.File;
 import java.time.LocalDate;
@@ -43,10 +42,6 @@ public class QueryParam {
 
     static {
         initFormatterMap();
-    }
-
-    public static String getParam(String prefix, String key, Map<String, String> param) {
-        return param.get(prefix + SEPARATOR + key);
     }
 
     private static void initFormatterMap() {
@@ -100,11 +95,6 @@ public class QueryParam {
     @NonNull
     public Map<String, String> getParams(String prefix) {
         return Optional.ofNullable(params.get(prefix)).orElseGet(HashMap::new);
-    }
-
-    @Nullable
-    public String getParam(String prefix, String key) {
-        return getParams(prefix).get(key);
     }
 
     // ********************内部方法********************

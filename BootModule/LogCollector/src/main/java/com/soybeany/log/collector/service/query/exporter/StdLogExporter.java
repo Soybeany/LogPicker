@@ -44,10 +44,11 @@ class StdLogExporter implements LogExporter {
         switch (exportType) {
             case Constants.EXPORT_FOR_DIRECT_READ:
                 return gson.toJson(toObjectForRead(toLogVO(result, packs)));
-            case Constants.EXPORT_FOR_READ:
+            case Constants.EXPORT_FOR_PACK:
                 return gson.toJson(toLogVO(result, packs));
-            case Constants.EXPORT_IN_SERIALIZE:
-                QueryResultVO vo = getNewResultVO(result);
+            case Constants.EXPORT_ROF_RAW:
+                QueryRawResultVO vo = new QueryRawResultVO();
+                setupResultInfo(result, vo.info);
                 vo.packs.addAll(packs);
                 try {
                     return HexUtils.bytesToHex(SerializeUtils.serialize(vo));
@@ -71,24 +72,23 @@ class StdLogExporter implements LogExporter {
     }
 
     private QueryResultVO toLogVO(QueryResult result, List<LogPack> packs) {
-        QueryResultVO vo = getNewResultVO(result);
+        QueryResultVO vo = new QueryResultVO();
+        setupResultInfo(result, vo.info);
         // 添加结果列表
         for (LogPack pack : packs) {
             vo.packs.add(toLogItem(pack));
         }
         // 排序
-        vo.packs.sort(Comparator.comparing(o -> ((LogPackForRead) o).time));
+        vo.packs.sort(Comparator.comparing(o -> o.time));
         return vo;
     }
 
-    private QueryResultVO getNewResultVO(QueryResult result) {
-        QueryResultVO vo = new QueryResultVO();
-        vo.info.lastContextId = result.lastId;
-        vo.info.curContextId = result.id;
-        vo.info.nextContextId = result.nextId;
-        vo.info.msg = result.getAllMsg();
-        vo.info.endReason = result.endReason;
-        return vo;
+    private void setupResultInfo(QueryResult result, ResultInfo info) {
+        info.lastResultId = result.lastId;
+        info.curResultId = result.id;
+        info.nextResultId = result.nextId;
+        info.msg = result.getAllMsg();
+        info.endReason = result.endReason;
     }
 
     private LogPackForRead toLogItem(LogPack pack) {

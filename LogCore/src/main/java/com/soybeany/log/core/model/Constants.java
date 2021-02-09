@@ -6,6 +6,13 @@ package com.soybeany.log.core.model;
  */
 public interface Constants {
 
+    // ********************PARAM********************
+
+    /**
+     * 入参-结果id
+     */
+    String PARAM_RESULT_ID = "resultId";
+
     // ********************TAG********************
 
     /**
@@ -21,14 +28,14 @@ public interface Constants {
     // ********************EXPORT********************
 
     /**
-     * 使用序列化导出(可更高级地加工)
+     * 导出原始数据(可更高级地加工)
      */
-    String EXPORT_IN_SERIALIZE = "inSerialize";
+    String EXPORT_ROF_RAW = "forRaw";
 
     /**
-     * 导出供阅读(可二次加工)
+     * 导出打包数据(可二次加工)
      */
-    String EXPORT_FOR_READ = "forRead";
+    String EXPORT_FOR_PACK = "forPack";
 
     /**
      * 导出供阅读(不再加工)
