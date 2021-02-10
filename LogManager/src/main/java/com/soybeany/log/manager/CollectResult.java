@@ -14,11 +14,11 @@ class CollectResult {
     private final Map<String, QueryResultVO> voMap = new HashMap<>();
 
     public void add(Map<String, BaseExecutor.Dto<QueryResultVO>> dtoList) {
-        dtoList.forEach((k, v) -> {
-            if (v.isNorm) {
-                voMap.put(k, v.data);
+        dtoList.forEach((server, dto) -> {
+            if (dto.isNorm) {
+                voMap.put(server, dto.data);
             } else {
-                errMsgMap.put(k, v.msg);
+                errMsgMap.put(server, dto.msg);
             }
         });
     }
@@ -45,13 +45,16 @@ class CollectResult {
         }
         // vo处理
         List<LogPackForRead> logPart = new LinkedList<>();
-        voMap.forEach((k, v) -> {
+        voMap.forEach((server, vo) -> {
             // 关联部分
-            if (null != v.info.nextResultId) {
-                nextResultIdMap.put(k, v.info.nextResultId);
+            if (null != vo.info.nextResultId) {
+                nextResultIdMap.put(server, vo.info.nextResultId);
             }
             // 日志部分
-            logPart.addAll(v.packs);
+            vo.packs.forEach(pack -> {
+                pack.server = server;
+                logPart.add(pack);
+            });
         });
         // 组装
         List<Object> output = new LinkedList<>();

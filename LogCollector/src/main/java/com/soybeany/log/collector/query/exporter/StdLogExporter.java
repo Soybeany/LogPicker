@@ -10,8 +10,6 @@ import com.soybeany.util.HexUtils;
 import com.soybeany.util.SerializeUtils;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -27,7 +25,6 @@ public class StdLogExporter implements LogExporter {
     private static final DateTimeFormatter FORMATTER2 = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     private final LogCollectConfig logCollectConfig;
-    private final String ipAddress = getIpAddress();
     private final Gson gson = new Gson();
 
     public StdLogExporter(LogCollectConfig logCollectConfig) {
@@ -101,7 +98,6 @@ public class StdLogExporter implements LogExporter {
         // 设置日志
         result.logs.addAll(getLogs(earliestTime, pack));
         // 设置其它简易信息
-        result.server = ipAddress;
         result.uid = pack.uid;
         result.thread = pack.thread;
         return result;
@@ -183,15 +179,6 @@ public class StdLogExporter implements LogExporter {
 
     private Date getDate(String timeString) {
         return TimeUtils.toDate(LocalDateTime.parse(timeString, logCollectConfig.lineTimeFormatter));
-    }
-
-    private String getIpAddress() {
-        try {
-            return InetAddress.getLocalHost().getHostAddress();
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-            return "未知";
-        }
     }
 
     // ********************内部类********************
