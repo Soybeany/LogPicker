@@ -1,4 +1,4 @@
-package com.soybeany.log.demo.manager;
+package com.soybeany.log.manager;
 
 /**
  * @author Soybeany

@@ -1,7 +1,7 @@
 package com.soybeany.log.demo;
 
-import com.soybeany.log.demo.manager.BaseExecutor;
-import com.soybeany.log.demo.manager.LogManager;
+import com.soybeany.log.manager.BaseExecutor;
+import com.soybeany.log.manager.LogManager;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 

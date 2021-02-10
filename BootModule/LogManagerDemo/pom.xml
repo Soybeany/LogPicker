@@ -9,6 +9,14 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>LogManager</artifactId>
+    <artifactId>LogManagerDemo</artifactId>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.soybeany</groupId>
+            <artifactId>LogCore</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
 
 </project>

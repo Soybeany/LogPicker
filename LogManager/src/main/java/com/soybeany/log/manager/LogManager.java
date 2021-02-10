@@ -1,4 +1,4 @@
-package com.soybeany.log.demo.manager;
+package com.soybeany.log.manager;
 
 import com.soybeany.log.core.model.Direction;
 

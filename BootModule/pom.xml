@@ -13,8 +13,8 @@
     <packaging>pom</packaging>
     <modules>
         <module>LogCollector</module>
-        <module>LogManager</module>
-        <module>LogProducerDemo</module>
+        <module>LogManagerDemo</module>
+        <module>LogCollectorDemo</module>
     </modules>
 
     <properties>
@@ -22,6 +22,12 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>com.soybeany</groupId>
+            <artifactId>LogManager</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>

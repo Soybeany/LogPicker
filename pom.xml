@@ -19,6 +19,7 @@
     <modules>
         <module>LogTagWriter</module>
         <module>LogCore</module>
+        <module>LogManager</module>
         <module>BootModule</module>
     </modules>
 
