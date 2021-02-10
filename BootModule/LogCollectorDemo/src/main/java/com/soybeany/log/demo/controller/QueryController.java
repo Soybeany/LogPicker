@@ -43,12 +43,6 @@ public class QueryController {
         return byParam(param);
     }
 
-    @PostMapping(value = "/forRaw", produces = MediaType.TEXT_PLAIN_VALUE)
-    public String forRaw(@RequestParam Map<String, String> param) {
-        param.put("exporter-exportType", "forRaw");
-        return byParam(param);
-    }
-
     @GetMapping("/config")
     public String config() {
         return ""
@@ -68,7 +62,7 @@ public class QueryController {
 
     @GetMapping("/help")
     public String help() {
-        return Direction.QUERY;
+        return Direction.query("/query/help", "/query/forDirectRead");
     }
 
 }

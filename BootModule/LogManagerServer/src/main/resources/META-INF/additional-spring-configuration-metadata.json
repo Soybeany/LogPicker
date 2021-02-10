@@ -1,0 +1,9 @@
+{
+  "properties": [
+    {
+      "name": "config.query-path",
+      "type": "java.lang.String",
+      "description": "日志查询接口的路径."
+    }
+  ]
+}

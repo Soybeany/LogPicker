@@ -47,11 +47,10 @@ public class BaseExecutor {
         return result;
     }
 
-    protected <T> T request(String host, String path, Map<String, String> param, Type type) throws IOException {
-        if (!host.startsWith("http")) {
-            host = "http://" + host;
+    protected <T> T request(String url, Map<String, String> param, Type type) throws IOException {
+        if (!url.startsWith("http")) {
+            url = "http://" + url;
         }
-        String url = host + path;
         FormBody.Builder bodyBuilder = new FormBody.Builder();
         param.forEach(bodyBuilder::add);
         Request request = new Request.Builder()

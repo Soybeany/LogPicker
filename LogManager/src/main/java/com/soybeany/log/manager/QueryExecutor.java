@@ -27,7 +27,7 @@ public class QueryExecutor extends BaseExecutor {
         HOLDER_MAP.put(uid, holder);
     }
 
-    public String getResult(Map<String, String> param) {
+    public String getResult(String path, Map<String, String> param) {
         String resultId = param.get(Constants.PARAM_RESULT_ID);
         ResultHolder holder;
         Map<String, String> nextResultIdMap = new HashMap<>();
@@ -41,7 +41,7 @@ public class QueryExecutor extends BaseExecutor {
                 return holder.getResultString();
             }
             // 使用resultId进行查找
-            holder.result = getNewResultsByResultId(holder.uidSearchHosts, holder.resultIdMap, holder.param, nextResultIdMap);
+            holder.result = getNewResultsByResultId(path, holder.uidSearchHosts, holder.resultIdMap, holder.param, nextResultIdMap);
         } else {
             // 使用参数进行查找
             Set<String> logSearchHosts = toHostSet(param.remove(KEY_LOG_SEARCH_HOSTS));
@@ -70,10 +70,10 @@ public class QueryExecutor extends BaseExecutor {
         return getSecondPartResultsByUid(param, result, uidSearchHosts, nextResultIdMap);
     }
 
-    private List<Object> getNewResultsByResultId(Set<String> uidSearchHosts, Map<String, String> resultIdMap, Map<String, String> param, Map<String, String> nextResultIdMap) {
+    private List<Object> getNewResultsByResultId(String path, Set<String> uidSearchHosts, Map<String, String> resultIdMap, Map<String, String> param, Map<String, String> nextResultIdMap) {
         CollectResult result = new CollectResult();
         // 获取第一批结果(根据查询条件)
-        Map<String, Dto<QueryResultVO>> firstDtoMap = batchInvoke(resultIdMap.keySet(), host -> getResultByResultId(host, param, resultIdMap.get(host)));
+        Map<String, Dto<QueryResultVO>> firstDtoMap = batchInvoke(resultIdMap.keySet(), host -> getResultByResultId(host + path, param, resultIdMap.get(host)));
         result.add(firstDtoMap);
         // 获取第二批结果(按需，根据uid)
         return getSecondPartResultsByUid(param, result, uidSearchHosts, nextResultIdMap);
@@ -118,13 +118,13 @@ public class QueryExecutor extends BaseExecutor {
         return invokeAll(callables);
     }
 
-    private QueryResultVO getResultByResultId(String host, Map<String, String> param, String resultId) throws IOException {
+    private QueryResultVO getResultByResultId(String url, Map<String, String> param, String resultId) throws IOException {
         Map<String, String> newParam = new HashMap<>(param);
         newParam.put(Constants.PARAM_RESULT_ID, resultId);
-        return getResultByParam(host, newParam);
+        return getResultByParam(url, newParam);
     }
 
-    private QueryResultVO getResultByUid(String host, Map<String, String> param, Set<String> uidSet) throws IOException {
+    private QueryResultVO getResultByUid(String url, Map<String, String> param, Set<String> uidSet) throws IOException {
         Map<String, String> newParam = new HashMap<>(param);
         Iterator<String> it = uidSet.iterator();
         StringBuilder uidListBuilder = new StringBuilder(it.next());
@@ -132,11 +132,11 @@ public class QueryExecutor extends BaseExecutor {
             uidListBuilder.append(";").append(it.next());
         }
         newParam.put("uidList", uidListBuilder.toString());
-        return getResultByParam(host, newParam);
+        return getResultByParam(url, newParam);
     }
 
-    private QueryResultVO getResultByParam(String host, Map<String, String> param) throws IOException {
-        return request(host, "/query/forPack", param, QueryResultVO.class);
+    private QueryResultVO getResultByParam(String url, Map<String, String> param) throws IOException {
+        return request(url, param, QueryResultVO.class);
     }
 
     // ********************内部类********************

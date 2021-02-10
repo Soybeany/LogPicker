@@ -1,2 +1,6 @@
 server:
   port: 8282
+
+config:
+  # 日志查询接口的路径
+  query-path: /query/forPack
