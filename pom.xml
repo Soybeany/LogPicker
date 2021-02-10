@@ -20,6 +20,7 @@
         <module>LogTagWriter</module>
         <module>LogCore</module>
         <module>LogManager</module>
+        <module>LogCollector</module>
         <module>BootModule</module>
     </modules>
 

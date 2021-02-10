@@ -12,7 +12,6 @@
     <artifactId>BootModule</artifactId>
     <packaging>pom</packaging>
     <modules>
-        <module>LogCollector</module>
         <module>LogManagerDemo</module>
         <module>LogCollectorDemo</module>
     </modules>
