@@ -51,6 +51,26 @@
         </dependencies>
     </dependencyManagement>
 
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <inherited>false</inherited>
+                    <executions>
+                        <execution>
+                            <id>aggregate</id>
+                            <goals>
+                                <goal>aggregate-jar</goal>
+                            </goals>
+                            <phase>package</phase>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
     <repositories>
         <repository>
             <id>jitpack.io</id>

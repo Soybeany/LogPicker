@@ -12,7 +12,7 @@
     <artifactId>BootModule</artifactId>
     <packaging>pom</packaging>
     <modules>
-        <module>LogManagerDemo</module>
+        <module>LogManagerServer</module>
         <module>LogCollectorDemo</module>
     </modules>
 
