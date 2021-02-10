@@ -1,14 +1,11 @@
 package com.soybeany.log.demo.controller;
 
 import com.soybeany.log.demo.config.AppConfig;
-import com.soybeany.log.manager.BaseExecutor;
 import com.soybeany.log.manager.LogManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import java.util.Map;
 
 /**
@@ -24,22 +21,12 @@ public class ManagerController {
 
     @PostMapping(value = "/forDirectRead", produces = MediaType.APPLICATION_JSON_VALUE)
     public String forDirectRead(@RequestParam Map<String, String> param) {
-        return LogManager.query().getResult(appConfig.queryPath, param);
+        return LogManager.query().getResult(appConfig.queryPath, param, appConfig.resultRetainSec);
     }
 
     @GetMapping("/help")
     public String help() {
         return LogManager.queryHelp("/query/help", "/query/forDirectRead");
-    }
-
-    @PostConstruct
-    void onInit() {
-        BaseExecutor.createRequestPool();
-    }
-
-    @PreDestroy
-    void onDestroy() {
-        BaseExecutor.destroyRequestPool();
     }
 
 }

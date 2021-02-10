@@ -1,9 +1,12 @@
 package com.soybeany.log.demo.config;
 
+import com.soybeany.log.collector.LogCollector;
 import com.soybeany.log.collector.common.data.LogCollectConfig;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -29,6 +32,19 @@ public class AppConfig {
     public int maxBytesGapToMerge;
     public int maxLinesPerResultWithNoUid;
     public int defaultMaxResultCount;
+    public int resultRetainSec;
+
+    @PostConstruct
+    void onInit() {
+        LogCollector.init();
+    }
+
+    @PreDestroy
+    void onDestroy() {
+        LogCollector.release();
+    }
+
+    // ********************设置方法********************
 
     public void setDirsToScan(String dirsToScan) {
         this.dirsToScan = dirsToScan.split(";");
@@ -82,6 +98,12 @@ public class AppConfig {
         this.maxLinesPerResultWithNoUid = maxLinesPerResultWithNoUid;
     }
 
+    public void setResultRetainSec(int resultRetainSec) {
+        this.resultRetainSec = resultRetainSec;
+    }
+
+    // ********************自定义方法********************
+
     public LogCollectConfig toLogCollectConfig() {
         return new LogCollectConfig(dirsToScan, dirForIndexes, logTodayFileName,
                 logHistoryFileName, lineParseRegex, tagParseRegex, lineTimeFormat)
@@ -90,7 +112,8 @@ public class AppConfig {
                 .withTagsToIndex(tagsToIndex)
                 .withMaxBytesGapToMerge(maxBytesGapToMerge)
                 .withMaxLinesPerResultWithNoUid(maxLinesPerResultWithNoUid)
-                .withDefaultMaxResultCount(defaultMaxResultCount);
+                .withDefaultMaxResultCount(defaultMaxResultCount)
+                .withResultRetainSec(resultRetainSec);
     }
 
 }

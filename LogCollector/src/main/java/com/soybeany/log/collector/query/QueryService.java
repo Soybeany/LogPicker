@@ -42,7 +42,7 @@ public class QueryService {
 
     public QueryService(LogCollectConfig logCollectConfig, List<ModuleFactory> moduleFactories, LogExporter logExporter) {
         this.logCollectConfig = logCollectConfig;
-        this.queryResultService = new QueryResultService();
+        this.queryResultService = new QueryResultService(logCollectConfig);
         this.rangeService = new RangeService(logCollectConfig);
         this.moduleFactories = moduleFactories;
         this.logExporter = logExporter;

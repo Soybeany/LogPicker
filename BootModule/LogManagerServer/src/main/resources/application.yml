@@ -4,3 +4,5 @@ server:
 config:
   # 日志查询接口的路径
   query-path: /query/forPack
+  # 查询结果保留的时间
+  result-retain-sec: 10

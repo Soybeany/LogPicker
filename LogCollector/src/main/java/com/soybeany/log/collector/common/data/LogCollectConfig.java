@@ -70,6 +70,10 @@ public class LogCollectConfig {
      * 默认一次查询，最多返回的结果条数
      */
     public int defaultMaxResultCount = 30;
+    /**
+     * 查询结果保留的时间
+     */
+    public int resultRetainSec = 300;
 
     public LogCollectConfig(String[] dirsToScan, String dirForIndexes, String logTodayFileName,
                             String logHistoryFileName, String lineParseRegex, String tagParseRegex,
@@ -111,6 +115,11 @@ public class LogCollectConfig {
 
     public LogCollectConfig withDefaultMaxResultCount(int defaultMaxResultCount) {
         this.defaultMaxResultCount = defaultMaxResultCount;
+        return this;
+    }
+
+    public LogCollectConfig withResultRetainSec(int resultRetainSec) {
+        this.resultRetainSec = resultRetainSec;
         return this;
     }
 

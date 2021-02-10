@@ -69,6 +69,11 @@
       "type": "java.lang.String",
       "description": "没有uid时，使用的占位符.",
       "defaultValue": ""
+    },
+    {
+      "name": "config.result-retain-sec",
+      "type": "java.lang.Integer",
+      "description": "查询结果保留的时间."
     }
   ]
 }

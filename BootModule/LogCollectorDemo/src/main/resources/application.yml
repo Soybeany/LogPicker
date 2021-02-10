@@ -33,3 +33,5 @@ config:
   default-max-result-count: 30
   # 当日志行没有uid时，每条查询结果允许包含的最大行数
   max-lines-per-result-with-no-uid: 20
+  # 查询结果保留的时间
+  result-retain-sec: 10

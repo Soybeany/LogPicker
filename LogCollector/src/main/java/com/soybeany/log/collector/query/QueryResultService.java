@@ -1,11 +1,12 @@
 package com.soybeany.log.collector.query;
 
+import com.soybeany.log.collector.common.data.LogCollectConfig;
 import com.soybeany.log.collector.query.data.QueryResult;
 import com.soybeany.log.core.model.Constants;
 import com.soybeany.log.core.model.LogException;
+import com.soybeany.log.core.util.DataTimingHolder;
 
 import java.util.Map;
-import java.util.WeakHashMap;
 
 /**
  * @author Soybeany
@@ -13,8 +14,13 @@ import java.util.WeakHashMap;
  */
 public class QueryResultService {
 
-    // todo 修改为定时器自动删除
-    private final Map<String, QueryResult> resultMap = new WeakHashMap<>();
+    private static final DataTimingHolder<QueryResult> RESULT_MAP = new DataTimingHolder<>();
+
+    private final LogCollectConfig logCollectConfig;
+
+    public QueryResultService(LogCollectConfig logCollectConfig) {
+        this.logCollectConfig = logCollectConfig;
+    }
 
     public QueryResult loadResultFromParam(Map<String, String> param) {
         String resultId = param.get(Constants.PARAM_RESULT_ID);
@@ -22,13 +28,14 @@ public class QueryResultService {
             return null;
         }
         // 若指定了resultId，则尝试获取指定的result
-        if (!resultMap.containsKey(resultId)) {
-            throw new LogException("找不到指定resultId对应的result");
+        QueryResult result = RESULT_MAP.get(resultId);
+        if (null == result) {
+            throw new LogException("指定的resultId不存在或已过期");
         }
-        return resultMap.get(resultId);
+        return result;
     }
 
     public synchronized void registerResult(QueryResult result) {
-        resultMap.put(result.id, result);
+        RESULT_MAP.set(result.id, result, logCollectConfig.resultRetainSec);
     }
 }

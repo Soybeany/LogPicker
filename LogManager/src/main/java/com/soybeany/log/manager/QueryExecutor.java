@@ -4,6 +4,7 @@ import com.soybeany.log.core.model.Constants;
 import com.soybeany.log.core.model.IdOwner;
 import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.core.model.QueryResultVO;
+import com.soybeany.log.core.util.DataTimingHolder;
 import com.soybeany.log.core.util.UidUtils;
 
 import java.io.IOException;
@@ -21,13 +22,9 @@ public class QueryExecutor extends BaseExecutor {
     private static final String KEY_HIDE_MSG = "hideMsg";
     private static final String HOST_SEPARATE_REGEX = "[,;]";
 
-    private static final Map<String, ResultHolder> HOLDER_MAP = new WeakHashMap<>();
+    private static final DataTimingHolder<ResultHolder> HOLDER_MAP = new DataTimingHolder<>();
 
-    private static synchronized void saveResultId(String uid, ResultHolder holder) {
-        HOLDER_MAP.put(uid, holder);
-    }
-
-    public String getResult(String path, Map<String, String> param) {
+    public String getResult(String path, Map<String, String> param, int expiryInSec) {
         String resultId = param.get(Constants.PARAM_RESULT_ID);
         ResultHolder holder;
         Map<String, String> nextResultIdMap = new HashMap<>();
@@ -48,7 +45,7 @@ public class QueryExecutor extends BaseExecutor {
             Set<String> uidSearchHosts = toHostSet(param.remove(KEY_UID_SEARCH_HOSTS));
             checkHosts(logSearchHosts, uidSearchHosts);
             List<Object> list = getNewResultsByParam(logSearchHosts, uidSearchHosts, param, nextResultIdMap);
-            holder = ResultHolder.getNew(param, list, uidSearchHosts);
+            holder = ResultHolder.getNew(param, list, uidSearchHosts, expiryInSec);
         }
         // 按需分页
         if (!nextResultIdMap.isEmpty()) {
@@ -150,26 +147,27 @@ public class QueryExecutor extends BaseExecutor {
         public final Map<String, String> param;
         public final Map<String, String> resultIdMap;
         public final Set<String> uidSearchHosts;
+        private final int expiryInSec;
         public List<Object> result;
 
-        public static ResultHolder getNew(Map<String, String> param, List<Object> result, Set<String> uidSearchHosts) {
-            return new ResultHolder(param, null, result, uidSearchHosts);
+        public static ResultHolder getNew(Map<String, String> param, List<Object> result, Set<String> uidSearchHosts, int expiryInSec) {
+            return new ResultHolder(param, null, result, uidSearchHosts, expiryInSec);
         }
 
         public static void generateNext(ResultHolder last, Map<String, String> resultIdMap) {
-            ResultHolder next = new ResultHolder(last.param, resultIdMap, null, last.uidSearchHosts);
+            ResultHolder next = new ResultHolder(last.param, resultIdMap, null, last.uidSearchHosts, last.expiryInSec);
             last.idOwner.nextResultId = next.idOwner.curResultId;
             next.idOwner.lastResultId = last.idOwner.curResultId;
         }
 
-        private ResultHolder(Map<String, String> param, Map<String, String> resultIdMap, List<Object> result, Set<String> uidSearchHosts) {
+        private ResultHolder(Map<String, String> param, Map<String, String> resultIdMap, List<Object> result, Set<String> uidSearchHosts, int expiryInSec) {
             this.param = param;
             this.resultIdMap = resultIdMap;
             this.result = result;
             this.uidSearchHosts = uidSearchHosts;
             String uid = UidUtils.getNew();
             idOwner.curResultId = uid;
-            saveResultId(uid, this);
+            HOLDER_MAP.set(uid, this, this.expiryInSec = expiryInSec);
         }
 
         public String getResultString() {

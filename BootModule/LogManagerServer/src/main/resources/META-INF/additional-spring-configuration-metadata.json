@@ -4,6 +4,11 @@
       "name": "config.query-path",
       "type": "java.lang.String",
       "description": "日志查询接口的路径."
+    },
+    {
+      "name": "config.result-retain-sec",
+      "type": "java.lang.Integer",
+      "description": "查询结果保留的时间."
     }
   ]
 }
