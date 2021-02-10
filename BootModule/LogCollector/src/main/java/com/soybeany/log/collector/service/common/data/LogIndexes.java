@@ -1,9 +1,13 @@
 package com.soybeany.log.collector.service.common.data;
 
+import com.soybeany.log.collector.config.AppConfig;
 import com.soybeany.log.core.model.FileRange;
+import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.core.model.LogPack;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.Serializable;
 import java.util.*;
 
@@ -43,10 +47,61 @@ public class LogIndexes implements Serializable {
      */
     public final Map<String, Map<String, Set<String>>> tagUidMap = new HashMap<>();
 
-    public LogIndexes(File logFile) {
+    // ********************验证是否还能复用********************
+
+    /**
+     * 生成索引时的配置项转换成的md5
+     */
+    public String configMd5;
+
+    /**
+     * 首行文本
+     */
+    public final String firstLineText;
+
+    // ********************方法区********************
+
+    public LogIndexes(AppConfig appConfig, File logFile) {
         this.logFile = logFile;
+        this.configMd5 = getConfigMd5(appConfig);
+        this.firstLineText = readFirstLine(logFile);
     }
 
-    // ********************内部类********************
+    /**
+     * 检查索引是否依然有效，因为配置变化、当天日志文件滚动等情况，索引文件将不再有效
+     */
+    public LogIndexes withCheck(AppConfig appConfig) {
+        String curConfigMd5 = getConfigMd5(appConfig);
+        if (!configMd5.equals(curConfigMd5)) {
+            throw new LogException("配置发生了变更");
+        }
+        String curFirstLineText = readFirstLine(logFile);
+        if (!firstLineText.equals(curFirstLineText)) {
+            throw new LogException("文件内容发生了变更");
+        }
+        return this;
+    }
+
+    // ********************内部方法********************
+
+    private String getConfigMd5(AppConfig config) {
+        try {
+            return config.getConfigMd5();
+        } catch (Exception e) {
+            throw new LogException("getConfigMd5：" + e.getMessage());
+        }
+    }
+
+    private String readFirstLine(File file) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line = reader.readLine();
+            if (null == line || line.isEmpty()) {
+                throw new LogException("不支持对空白文件进行索引");
+            }
+            return line;
+        } catch (Exception e) {
+            throw new LogException("readFirstLine:" + e.getMessage());
+        }
+    }
 
 }

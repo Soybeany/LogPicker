@@ -53,8 +53,8 @@ class LogIndexServiceImpl implements LogIndexService {
             return null;
         }
         try (ObjectInputStream is = new ObjectInputStream(new FileInputStream(indexFile))) {
-            return (LogIndexes) is.readObject();
-        } catch (IOException | ClassNotFoundException ignored) {
+            return ((LogIndexes) is.readObject()).withCheck(appConfig);
+        } catch (Exception ignore) {
         }
         // 后续为异常时的处理
         boolean deleted = indexFile.delete();
@@ -68,7 +68,7 @@ class LogIndexServiceImpl implements LogIndexService {
     @Override
     public LogIndexes updateAndGetIndexes(MsgRecorder recorder, File file) throws IOException {
         // 得到索引
-        LogIndexes indexes = Optional.ofNullable(getIndexes(recorder, file)).orElseGet(() -> new LogIndexes(file));
+        LogIndexes indexes = Optional.ofNullable(getIndexes(recorder, file)).orElseGet(() -> new LogIndexes(appConfig, file));
         long startByte = indexes.scannedBytes;
         // 若索引已是最新，则不再更新
         if (file.length() == startByte) {

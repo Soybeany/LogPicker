@@ -1,11 +1,12 @@
 package com.soybeany.log.collector.config;
 
+import com.soybeany.log.core.util.Md5Calculator;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -27,7 +28,7 @@ public class AppConfig {
     public String noUidPlaceholder;
     public String lineTimeFormat;
     public DateTimeFormatter lineTimeFormatter;
-    public final Set<String> tagsToIndex = new HashSet<>();
+    public final Set<String> tagsToIndex = new LinkedHashSet<>();
     public int maxBytesGapToMerge;
     public int maxLinesPerResultWithNoUid;
     public int defaultMaxResultCount;
@@ -83,6 +84,13 @@ public class AppConfig {
 
     public void setMaxLinesPerResultWithNoUid(int maxLinesPerResultWithNoUid) {
         this.maxLinesPerResultWithNoUid = maxLinesPerResultWithNoUid;
+    }
+
+    public String getConfigMd5() throws Exception {
+        return new Md5Calculator()
+                .with(logCharset).with(lineParsePattern).with(tagParsePattern).with(noUidPlaceholder)
+                .with(lineTimeFormat).with(lineTimeFormatter).with(tagsToIndex)
+                .calculate();
     }
 
 }

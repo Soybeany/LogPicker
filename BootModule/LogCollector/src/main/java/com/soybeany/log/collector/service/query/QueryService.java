@@ -167,6 +167,8 @@ class QueryServiceImpl implements QueryService {
             if (needMore) {
                 needMore = queryByRanges(result, context, formalLogPacks, loaderMap);
             }
+            // 检测文件是否有变更
+            context.indexesMap.values().forEach(indexes -> indexes.withCheck(appConfig));
         } finally {
             // 释放加载器持有器
             for (LogPackLoader loader : loaderMap.values()) {
