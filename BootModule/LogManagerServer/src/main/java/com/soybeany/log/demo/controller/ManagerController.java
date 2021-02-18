@@ -13,20 +13,22 @@ import java.util.Map;
  * @date 2021/2/5
  */
 @RestController
-@RequestMapping("/query")
+@RequestMapping(ManagerController.PATH_PREFIX)
 public class ManagerController {
+
+    static final String PATH_PREFIX = "/api/v1/logMonitorV4";
 
     @Autowired
     private AppConfig appConfig;
 
-    @PostMapping(value = "/forDirectRead", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/query", produces = MediaType.APPLICATION_JSON_VALUE)
     public String forDirectRead(@RequestParam Map<String, String> param) {
         return LogManager.query().getResult(appConfig.queryPath, param, appConfig.resultRetainSec);
     }
 
     @GetMapping("/help")
     public String help() {
-        return LogManager.queryHelp("/query/help", "/query/forDirectRead");
+        return LogManager.queryHelp(PATH_PREFIX + "/help", PATH_PREFIX + "/query");
     }
 
 }
