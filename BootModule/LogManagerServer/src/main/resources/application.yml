@@ -7,6 +7,6 @@ config:
   # 帮助接口的路径(不含context)
   help-path: /api/v1/logMonitorV4/help
   # 调外部查询接口的路径(含context)
-  outer-query-path: /efb/api/v1/logMonitorV4/query.do
+  outer-query-path: /efb/api/v1/logMonitorV4/queryByManager.do
   # 查询结果保留的时间
   result-retain-sec: 10
