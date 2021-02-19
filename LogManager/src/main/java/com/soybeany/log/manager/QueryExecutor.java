@@ -24,7 +24,7 @@ public class QueryExecutor extends BaseExecutor {
 
     private static final DataTimingHolder<ResultHolder> HOLDER_MAP = new DataTimingHolder<>();
 
-    public String getResult(String path, Map<String, String> param, int expiryInSec) {
+    public String getResult(String path, Map<String, String> headers, Map<String, String> param, int expiryInSec) {
         String resultId = param.get(Constants.PARAM_RESULT_ID);
         ResultHolder holder;
         Map<String, String> nextResultIdMap = new HashMap<>();
@@ -38,14 +38,14 @@ public class QueryExecutor extends BaseExecutor {
                 return holder.getResultString();
             }
             // 使用resultId进行查找
-            holder.result = getNewResultsByResultId(path, holder.uidSearchHosts, holder.resultIdMap, holder.param, nextResultIdMap);
+            holder.result = getNewResultsByResultId(path, holder.uidSearchHosts, holder.resultIdMap, holder.headers, holder.param, nextResultIdMap);
         } else {
             // 使用参数进行查找
             Set<String> logSearchHosts = toHostSet(param.remove(KEY_LOG_SEARCH_HOSTS));
             Set<String> uidSearchHosts = toHostSet(param.remove(KEY_UID_SEARCH_HOSTS));
             checkHosts(logSearchHosts, uidSearchHosts);
-            List<Object> list = getNewResultsByParam(logSearchHosts, uidSearchHosts, param, nextResultIdMap);
-            holder = ResultHolder.getNew(param, list, uidSearchHosts, expiryInSec);
+            List<Object> list = getNewResultsByParam(logSearchHosts, uidSearchHosts, path, headers, param, nextResultIdMap);
+            holder = ResultHolder.getNew(headers, param, list, uidSearchHosts, expiryInSec);
         }
         // 按需分页
         if (!nextResultIdMap.isEmpty()) {
@@ -58,28 +58,28 @@ public class QueryExecutor extends BaseExecutor {
 
     // ********************内部方法********************
 
-    private List<Object> getNewResultsByParam(Set<String> logSearchHosts, Set<String> uidSearchHosts, Map<String, String> param, Map<String, String> nextResultIdMap) {
+    private List<Object> getNewResultsByParam(Set<String> logSearchHosts, Set<String> uidSearchHosts, String path, Map<String, String> headers, Map<String, String> param, Map<String, String> nextResultIdMap) {
         CollectResult result = new CollectResult();
         // 获取第一批结果(根据查询条件)
-        Map<String, Dto<QueryResultVO>> firstDtoMap = batchInvoke(logSearchHosts, host -> getResultByParam(host, param));
+        Map<String, Dto<QueryResultVO>> firstDtoMap = batchInvoke(logSearchHosts, host -> getResultByParam(host, path, headers, param));
         result.add(firstDtoMap);
         // 获取第二批结果(按需，根据uid)
-        return getSecondPartResultsByUid(param, result, uidSearchHosts, nextResultIdMap);
+        return getSecondPartResultsByUid(path, headers, param, result, uidSearchHosts, nextResultIdMap);
     }
 
-    private List<Object> getNewResultsByResultId(String path, Set<String> uidSearchHosts, Map<String, String> resultIdMap, Map<String, String> param, Map<String, String> nextResultIdMap) {
+    private List<Object> getNewResultsByResultId(String path, Set<String> uidSearchHosts, Map<String, String> resultIdMap, Map<String, String> headers, Map<String, String> param, Map<String, String> nextResultIdMap) {
         CollectResult result = new CollectResult();
         // 获取第一批结果(根据查询条件)
-        Map<String, Dto<QueryResultVO>> firstDtoMap = batchInvoke(resultIdMap.keySet(), host -> getResultByResultId(host + path, param, resultIdMap.get(host)));
+        Map<String, Dto<QueryResultVO>> firstDtoMap = batchInvoke(resultIdMap.keySet(), host -> getResultByResultId(host, path, headers, param, resultIdMap.get(host)));
         result.add(firstDtoMap);
         // 获取第二批结果(按需，根据uid)
-        return getSecondPartResultsByUid(param, result, uidSearchHosts, nextResultIdMap);
+        return getSecondPartResultsByUid(path, headers, param, result, uidSearchHosts, nextResultIdMap);
     }
 
-    private List<Object> getSecondPartResultsByUid(Map<String, String> param, CollectResult result, Set<String> uidSearchHosts, Map<String, String> nextResultIdMap) {
+    private List<Object> getSecondPartResultsByUid(String path, Map<String, String> headers, Map<String, String> param, CollectResult result, Set<String> uidSearchHosts, Map<String, String> nextResultIdMap) {
         Set<String> uidSet;
         if (null != uidSearchHosts && !(uidSet = result.getUidSet()).isEmpty()) {
-            Map<String, Dto<QueryResultVO>> secondDtoMap = batchInvoke(uidSearchHosts, host -> getResultByUid(host, param, uidSet));
+            Map<String, Dto<QueryResultVO>> secondDtoMap = batchInvoke(uidSearchHosts, host -> getResultByUid(host, path, headers, param, uidSet));
             result.add(secondDtoMap);
         }
         // 转换为最终结果
@@ -115,13 +115,13 @@ public class QueryExecutor extends BaseExecutor {
         return invokeAll(callables);
     }
 
-    private QueryResultVO getResultByResultId(String url, Map<String, String> param, String resultId) throws IOException {
+    private QueryResultVO getResultByResultId(String host, String path, Map<String, String> headers, Map<String, String> param, String resultId) throws IOException {
         Map<String, String> newParam = new HashMap<>(param);
         newParam.put(Constants.PARAM_RESULT_ID, resultId);
-        return getResultByParam(url, newParam);
+        return getResultByParam(host, path, headers, newParam);
     }
 
-    private QueryResultVO getResultByUid(String url, Map<String, String> param, Set<String> uidSet) throws IOException {
+    private QueryResultVO getResultByUid(String host, String path, Map<String, String> headers, Map<String, String> param, Set<String> uidSet) throws IOException {
         Map<String, String> newParam = new HashMap<>(param);
         Iterator<String> it = uidSet.iterator();
         StringBuilder uidListBuilder = new StringBuilder(it.next());
@@ -129,11 +129,11 @@ public class QueryExecutor extends BaseExecutor {
             uidListBuilder.append(";").append(it.next());
         }
         newParam.put("uidList", uidListBuilder.toString());
-        return getResultByParam(url, newParam);
+        return getResultByParam(host, path, headers, newParam);
     }
 
-    private QueryResultVO getResultByParam(String url, Map<String, String> param) throws IOException {
-        return request(url, param, QueryResultVO.class);
+    private QueryResultVO getResultByParam(String host, String path, Map<String, String> headers, Map<String, String> param) throws IOException {
+        return request(host + path, headers, param, QueryResultVO.class);
     }
 
     // ********************内部类********************
@@ -144,23 +144,25 @@ public class QueryExecutor extends BaseExecutor {
 
     private static class ResultHolder {
         public final IdOwner idOwner = new IdOwner();
+        public final Map<String, String> headers;
         public final Map<String, String> param;
         public final Map<String, String> resultIdMap;
         public final Set<String> uidSearchHosts;
         private final int expiryInSec;
         public List<Object> result;
 
-        public static ResultHolder getNew(Map<String, String> param, List<Object> result, Set<String> uidSearchHosts, int expiryInSec) {
-            return new ResultHolder(param, null, result, uidSearchHosts, expiryInSec);
+        public static ResultHolder getNew(Map<String, String> headers, Map<String, String> param, List<Object> result, Set<String> uidSearchHosts, int expiryInSec) {
+            return new ResultHolder(headers, param, null, result, uidSearchHosts, expiryInSec);
         }
 
         public static void generateNext(ResultHolder last, Map<String, String> resultIdMap) {
-            ResultHolder next = new ResultHolder(last.param, resultIdMap, null, last.uidSearchHosts, last.expiryInSec);
+            ResultHolder next = new ResultHolder(last.headers, last.param, resultIdMap, null, last.uidSearchHosts, last.expiryInSec);
             last.idOwner.nextResultId = next.idOwner.curResultId;
             next.idOwner.lastResultId = last.idOwner.curResultId;
         }
 
-        private ResultHolder(Map<String, String> param, Map<String, String> resultIdMap, List<Object> result, Set<String> uidSearchHosts, int expiryInSec) {
+        private ResultHolder(Map<String, String> headers, Map<String, String> param, Map<String, String> resultIdMap, List<Object> result, Set<String> uidSearchHosts, int expiryInSec) {
+            this.headers = headers;
             this.param = param;
             this.resultIdMap = resultIdMap;
             this.result = result;

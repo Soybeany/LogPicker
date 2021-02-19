@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,15 +37,25 @@ public class ManagerController {
             return null;
         }
         response.setContentType(action.onGetContentType());
-        return action.onInvoke(param);
+        Map<String, String> headers = new HashMap<>();
+        Enumeration<String> headerNames = request.getHeaderNames();
+        while (headerNames.hasMoreElements()) {
+            String headerName = headerNames.nextElement();
+            headers.put(headerName, request.getHeader(headerName));
+        }
+        try {
+            return action.onInvoke(headers, param);
+        } catch (Exception e) {
+            return e.getMessage();
+        }
     }
 
     @PostConstruct
     private void init() {
         actionMap.put(appConfig.queryPath, new IAction() {
             @Override
-            public String onInvoke(Map<String, String> param) {
-                return LogManager.query().getResult(appConfig.outerQueryPath, param, appConfig.resultRetainSec);
+            public String onInvoke(Map<String, String> headers, Map<String, String> param) {
+                return LogManager.query().getResult(appConfig.outerQueryPath, headers, param, appConfig.resultRetainSec);
             }
 
             @Override
@@ -52,11 +63,11 @@ public class ManagerController {
                 return MediaType.APPLICATION_JSON_VALUE;
             }
         });
-        actionMap.put(appConfig.helpPath, param -> LogManager.queryHelp(appConfig.helpPath, appConfig.queryPath));
+        actionMap.put(appConfig.helpPath, (headers, param) -> LogManager.queryHelp(appConfig.helpPath, appConfig.queryPath));
     }
 
     private interface IAction {
-        String onInvoke(Map<String, String> param);
+        String onInvoke(Map<String, String> headers, Map<String, String> param);
 
         default String onGetContentType() {
             return MediaType.TEXT_PLAIN_VALUE;

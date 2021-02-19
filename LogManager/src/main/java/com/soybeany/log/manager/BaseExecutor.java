@@ -5,6 +5,7 @@ import okhttp3.*;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -47,15 +48,19 @@ public class BaseExecutor {
         return result;
     }
 
-    protected <T> T request(String url, Map<String, String> param, Type type) throws IOException {
+    protected <T> T request(String url, Map<String, String> headers, Map<String, String> param, Type type) throws IOException {
         if (!url.startsWith("http")) {
             url = "http://" + url;
+        }
+        if (null == headers) {
+            headers = Collections.emptyMap();
         }
         FormBody.Builder bodyBuilder = new FormBody.Builder();
         param.forEach(bodyBuilder::add);
         Request request = new Request.Builder()
                 .post(bodyBuilder.build())
                 .url(url)
+                .headers(Headers.of(headers))
                 .build();
         try (Response response = CLIENT_FOR_READ.newCall(request).execute()) {
             ResponseBody body;
