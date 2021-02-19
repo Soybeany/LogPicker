@@ -15,7 +15,9 @@ import javax.annotation.PreDestroy;
 @ConfigurationProperties(prefix = "config")
 public class AppConfig {
 
+    public String outerQueryPath;
     public String queryPath;
+    public String helpPath;
     public int resultRetainSec;
 
     @PostConstruct
@@ -30,6 +32,14 @@ public class AppConfig {
 
     public void setQueryPath(String queryPath) {
         this.queryPath = queryPath;
+    }
+
+    public void setHelpPath(String helpPath) {
+        this.helpPath = helpPath;
+    }
+
+    public void setOuterQueryPath(String outerQueryPath) {
+        this.outerQueryPath = outerQueryPath;
     }
 
     public void setResultRetainSec(int resultRetainSec) {

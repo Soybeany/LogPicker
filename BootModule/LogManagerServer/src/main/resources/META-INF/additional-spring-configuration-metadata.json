@@ -3,7 +3,17 @@
     {
       "name": "config.query-path",
       "type": "java.lang.String",
-      "description": "日志查询接口的路径."
+      "description": "日志查询接口的路径(不含context)."
+    },
+    {
+      "name": "config.help-path",
+      "type": "java.lang.String",
+      "description": "帮助接口的路径(不含context)."
+    },
+    {
+      "name": "config.outer-query-path",
+      "type": "java.lang.String",
+      "description": "调外部查询接口的路径(含context)."
     },
     {
       "name": "config.result-retain-sec",

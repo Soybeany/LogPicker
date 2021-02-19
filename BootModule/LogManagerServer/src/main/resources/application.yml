@@ -2,7 +2,11 @@ server:
   port: 8282
 
 config:
-  # 日志查询接口的路径
-  query-path: /query/forPack
+  # 日志查询接口的路径(不含context)
+  query-path: /api/v1/logMonitorV4/query
+  # 帮助接口的路径(不含context)
+  help-path: /api/v1/logMonitorV4/help
+  # 调外部查询接口的路径(含context)
+  outer-query-path: efb/api/v1/logMonitorV4/query
   # 查询结果保留的时间
   result-retain-sec: 10
