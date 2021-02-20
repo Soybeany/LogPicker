@@ -10,7 +10,7 @@ import com.soybeany.log.collector.query.factory.ModuleFactory;
 import com.soybeany.log.collector.query.factory.TagContainsModuleFactory;
 import com.soybeany.log.collector.query.factory.UidModuleFactory;
 import com.soybeany.log.collector.scan.ScanService;
-import com.soybeany.log.core.util.DataTimingHolder;
+import com.soybeany.log.core.util.DataHolder;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -22,11 +22,11 @@ import java.util.List;
 public class LogCollector {
 
     public static void init() {
-        DataTimingHolder.createTimer();
+        DataHolder.createTimer();
     }
 
     public static void release() {
-        DataTimingHolder.destroyTimer();
+        DataHolder.destroyTimer();
     }
 
     public static ScanBuilder scan(LogCollectConfig logCollectConfig) {

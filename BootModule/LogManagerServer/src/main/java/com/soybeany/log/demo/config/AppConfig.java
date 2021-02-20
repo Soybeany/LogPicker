@@ -18,6 +18,7 @@ public class AppConfig {
     public String outerQueryPath;
     public String queryPath;
     public String helpPath;
+    public int maxResultRetain;
     public int resultRetainSec;
 
     @PostConstruct
@@ -40,6 +41,10 @@ public class AppConfig {
 
     public void setOuterQueryPath(String outerQueryPath) {
         this.outerQueryPath = outerQueryPath;
+    }
+
+    public void setMaxResultRetain(int maxResultRetain) {
+        this.maxResultRetain = maxResultRetain;
     }
 
     public void setResultRetainSec(int resultRetainSec) {

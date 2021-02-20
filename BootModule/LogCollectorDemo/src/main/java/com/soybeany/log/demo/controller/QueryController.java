@@ -1,6 +1,7 @@
 package com.soybeany.log.demo.controller;
 
 import com.soybeany.log.collector.LogCollector;
+import com.soybeany.log.collector.query.QueryService;
 import com.soybeany.log.core.model.Direction;
 import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.demo.config.AppConfig;
@@ -8,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Arrays;
+import javax.annotation.PostConstruct;
 import java.util.Map;
 
 /**
@@ -22,10 +23,12 @@ public class QueryController {
     @Autowired
     private AppConfig appConfig;
 
+    private QueryService queryService;
+
     @PostMapping("/byParam")
     public String byParam(@RequestParam Map<String, String> param) {
         try {
-            return LogCollector.query(appConfig.toLogCollectConfig()).build().simpleQuery(param);
+            return queryService.simpleQuery(param);
         } catch (LogException e) {
             return "出现异常:" + e.getMessage();
         }
@@ -43,26 +46,14 @@ public class QueryController {
         return byParam(param);
     }
 
-    @GetMapping("/config")
-    public String config() {
-        return ""
-                + "待扫描的目录: " + Arrays.toString(appConfig.dirsToScan)
-                + "存放索引的目录: " + appConfig.dirForIndexes
-                + "当天日志文件的命名: " + appConfig.logTodayFileName
-                + "历史日志文件的命名: " + appConfig.logHistoryFileName
-                + "日志的字符集: " + appConfig.logCharset
-                + "行解析的正则: " + appConfig.lineParseRegex
-                + "标签解析的正则: " + appConfig.tagParseRegex
-                + "行的时间格式: " + appConfig.lineTimeFormat
-                + "建立索引的标签: " + appConfig.tagsToIndex
-                + "新记录与旧记录的字节数阈值: " + appConfig.maxBytesGapToMerge
-                + "默认一次查询最多返回的结果条数: " + appConfig.defaultMaxResultCount
-                + "没有uid时每条查询结果允许包含的最大行数: " + appConfig.maxLinesPerResultWithNoUid;
-    }
-
     @GetMapping("/help")
     public String help() {
         return Direction.query("/query/help", "/query/forDirectRead");
+    }
+
+    @PostConstruct
+    private void onInit() {
+        queryService = LogCollector.query(appConfig.toLogCollectConfig()).build();
     }
 
 }

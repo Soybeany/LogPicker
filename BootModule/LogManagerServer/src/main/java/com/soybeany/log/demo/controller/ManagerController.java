@@ -2,6 +2,7 @@ package com.soybeany.log.demo.controller;
 
 import com.soybeany.log.demo.config.AppConfig;
 import com.soybeany.log.manager.LogManager;
+import com.soybeany.log.manager.QueryExecutor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,6 +27,8 @@ public class ManagerController {
 
     @Autowired
     private AppConfig appConfig;
+
+    private QueryExecutor queryExecutor;
 
     @RequestMapping("/**")
     public String forDirectRead(HttpServletRequest request, HttpServletResponse response, @RequestParam Map<String, String> param) {
@@ -52,10 +55,11 @@ public class ManagerController {
 
     @PostConstruct
     private void init() {
+        queryExecutor = LogManager.query(appConfig.maxResultRetain);
         actionMap.put(appConfig.queryPath, new IAction() {
             @Override
             public String onInvoke(Map<String, String> headers, Map<String, String> param) {
-                return LogManager.query().getResult(appConfig.outerQueryPath, headers, param, appConfig.resultRetainSec);
+                return queryExecutor.getResult(appConfig.outerQueryPath, headers, param, appConfig.resultRetainSec);
             }
 
             @Override

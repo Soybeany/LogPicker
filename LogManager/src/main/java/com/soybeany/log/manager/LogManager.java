@@ -1,7 +1,7 @@
 package com.soybeany.log.manager;
 
 import com.soybeany.log.core.model.Direction;
-import com.soybeany.log.core.util.DataTimingHolder;
+import com.soybeany.log.core.util.DataHolder;
 
 /**
  * @author Soybeany
@@ -10,17 +10,17 @@ import com.soybeany.log.core.util.DataTimingHolder;
 public class LogManager {
 
     public static void init() {
-        DataTimingHolder.createTimer();
+        DataHolder.createTimer();
         BaseExecutor.createRequestPool();
     }
 
     public static void release() {
         BaseExecutor.destroyRequestPool();
-        DataTimingHolder.destroyTimer();
+        DataHolder.destroyTimer();
     }
 
-    public static QueryExecutor query() {
-        return new QueryExecutor();
+    public static QueryExecutor query(int maxResultCount) {
+        return new QueryExecutor(maxResultCount);
     }
 
     public static String queryHelp(String helpPath, String forDirectReadPath) {

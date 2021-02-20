@@ -1,5 +1,6 @@
 package com.soybeany.log.collector.common.data;
 
+import com.google.gson.Gson;
 import com.soybeany.log.core.model.FileRange;
 import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.core.model.LogPack;
@@ -15,6 +16,8 @@ import java.util.*;
  * @date 2021/1/14
  */
 public class LogIndexes implements Serializable {
+
+    private static final Gson GSON = new Gson();
 
     /**
      * 日志文件
@@ -51,19 +54,45 @@ public class LogIndexes implements Serializable {
     /**
      * 生成索引时的配置项转换成的md5
      */
-    public String configMd5;
+    public final String configMd5;
 
     /**
      * 首行文本
      */
     public final String firstLineText;
 
-    // ********************方法区********************
+    // ********************静态方法区********************
+
+    private static String getConfigMd5(LogCollectConfig config) {
+        try {
+            return config.getConfigMd5();
+        } catch (Exception e) {
+            throw new LogException("getConfigMd5：" + e.getMessage());
+        }
+    }
+
+    private static String readFirstLine(File file) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line = reader.readLine();
+            if (null == line || line.isEmpty()) {
+                throw new LogException("不支持对空白文件进行索引");
+            }
+            return line;
+        } catch (Exception e) {
+            throw new LogException("readFirstLine:" + e.getMessage());
+        }
+    }
+
+    // ********************普通方法区********************
 
     public LogIndexes(LogCollectConfig logCollectConfig, File logFile) {
+        this(logFile, getConfigMd5(logCollectConfig), readFirstLine(logFile));
+    }
+
+    private LogIndexes(File logFile, String configMd5, String firstLineText) {
         this.logFile = logFile;
-        this.configMd5 = getConfigMd5(logCollectConfig);
-        this.firstLineText = readFirstLine(logFile);
+        this.configMd5 = configMd5;
+        this.firstLineText = firstLineText;
     }
 
     /**
@@ -81,26 +110,14 @@ public class LogIndexes implements Serializable {
         return this;
     }
 
-    // ********************内部方法********************
-
-    private String getConfigMd5(LogCollectConfig config) {
-        try {
-            return config.getConfigMd5();
-        } catch (Exception e) {
-            throw new LogException("getConfigMd5：" + e.getMessage());
-        }
-    }
-
-    private String readFirstLine(File file) {
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-            String line = reader.readLine();
-            if (null == line || line.isEmpty()) {
-                throw new LogException("不支持对空白文件进行索引");
-            }
-            return line;
-        } catch (Exception e) {
-            throw new LogException("readFirstLine:" + e.getMessage());
-        }
+    public LogIndexes getCopy() {
+        LogIndexes newIndexes = new LogIndexes(logFile, configMd5, firstLineText);
+        newIndexes.scannedBytes = scannedBytes;
+        newIndexes.uidRanges.putAll(uidRanges);
+        newIndexes.tagUidMap.putAll(tagUidMap);
+        newIndexes.timeIndexMap.putAll(timeIndexMap);
+        uidTempMap.forEach((key, value) -> newIndexes.uidTempMap.put(key, GSON.fromJson(GSON.toJson(value), LogPack.class)));
+        return newIndexes;
     }
 
 }

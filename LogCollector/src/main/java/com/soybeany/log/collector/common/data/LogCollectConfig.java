@@ -19,10 +19,6 @@ public class LogCollectConfig {
      */
     public String[] dirsToScan;
     /**
-     * 用于存放索引的目录
-     */
-    public String dirForIndexes;
-    /**
      * 当天日志文件的命名
      */
     public String logTodayFileName;
@@ -71,15 +67,30 @@ public class LogCollectConfig {
      */
     public int defaultMaxResultCount = 30;
     /**
+     * 一次查询最多能查询的文件数
+     */
+    public int maxFilesToQuery = 10;
+    /**
+     * 在内存中最多持有的文件索引数
+     */
+    public int maxFileIndexesRetain = 10;
+    /**
+     * 在内存中最多持有的结果数
+     */
+    public int maxResultRetain = 10;
+    /**
+     * 索引保留的时间
+     */
+    public int indexRetainSec = 300;
+    /**
      * 查询结果保留的时间
      */
     public int resultRetainSec = 300;
 
-    public LogCollectConfig(String[] dirsToScan, String dirForIndexes, String logTodayFileName,
+    public LogCollectConfig(String[] dirsToScan, String logTodayFileName,
                             String logHistoryFileName, String lineParseRegex, String tagParseRegex,
                             String lineTimeFormat) {
         this.dirsToScan = dirsToScan;
-        this.dirForIndexes = dirForIndexes;
         this.logTodayFileName = logTodayFileName;
         this.logHistoryFileName = logHistoryFileName;
         this.lineParsePattern = Pattern.compile(lineParseRegex);
@@ -115,6 +126,26 @@ public class LogCollectConfig {
 
     public LogCollectConfig withDefaultMaxResultCount(int defaultMaxResultCount) {
         this.defaultMaxResultCount = defaultMaxResultCount;
+        return this;
+    }
+
+    public LogCollectConfig withMaxFileIndexesRetain(int count) {
+        this.maxFileIndexesRetain = count;
+        return this;
+    }
+
+    public LogCollectConfig withMaxResultRetain(int count) {
+        this.maxResultRetain = count;
+        return this;
+    }
+
+    public LogCollectConfig withMaxFilesToQuery(int count) {
+        this.maxFilesToQuery = count;
+        return this;
+    }
+
+    public LogCollectConfig withIndexRetainSec(int sec) {
+        this.indexRetainSec = sec;
         return this;
     }
 

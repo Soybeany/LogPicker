@@ -4,7 +4,7 @@ import com.soybeany.log.core.model.Constants;
 import com.soybeany.log.core.model.IdOwner;
 import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.core.model.QueryResultVO;
-import com.soybeany.log.core.util.DataTimingHolder;
+import com.soybeany.log.core.util.DataHolder;
 import com.soybeany.log.core.util.UidUtils;
 
 import java.io.IOException;
@@ -20,16 +20,21 @@ public class QueryExecutor extends BaseExecutor {
     private static final String KEY_LOG_SEARCH_HOSTS = "logSearchHosts";
     private static final String KEY_UID_SEARCH_HOSTS = "uidSearchHosts";
     private static final String KEY_HIDE_MSG = "hideMsg";
+    private static final String KEY_UID_LIST = "uidList";
     private static final String HOST_SEPARATE_REGEX = "[,;]";
 
-    private static final DataTimingHolder<ResultHolder> HOLDER_MAP = new DataTimingHolder<>();
+    private final DataHolder<ResultHolder> holderMap;
+
+    public QueryExecutor(int maxResultCount) {
+        holderMap = new DataHolder<>(maxResultCount);
+    }
 
     public String getResult(String path, Map<String, String> headers, Map<String, String> param, int expiryInSec) {
         String resultId = param.get(Constants.PARAM_RESULT_ID);
         ResultHolder holder;
         Map<String, String> nextResultIdMap = new HashMap<>();
         if (null != resultId) {
-            holder = HOLDER_MAP.get(resultId);
+            holder = holderMap.updateAndGet(resultId);
             if (null == holder) {
                 throw new LogException("找不到指定resultId对应的result");
             }
@@ -45,11 +50,11 @@ public class QueryExecutor extends BaseExecutor {
             Set<String> uidSearchHosts = toHostSet(param.remove(KEY_UID_SEARCH_HOSTS));
             checkHosts(logSearchHosts, uidSearchHosts);
             List<Object> list = getNewResultsByParam(logSearchHosts, uidSearchHosts, path, headers, param, nextResultIdMap);
-            holder = ResultHolder.getNew(headers, param, list, uidSearchHosts, expiryInSec);
+            holder = getNewHolder(headers, param, list, uidSearchHosts, expiryInSec);
         }
         // 按需分页
         if (!nextResultIdMap.isEmpty()) {
-            ResultHolder.generateNext(holder, nextResultIdMap);
+            generateNextHolder(holder, nextResultIdMap);
         }
         // 加入id信息
         holder.result.add(0, holder.idOwner);
@@ -128,12 +133,22 @@ public class QueryExecutor extends BaseExecutor {
         while (it.hasNext()) {
             uidListBuilder.append(";").append(it.next());
         }
-        newParam.put("uidList", uidListBuilder.toString());
+        newParam.put(KEY_UID_LIST, uidListBuilder.toString());
         return getResultByParam(host, path, headers, newParam);
     }
 
     private QueryResultVO getResultByParam(String host, String path, Map<String, String> headers, Map<String, String> param) throws IOException {
         return request(host + path, headers, param, QueryResultVO.class);
+    }
+
+    private ResultHolder getNewHolder(Map<String, String> headers, Map<String, String> param, List<Object> result, Set<String> uidSearchHosts, int expiryInSec) {
+        return new ResultHolder(headers, param, null, result, uidSearchHosts, expiryInSec);
+    }
+
+    private void generateNextHolder(ResultHolder last, Map<String, String> resultIdMap) {
+        ResultHolder next = new ResultHolder(last.headers, last.param, resultIdMap, null, last.uidSearchHosts, last.expiryInSec);
+        last.idOwner.nextResultId = next.idOwner.curResultId;
+        next.idOwner.lastResultId = last.idOwner.curResultId;
     }
 
     // ********************内部类********************
@@ -142,7 +157,7 @@ public class QueryExecutor extends BaseExecutor {
         QueryResultVO onInvoke(String host) throws IOException;
     }
 
-    private static class ResultHolder {
+    private class ResultHolder {
         public final IdOwner idOwner = new IdOwner();
         public final Map<String, String> headers;
         public final Map<String, String> param;
@@ -150,16 +165,6 @@ public class QueryExecutor extends BaseExecutor {
         public final Set<String> uidSearchHosts;
         private final int expiryInSec;
         public List<Object> result;
-
-        public static ResultHolder getNew(Map<String, String> headers, Map<String, String> param, List<Object> result, Set<String> uidSearchHosts, int expiryInSec) {
-            return new ResultHolder(headers, param, null, result, uidSearchHosts, expiryInSec);
-        }
-
-        public static void generateNext(ResultHolder last, Map<String, String> resultIdMap) {
-            ResultHolder next = new ResultHolder(last.headers, last.param, resultIdMap, null, last.uidSearchHosts, last.expiryInSec);
-            last.idOwner.nextResultId = next.idOwner.curResultId;
-            next.idOwner.lastResultId = last.idOwner.curResultId;
-        }
 
         private ResultHolder(Map<String, String> headers, Map<String, String> param, Map<String, String> resultIdMap, List<Object> result, Set<String> uidSearchHosts, int expiryInSec) {
             this.headers = headers;
@@ -169,7 +174,7 @@ public class QueryExecutor extends BaseExecutor {
             this.uidSearchHosts = uidSearchHosts;
             String uid = UidUtils.getNew();
             idOwner.curResultId = uid;
-            HOLDER_MAP.set(uid, this, this.expiryInSec = expiryInSec);
+            holderMap.put(uid, this, this.expiryInSec = expiryInSec);
         }
 
         public String getResultString() {

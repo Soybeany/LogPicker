@@ -154,6 +154,10 @@ public class QueryParam {
             addFiles(today, tempDate);
             tempDate = tempDate.plusDays(1);
         }
+        int size = logFiles.size();
+        if (size > logCollectConfig.maxFilesToQuery) {
+            throw new LogException("一次查询最多允许" + logCollectConfig.maxFilesToQuery + "个文件，当前为" + size + "个");
+        }
     }
 
     private LocalDateTime parseToDateTime(String string) {

@@ -105,7 +105,7 @@ public class AppConfig {
     // ********************自定义方法********************
 
     public LogCollectConfig toLogCollectConfig() {
-        return new LogCollectConfig(dirsToScan, dirForIndexes, logTodayFileName,
+        return new LogCollectConfig(dirsToScan, logTodayFileName,
                 logHistoryFileName, lineParseRegex, tagParseRegex, lineTimeFormat)
                 .withLogCharset(logCharset)
                 .withNoUidPlaceholder(noUidPlaceholder)

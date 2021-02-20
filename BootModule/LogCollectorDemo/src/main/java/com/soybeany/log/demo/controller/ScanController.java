@@ -1,6 +1,7 @@
 package com.soybeany.log.demo.controller;
 
 import com.soybeany.log.collector.LogCollector;
+import com.soybeany.log.collector.scan.ScanService;
 import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.demo.config.AppConfig;
 import org.slf4j.Logger;
@@ -9,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import javax.annotation.PostConstruct;
 
 /**
  * @author Soybeany
@@ -23,12 +26,14 @@ public class ScanController {
     @Autowired
     private AppConfig appConfig;
 
+    private ScanService scanService;
+
     @GetMapping("/full")
     public String full() {
         try {
             LOG.info("开始扫描");
             long start = System.currentTimeMillis();
-            LogCollector.scan(appConfig.toLogCollectConfig()).build().fullScan();
+            scanService.fullScan();
             long end = System.currentTimeMillis();
             String spend = "ok，耗时:" + ((end - start) / 1000) + "s";
             LOG.info(spend);
@@ -36,6 +41,11 @@ public class ScanController {
         } catch (LogException e) {
             return "异常:" + e.getMessage();
         }
+    }
+
+    @PostConstruct
+    private void onInit() {
+        scanService = LogCollector.scan(appConfig.toLogCollectConfig()).build();
     }
 
 }

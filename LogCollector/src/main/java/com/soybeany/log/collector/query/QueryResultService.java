@@ -4,7 +4,7 @@ import com.soybeany.log.collector.common.data.LogCollectConfig;
 import com.soybeany.log.collector.query.data.QueryResult;
 import com.soybeany.log.core.model.Constants;
 import com.soybeany.log.core.model.LogException;
-import com.soybeany.log.core.util.DataTimingHolder;
+import com.soybeany.log.core.util.DataHolder;
 
 import java.util.Map;
 
@@ -14,12 +14,12 @@ import java.util.Map;
  */
 public class QueryResultService {
 
-    private static final DataTimingHolder<QueryResult> RESULT_MAP = new DataTimingHolder<>();
-
     private final LogCollectConfig logCollectConfig;
+    private final DataHolder<QueryResult> resultHolder;
 
     public QueryResultService(LogCollectConfig logCollectConfig) {
         this.logCollectConfig = logCollectConfig;
+        this.resultHolder = new DataHolder<>(logCollectConfig.maxResultRetain);
     }
 
     public QueryResult loadResultFromParam(Map<String, String> param) {
@@ -28,7 +28,7 @@ public class QueryResultService {
             return null;
         }
         // 若指定了resultId，则尝试获取指定的result
-        QueryResult result = RESULT_MAP.get(resultId);
+        QueryResult result = resultHolder.updateAndGet(resultId);
         if (null == result) {
             throw new LogException("指定的resultId不存在或已过期");
         }
@@ -36,6 +36,6 @@ public class QueryResultService {
     }
 
     public synchronized void registerResult(QueryResult result) {
-        RESULT_MAP.set(result.id, result, logCollectConfig.resultRetainSec);
+        resultHolder.put(result.id, result, logCollectConfig.resultRetainSec);
     }
 }

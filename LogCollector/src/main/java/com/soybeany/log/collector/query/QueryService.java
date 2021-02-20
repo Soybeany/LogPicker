@@ -108,7 +108,7 @@ public class QueryService {
 
     private void initContextWithFile(QueryParam queryParam, QueryContext context, List<RangeLimiter> limiters, File logFile) {
         // 更新并稳固索引
-        LogIndexes indexes = scanService.updateAndGet(context.msgList::add, logFile);
+        LogIndexes indexes = scanService.updateAndGet(context.msgList::add, logFile).getCopy();
         logIndexService.stabilize(indexes);
         context.indexesMap.put(logFile, indexes);
         // 设置待查询的范围

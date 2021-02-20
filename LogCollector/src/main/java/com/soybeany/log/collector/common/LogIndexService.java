@@ -7,9 +7,10 @@ import com.soybeany.log.collector.common.model.MsgRecorder;
 import com.soybeany.log.collector.common.model.loader.LogPackLoader;
 import com.soybeany.log.collector.common.model.loader.SimpleLogLineLoader;
 import com.soybeany.log.core.model.*;
-import com.soybeany.util.file.BdFileUtils;
+import com.soybeany.log.core.util.DataHolder;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -20,33 +21,17 @@ public class LogIndexService {
 
     private final LogCollectConfig logCollectConfig;
     private final RangeService rangeService;
+    private final DataHolder<LogIndexes> indexesHolder;
 
     public LogIndexService(LogCollectConfig logCollectConfig, RangeService rangeService) {
         this.logCollectConfig = logCollectConfig;
         this.rangeService = rangeService;
-    }
-
-    public LogIndexes getIndexes(MsgRecorder recorder, File file) throws IOException {
-        File indexFile = getLogIndexesFile(file);
-        if (!indexFile.exists()) {
-            return null;
-        }
-        try (ObjectInputStream is = new ObjectInputStream(new FileInputStream(indexFile))) {
-            return ((LogIndexes) is.readObject()).withCheck(logCollectConfig);
-        } catch (Exception ignore) {
-        }
-        // 后续为异常时的处理
-        boolean deleted = indexFile.delete();
-        recorder.write("“" + file.getName() + "”的异常索引文件，删除" + (deleted ? "成功" : "失败"));
-        if (!deleted) {
-            throw new IOException("无法删除索引文件“" + indexFile.getName() + "”");
-        }
-        return null;
+        this.indexesHolder = new DataHolder<>(logCollectConfig.maxFileIndexesRetain);
     }
 
     public LogIndexes updateAndGetIndexes(MsgRecorder recorder, File file) throws IOException {
         // 得到索引
-        LogIndexes indexes = Optional.ofNullable(getIndexes(recorder, file)).orElseGet(() -> new LogIndexes(logCollectConfig, file));
+        LogIndexes indexes = getIndexes(recorder, file);
         long startByte = indexes.scannedBytes;
         // 若索引已是最新，则不再更新
         if (file.length() == startByte) {
@@ -66,8 +51,6 @@ public class LogIndexService {
         indexes.scannedBytes = lineLoader.getReadPointer();
         long spendTime = System.currentTimeMillis() - startTime;
         recorder.write("“" + file.getName() + "”的索引已更新(" + startByte + "~" + indexes.scannedBytes + ")，耗时" + spendTime + "ms");
-        // 保存并返回索引
-        saveIndexes(indexes);
         return indexes;
     }
 
@@ -96,23 +79,19 @@ public class LogIndexService {
 
     // ********************内部方法********************
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    private void saveIndexes(LogIndexes indexes) throws IOException {
-        File tempFile = new File(logCollectConfig.dirForIndexes + "/temp", UUID.randomUUID().toString());
-        BdFileUtils.mkParentDirs(tempFile);
-        // 将索引保存到临时文件
-        try (ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(tempFile))) {
-            os.writeObject(indexes);
-        }
-        // 替换原文件
+    private LogIndexes getIndexes(MsgRecorder recorder, File file) {
+        String indexKey = getIndexKey(file);
+        LogIndexes indexes = indexesHolder.updateAndGet(indexKey);
         try {
-            File indexFile = getLogIndexesFile(indexes.logFile);
-            indexFile.delete();
-            BdFileUtils.mkParentDirs(indexFile);
-            tempFile.renameTo(indexFile);
-        } finally {
-            tempFile.delete();
+            if (null != indexes) {
+                return indexes.withCheck(logCollectConfig);
+            }
+        } catch (LogException e) {
+            recorder.write("重新创建“" + file.getName() + "”的索引文件(" + e.getMessage() + ")");
         }
+        indexes = new LogIndexes(logCollectConfig, file);
+        indexesHolder.put(indexKey, indexes, logCollectConfig.indexRetainSec);
+        return indexes;
     }
 
     private void indexTagAndUid(LogIndexes indexes, LogPack logPack, boolean append) {
@@ -149,11 +128,9 @@ public class LogIndexService {
         indexes.timeIndexMap.putIfAbsent(logLine.time, fromByte);
     }
 
-    private File getLogIndexesFile(File logFile) {
+    private String getIndexKey(File logFile) {
         try {
-            String md5 = BDCipherUtils.calculateMd5(logFile.getAbsolutePath());
-            String fileName = logFile.getName() + " - " + md5.substring(0, 8);
-            return new File(logCollectConfig.dirForIndexes, fileName);
+            return BDCipherUtils.calculateMd5(logFile.getAbsolutePath());
         } catch (Exception e) {
             throw new LogException(e);
         }
