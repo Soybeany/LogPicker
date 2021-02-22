@@ -365,6 +365,16 @@ public class QueryService {
 
     private FileRange getTimeRange(LogIndexes indexes, String fromTime, String toTime) {
         TreeMap<String, Long> timeIndexMap = indexes.timeIndexMap;
+        if (timeIndexMap.isEmpty()) {
+            return FileRange.EMPTY;
+        }
+        // 是否为极端位置
+        String firstTime = timeIndexMap.firstKey();
+        String lastTime = timeIndexMap.lastKey();
+        if (toTime.compareTo(firstTime) <= 0 || fromTime.compareTo(lastTime) >= 0) {
+            return FileRange.EMPTY;
+        }
+        // 正常合并
         long startByte = Optional.ofNullable(timeIndexMap.floorEntry(fromTime))
                 .map(Map.Entry::getValue).orElse(0L);
         long endByte = Optional.ofNullable(timeIndexMap.ceilingEntry(toTime))
