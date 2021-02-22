@@ -3,8 +3,8 @@ package com.soybeany.log.collector.query.factory;
 import com.soybeany.log.collector.common.LogIndexService;
 import com.soybeany.log.collector.common.RangeService;
 import com.soybeany.log.collector.common.data.LogCollectConfig;
-import com.soybeany.log.collector.common.data.LogIndexes;
 import com.soybeany.log.collector.query.data.QueryContext;
+import com.soybeany.log.collector.query.data.QueryIndexes;
 import com.soybeany.log.collector.query.processor.LogFilter;
 import com.soybeany.log.collector.query.processor.Preprocessor;
 import com.soybeany.log.collector.query.processor.RangeLimiter;
@@ -78,13 +78,13 @@ public class TagContainsModuleFactory implements ModuleFactory {
         }
 
         @Override
-        public List<FileRange> onSetupQueryRanges(FileRange timeRange, LogIndexes indexes) {
+        public List<FileRange> onSetupQueryRanges(FileRange timeRange, QueryIndexes indexes) {
             // 不再需要额外查询
             return Collections.emptyList();
         }
 
         @Override
-        public Set<String> onSetupUnfilteredUidSet(FileRange timeRange, LogIndexes indexes) {
+        public Set<String> onSetupUnfilteredUidSet(FileRange timeRange, QueryIndexes indexes) {
             Set<String> uidSet = null, tempUidSet;
             // 筛选出符合值限制的uid
             for (Map.Entry<String, String> entry : tags.entrySet()) {
@@ -107,8 +107,8 @@ public class TagContainsModuleFactory implements ModuleFactory {
 
         // ********************内部方法********************
 
-        private Set<String> getUidSet(LogIndexes indexes, String tagKey, String tagValue) {
-            Map<String, Set<String>> tagValueMap = indexes.tagUidMap.get(tagKey);
+        private Set<String> getUidSet(QueryIndexes indexes, String tagKey, String tagValue) {
+            Map<String, Set<String>> tagValueMap = indexes.getUidMap(tagKey);
             if (null == tagValueMap) {
                 return Collections.emptySet();
             }

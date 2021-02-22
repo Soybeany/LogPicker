@@ -110,14 +110,4 @@ public class LogIndexes implements Serializable {
         return this;
     }
 
-    public LogIndexes getCopy() {
-        LogIndexes newIndexes = new LogIndexes(logFile, configMd5, firstLineText);
-        newIndexes.scannedBytes = scannedBytes;
-        newIndexes.uidRanges.putAll(uidRanges);
-        newIndexes.tagUidMap.putAll(tagUidMap);
-        newIndexes.timeIndexMap.putAll(timeIndexMap);
-        uidTempMap.forEach((key, value) -> newIndexes.uidTempMap.put(key, GSON.fromJson(GSON.toJson(value), LogPack.class)));
-        return newIndexes;
-    }
-
 }

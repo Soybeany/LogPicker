@@ -7,6 +7,7 @@ import com.soybeany.log.collector.common.data.LogIndexes;
 import com.soybeany.log.collector.common.model.loader.LogPackLoader;
 import com.soybeany.log.collector.common.model.loader.RangesLogLineLoader;
 import com.soybeany.log.collector.query.data.QueryContext;
+import com.soybeany.log.collector.query.data.QueryIndexes;
 import com.soybeany.log.collector.query.data.QueryParam;
 import com.soybeany.log.collector.query.data.QueryResult;
 import com.soybeany.log.collector.query.exporter.LogExporter;
@@ -108,8 +109,8 @@ public class QueryService {
 
     private void initContextWithFile(QueryParam queryParam, QueryContext context, List<RangeLimiter> limiters, File logFile) {
         // 更新并稳固索引
-        LogIndexes indexes = scanService.updateAndGet(context.msgList::add, logFile).getCopy();
-        logIndexService.stabilize(indexes);
+        LogIndexes indexes = scanService.updateAndGet(context.msgList::add, logFile);
+        QueryIndexes queryIndexes = QueryIndexes.getNew(logIndexService, indexes);
         context.indexesMap.put(logFile, indexes);
         // 设置待查询的范围
         FileRange timeRange = getTimeRange(indexes, queryParam.getFromTime(), queryParam.getToTime());
@@ -117,7 +118,7 @@ public class QueryService {
         rangeList.add(Collections.singletonList(timeRange));
         boolean[] shouldInitUidSet = {true};
         for (RangeLimiter limiter : limiters) {
-            Optional.ofNullable(limiter.onSetupUnfilteredUidSet(timeRange, indexes)).ifPresent(set -> {
+            Optional.ofNullable(limiter.onSetupUnfilteredUidSet(timeRange, queryIndexes)).ifPresent(set -> {
                 if (shouldInitUidSet[0]) {
                     context.unfilteredUidSet.addAll(set);
                     shouldInitUidSet[0] = false;
@@ -125,7 +126,7 @@ public class QueryService {
                     context.unfilteredUidSet.retainAll(set);
                 }
             });
-            Optional.ofNullable(limiter.onSetupQueryRanges(timeRange, indexes)).ifPresent(rangeList::add);
+            Optional.ofNullable(limiter.onSetupQueryRanges(timeRange, queryIndexes)).ifPresent(rangeList::add);
         }
         // 合并范围并保存到context
         List<FileRange> intersectedRanges = rangeService.intersect(rangeList);

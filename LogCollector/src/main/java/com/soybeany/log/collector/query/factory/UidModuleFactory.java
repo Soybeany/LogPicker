@@ -1,8 +1,8 @@
 package com.soybeany.log.collector.query.factory;
 
 import com.soybeany.log.collector.common.RangeService;
-import com.soybeany.log.collector.common.data.LogIndexes;
 import com.soybeany.log.collector.query.data.QueryContext;
+import com.soybeany.log.collector.query.data.QueryIndexes;
 import com.soybeany.log.collector.query.processor.Preprocessor;
 import com.soybeany.log.collector.query.processor.RangeLimiter;
 import com.soybeany.log.core.model.FileRange;
@@ -44,16 +44,16 @@ public class UidModuleFactory implements ModuleFactory {
         }
 
         @Override
-        public List<FileRange> onSetupQueryRanges(FileRange timeRange, LogIndexes indexes) {
+        public List<FileRange> onSetupQueryRanges(FileRange timeRange, QueryIndexes indexes) {
             // 不再需要额外查询
             return Collections.emptyList();
         }
 
         @Override
-        public Set<String> onSetupUnfilteredUidSet(FileRange timeRange, LogIndexes indexes) {
+        public Set<String> onSetupUnfilteredUidSet(FileRange timeRange, QueryIndexes indexes) {
             Set<String> result = new LinkedHashSet<>();
             for (String uid : uidSet) {
-                if (indexes.uidRanges.containsKey(uid)) {
+                if (indexes.containUid(uid)) {
                     result.add(uid);
                 }
             }

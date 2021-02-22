@@ -46,21 +46,12 @@ public class LogIndexService {
         packLoader.setListener(holder -> indexTime(indexes, holder.fromByte, holder.logLine));
         LogPack logPack;
         while (null != (logPack = packLoader.loadNextCompleteLogPack())) {
-            indexTagAndUid(indexes, logPack, true);
+            indexTagAndUid(indexes.uidRanges, indexes.tagUidMap, logPack, true);
         }
         indexes.scannedBytes = lineLoader.getReadPointer();
         long spendTime = System.currentTimeMillis() - startTime;
         recorder.write("“" + file.getName() + "”的索引已更新(" + startByte + "~" + indexes.scannedBytes + ")，耗时" + spendTime + "ms");
         return indexes;
-    }
-
-    public void stabilize(LogIndexes indexes) {
-        Iterator<LogPack> iterator = indexes.uidTempMap.values().iterator();
-        while (iterator.hasNext()) {
-            LogPack logPack = iterator.next();
-            iterator.remove();
-            indexTagAndUid(indexes, logPack, false);
-        }
     }
 
     public Map<String, String> getTreatedTagMap(Map<String, String> tags) {
@@ -94,25 +85,25 @@ public class LogIndexService {
         return indexes;
     }
 
-    private void indexTagAndUid(LogIndexes indexes, LogPack logPack, boolean append) {
+    public void indexTagAndUid(Map<String, LinkedList<FileRange>> uidRanges, Map<String, Map<String, Set<String>>> tagUidMap, LogPack logPack, boolean append) {
         for (LogTag tag : logPack.tags) {
-            indexTag(indexes, tag);
+            indexTag(tagUidMap, tag);
         }
-        indexUid(indexes, logPack, append);
+        indexUid(uidRanges, logPack, append);
     }
 
-    private void indexTag(LogIndexes indexes, LogTag logTag) {
+    private void indexTag(Map<String, Map<String, Set<String>>> tagUidMap, LogTag logTag) {
         if (!logCollectConfig.tagsToIndex.contains(logTag.key)) {
             return;
         }
         // 将tag的值转成小写，并保存到tagUidMap中
-        Set<String> totalUidList = indexes.tagUidMap.computeIfAbsent(logTag.key, k -> new HashMap<>())
+        Set<String> totalUidList = tagUidMap.computeIfAbsent(logTag.key, k -> new HashMap<>())
                 .computeIfAbsent(logTag.value.toLowerCase(), k -> new HashSet<>());
         totalUidList.add(logTag.uid);
     }
 
-    private void indexUid(LogIndexes indexes, LogPack logPack, boolean append) {
-        LinkedList<FileRange> totalRanges = indexes.uidRanges.computeIfAbsent(logPack.uid, k -> new LinkedList<>());
+    private void indexUid(Map<String, LinkedList<FileRange>> uidRanges, LogPack logPack, boolean append) {
+        LinkedList<FileRange> totalRanges = uidRanges.computeIfAbsent(logPack.uid, k -> new LinkedList<>());
         if (append) {
             for (FileRange range : logPack.ranges) {
                 rangeService.append(totalRanges, range.from, range.to);
@@ -120,7 +111,7 @@ public class LogIndexService {
         } else {
             totalRanges.addAll(logPack.ranges);
             LinkedList<FileRange> newRanges = rangeService.merge(totalRanges);
-            indexes.uidRanges.put(logPack.uid, newRanges);
+            uidRanges.put(logPack.uid, newRanges);
         }
     }
 

@@ -1,7 +1,7 @@
 package com.soybeany.log.collector.query.processor;
 
 import com.soybeany.log.collector.common.RangeService;
-import com.soybeany.log.collector.common.data.LogIndexes;
+import com.soybeany.log.collector.query.data.QueryIndexes;
 import com.soybeany.log.core.model.FileRange;
 
 import java.util.*;
@@ -15,18 +15,18 @@ public interface RangeLimiter extends Preprocessor {
     /**
      * 设置未过滤的uid集合
      */
-    default Set<String> onSetupUnfilteredUidSet(FileRange timeRange, LogIndexes indexes) {
+    default Set<String> onSetupUnfilteredUidSet(FileRange timeRange, QueryIndexes indexes) {
         return null;
     }
 
     /**
      * 设置查询范围
      */
-    default List<FileRange> onSetupQueryRanges(FileRange timeRange, LogIndexes indexes) {
+    default List<FileRange> onSetupQueryRanges(FileRange timeRange, QueryIndexes indexes) {
         return null;
     }
 
-    static void filterUidSetByTimeRange(RangeService rangeService, Set<String> uidSet, FileRange timeRange, LogIndexes indexes) {
+    static void filterUidSetByTimeRange(RangeService rangeService, Set<String> uidSet, FileRange timeRange, QueryIndexes indexes) {
         if (null == uidSet) {
             return;
         }
@@ -34,7 +34,7 @@ public interface RangeLimiter extends Preprocessor {
         Iterator<String> uidIterator = uidSet.iterator();
         while (uidIterator.hasNext()) {
             String uid = uidIterator.next();
-            LinkedList<FileRange> uidRanges = indexes.uidRanges.get(uid);
+            List<FileRange> uidRanges = indexes.getRanges(uid);
             List<FileRange> intersect = rangeService.intersect(Arrays.asList(uidRanges, timeRanges));
             // 若时间无交集，则移除
             if (intersect.isEmpty()) {
