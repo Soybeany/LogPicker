@@ -16,88 +16,150 @@ import java.util.UUID;
  */
 public class TagWriter {
 
-    private static final String FLAG_TAG = "FLAG";
-    private static final String KEY_TRACE_ID = "traceId";
-
     private static final Gson GSON = new Gson();
     private static final Logger LOG = LoggerFactory.getLogger(TagWriter.class);
 
-    // ********************记录区********************
+    private static String KEY_TRACE_ID = "traceId";
+
+    private String tagPrefix = "TAG";
+    private String startTag = "border_start";
+    private String endTag = "border_end";
+    private String urlTag = "url";
+    private String paramTag = "param";
+    private String userTag = "user";
+    private String infoTag = "info";
+
+    // ********************TRACE_ID********************
+
+    public static void setTraceIdKey(String key) {
+        KEY_TRACE_ID = key;
+    }
 
     public static void setupTraceId(boolean forceNew) {
-        if (!forceNew && null != MDC.get(KEY_TRACE_ID)) {
+        if (!forceNew && null != getTraceId()) {
             return;
         }
         String uuid = UUID.randomUUID().toString().replaceAll("-", "").substring(24);
         MDC.put(KEY_TRACE_ID, uuid);
     }
 
+    public static String getTraceId() {
+        return MDC.get(KEY_TRACE_ID);
+    }
+
     public static void removeTraceId() {
         MDC.remove(KEY_TRACE_ID);
     }
 
-    public static void writeStdBorderFlag(String url, String info, boolean isStart) {
+    // ********************记录区********************
+
+    public void writeStdBorderTag(String url, String info, boolean isStart) {
         if (isStart) {
             setupTraceId(false);
-            writeStartFlag();
-            writeUrlFlag(url);
-            Optional.ofNullable(info).ifPresent(TagWriter::writeInfoFlag);
+            writeStartTag();
+            writeUrlTag(url);
+            Optional.ofNullable(info).ifPresent(this::writeInfoTag);
         } else {
-            writeEndFlag();
+            writeEndTag();
             removeTraceId();
         }
     }
 
-    public static void writeStdRequestInfoFlag(ServletRequest request, String user) {
-        writeStdRequestInfoFlag(request.getParameterMap(), user);
+    public void writeStdRequestInfoTag(ServletRequest request, String user) {
+        writeStdRequestInfoTag(request.getParameterMap(), user);
     }
 
-    public static void writeStdRequestInfoFlag(Map<?, ?> paramMap, String user) {
-        writeParamFlag(paramMap);
-        writeUserFlag(user);
+    public void writeStdRequestInfoTag(Map<?, ?> paramMap, String user) {
+        writeParamTag(paramMap);
+        writeUserTag(user);
     }
 
-    public static void writeStdRequestInfoFlag(String param, String user) {
-        writeParamFlag(param);
-        writeUserFlag(user);
+    public void writeStdRequestInfoTag(String param, String user) {
+        writeParamTag(param);
+        writeUserTag(user);
     }
 
-    public static void writeStartFlag() {
-        writeFlag("border_start", "");
+    public void writeStartTag() {
+        writeTag(startTag, "");
     }
 
-    public static void writeEndFlag() {
-        writeFlag("border_end", "");
+    public void writeEndTag() {
+        writeTag(endTag, "");
     }
 
-    public static void writeUrlFlag(String url) {
-        writeFlag("url", url);
+    public void writeUrlTag(String url) {
+        writeTag(urlTag, url);
     }
 
-    public static void writeParamFlag(Map<?, ?> paramMap) {
+    public void writeParamTag(Map<?, ?> paramMap) {
         if (!paramMap.isEmpty()) {
-            writeParamFlag(GSON.toJson(paramMap).replaceAll("\\\\", ""));
+            writeParamTag(GSON.toJson(paramMap).replaceAll("\\\\", ""));
         }
     }
 
-    public static void writeParamFlag(String param) {
-        writeFlag("param", param);
+    public void writeParamTag(String param) {
+        writeTag(paramTag, param);
     }
 
-    public static void writeUserFlag(String user) {
-        writeFlag("user", user);
+    public void writeUserTag(String user) {
+        writeTag(userTag, user);
     }
 
-    public static void writeInfoFlag(String info) {
-        writeFlag("info", info);
+    public void writeInfoTag(String info) {
+        writeTag(infoTag, info);
     }
 
     /**
      * 写入标识日志<br/>
-     * FLAG格式：FLAG-name(标签名)-content(标签内容)
+     * TAG格式：TAG-name(标签名)-content(标签内容)
      */
-    public static void writeFlag(String key, String value) {
-        LOG.info(FLAG_TAG + "-" + key + "-" + value);
+    public void writeTag(String key, String value) {
+        LOG.info(tagPrefix + "-" + key + "-" + value);
+    }
+
+    // ********************内部类********************
+
+    public static class Builder {
+        private final TagWriter writer = new TagWriter();
+
+        public Builder tagPrefix(String prefix) {
+            writer.tagPrefix = prefix;
+            return this;
+        }
+
+        public Builder startTag(String tag) {
+            writer.startTag = tag;
+            return this;
+        }
+
+        public Builder endTag(String tag) {
+            writer.endTag = tag;
+            return this;
+        }
+
+        public Builder urlTag(String tag) {
+            writer.urlTag = tag;
+            return this;
+        }
+
+        public Builder paramTag(String tag) {
+            writer.paramTag = tag;
+            return this;
+        }
+
+        public Builder userTag(String tag) {
+            writer.userTag = tag;
+            return this;
+        }
+
+        public Builder infoTag(String tag) {
+            writer.infoTag = tag;
+            return this;
+        }
+
+        public TagWriter get() {
+            return writer;
+        }
     }
 
 }

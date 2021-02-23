@@ -1,7 +1,5 @@
 package com.soybeany.log.writer;
 
-import org.slf4j.MDC;
-
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletRequestEvent;
 import javax.servlet.ServletRequestListener;
@@ -14,6 +12,8 @@ import javax.servlet.http.HttpServletRequest;
 public abstract class TagWriteListener implements ServletRequestListener {
 
     private static final String KEY_TRACE_ID = "traceId";
+
+    private final TagWriter tagWriter = onGetTagWriter();
 
     @Override
     public void requestInitialized(ServletRequestEvent sre) {
@@ -29,9 +29,9 @@ public abstract class TagWriteListener implements ServletRequestListener {
         }
         // 设置并输出开始标签
         TagWriter.setupTraceId(true);
-        TagWriter.writeStartFlag();
-        TagWriter.writeUrlFlag(path);
-        request.setAttribute(KEY_TRACE_ID, MDC.get(KEY_TRACE_ID));
+        tagWriter.writeStartTag();
+        tagWriter.writeUrlTag(path);
+        request.setAttribute(KEY_TRACE_ID, TagWriter.getTraceId());
     }
 
     @Override
@@ -47,11 +47,15 @@ public abstract class TagWriteListener implements ServletRequestListener {
             return;
         }
         // 输出结束标签
-        TagWriter.writeEndFlag();
+        tagWriter.writeEndTag();
         TagWriter.removeTraceId();
     }
 
     // ********************子类重写********************
+
+    protected TagWriter onGetTagWriter() {
+        return new TagWriter();
+    }
 
     protected boolean shouldWriteFlags(HttpServletRequest request, String path) {
         return true;
