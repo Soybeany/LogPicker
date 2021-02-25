@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,26 +32,29 @@ public class ManagerController {
     private QueryExecutor queryExecutor;
 
     @RequestMapping("/**")
-    public String forDirectRead(HttpServletRequest request, HttpServletResponse response, @RequestParam Map<String, String> param) {
+    public void forDirectRead(HttpServletRequest request, HttpServletResponse response, @RequestParam Map<String, String> param) throws IOException {
         String uri = request.getRequestURI();
         String path = uri.substring(request.getContextPath().length());
         IAction action = actionMap.get(path);
         if (null == action) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            return null;
+            return;
         }
         response.setContentType(action.onGetContentType());
+        response.setCharacterEncoding("UTF-8");
         Map<String, String> headers = new HashMap<>();
         Enumeration<String> headerNames = request.getHeaderNames();
         while (headerNames.hasMoreElements()) {
             String headerName = headerNames.nextElement();
             headers.put(headerName, request.getHeader(headerName));
         }
+        String msg;
         try {
-            return action.onInvoke(headers, param);
+            msg = action.onInvoke(headers, param);
         } catch (Exception e) {
-            return e.getMessage();
+            msg = e.getMessage();
         }
+        response.getWriter().write(msg);
     }
 
     @PostConstruct
