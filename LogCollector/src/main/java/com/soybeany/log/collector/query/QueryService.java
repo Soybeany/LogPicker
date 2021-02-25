@@ -197,7 +197,7 @@ public class QueryService {
                     if (isFiltered(context, logPack)) {
                         continue;
                     }
-                    if (null != logPack.uid) {
+                    if (!logCollectConfig.noUidPlaceholder.equals(logPack.uid)) {
                         needMore = addResultsByUid(result, context, logPack.uid, formalLogPacks, loaderMapForUid);
                     } else {
                         needMore = filterAndAddToResults(result, context, formalLogPacks, logPack);
