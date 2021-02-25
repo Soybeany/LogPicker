@@ -20,7 +20,6 @@ import java.util.List;
 public class AppConfig {
 
     public String[] dirsToScan;
-    public String dirForIndexes;
     public String logTodayFileName;
     public String logHistoryFileName;
     public String logCharset;
@@ -48,10 +47,6 @@ public class AppConfig {
 
     public void setDirsToScan(String dirsToScan) {
         this.dirsToScan = dirsToScan.split(";");
-    }
-
-    public void setDirForIndexes(String dirForIndexes) {
-        this.dirForIndexes = dirForIndexes;
     }
 
     public void setLogTodayFileName(String logTodayFileName) {

@@ -376,8 +376,8 @@ public class QueryService {
             return FileRange.EMPTY;
         }
         // 正常合并
-        long startByte = Optional.ofNullable(timeIndexMap.floorEntry(fromTime))
-                .map(Map.Entry::getValue).orElse(0L);
+        long startByte = Optional.ofNullable(timeIndexMap.ceilingEntry(fromTime))
+                .map(Map.Entry::getValue).orElseThrow(() -> new LogException("不可能的开始时间"));
         long endByte = Optional.ofNullable(timeIndexMap.ceilingEntry(toTime))
                 .map(Map.Entry::getValue).orElse(indexes.scannedBytes);
         return new FileRange(startByte, endByte);

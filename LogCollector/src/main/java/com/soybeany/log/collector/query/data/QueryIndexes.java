@@ -5,7 +5,10 @@ import com.soybeany.log.collector.common.data.LogIndexes;
 import com.soybeany.log.core.model.FileRange;
 import com.soybeany.log.core.model.LogPack;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Soybeany
@@ -19,11 +22,8 @@ public class QueryIndexes {
     private final Map<String, Map<String, Set<String>>> tagUidMap = new HashMap<>();
 
     public static QueryIndexes getNew(LogIndexService service, LogIndexes logIndexes) {
-        Iterator<LogPack> iterator = logIndexes.uidTempMap.values().iterator();
         QueryIndexes indexes = new QueryIndexes(logIndexes);
-        while (iterator.hasNext()) {
-            LogPack logPack = iterator.next();
-            iterator.remove();
+        for (LogPack logPack : logIndexes.uidTempMap.values()) {
             service.indexTagAndUid(indexes.uidRanges, indexes.tagUidMap, logPack, false);
         }
         return indexes;
