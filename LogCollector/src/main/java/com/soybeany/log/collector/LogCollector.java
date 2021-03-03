@@ -3,8 +3,8 @@ package com.soybeany.log.collector;
 import com.soybeany.log.collector.common.RangeService;
 import com.soybeany.log.collector.common.data.LogCollectConfig;
 import com.soybeany.log.collector.query.QueryService;
+import com.soybeany.log.collector.query.exporter.DirectReadLogExporter;
 import com.soybeany.log.collector.query.exporter.LogExporter;
-import com.soybeany.log.collector.query.exporter.StdLogExporter;
 import com.soybeany.log.collector.query.factory.KeyContainsModuleFactory;
 import com.soybeany.log.collector.query.factory.ModuleFactory;
 import com.soybeany.log.collector.query.factory.TagContainsModuleFactory;
@@ -95,7 +95,7 @@ public class LogCollector {
         }
 
         private void setupDefaultExporter() {
-            logExporter = new StdLogExporter(logCollectConfig);
+            logExporter = new DirectReadLogExporter(logCollectConfig);
         }
     }
 

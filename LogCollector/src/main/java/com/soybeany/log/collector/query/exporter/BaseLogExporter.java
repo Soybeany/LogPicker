@@ -2,68 +2,46 @@ package com.soybeany.log.collector.query.exporter;
 
 import com.google.gson.Gson;
 import com.soybeany.log.collector.common.data.LogCollectConfig;
-import com.soybeany.log.collector.query.data.QueryContext;
 import com.soybeany.log.collector.query.data.QueryResult;
 import com.soybeany.log.core.model.*;
 import com.soybeany.log.core.util.TimeUtils;
-import com.soybeany.util.HexUtils;
-import com.soybeany.util.SerializeUtils;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
  * @author Soybeany
- * @date 2021/1/11
+ * @date 2021/3/3
  */
-public class StdLogExporter implements LogExporter {
+public abstract class BaseLogExporter implements LogExporter {
 
-    private static final String P_KEY_EXPORT_TYPE = "exportType";
     private static final DateTimeFormatter FORMATTER1 = DateTimeFormatter.ofPattern("yy-MM-dd HH:mm:ss");
     private static final DateTimeFormatter FORMATTER2 = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     private final LogCollectConfig logCollectConfig;
     private final Gson gson = new Gson();
 
-    public StdLogExporter(LogCollectConfig logCollectConfig) {
+    public BaseLogExporter(LogCollectConfig logCollectConfig) {
         this.logCollectConfig = logCollectConfig;
     }
 
     @Override
     public String export(QueryResult result, List<LogPack> packs) {
-        QueryContext context = result.context;
-        String exportType = Optional.ofNullable(context.getParam(PREFIX, P_KEY_EXPORT_TYPE)).orElse(Constants.EXPORT_FOR_DIRECT_READ);
-        switch (exportType) {
-            case Constants.EXPORT_FOR_DIRECT_READ:
-                return gson.toJson(toObjectForRead(toLogVO(result, packs)));
-            case Constants.EXPORT_FOR_PACK:
-                return gson.toJson(toLogVO(result, packs));
-            case Constants.EXPORT_ROF_RAW:
-                QueryRawResultVO vo = new QueryRawResultVO();
-                setupResultInfo(result, vo.info);
-                vo.packs.addAll(packs);
-                try {
-                    return HexUtils.bytesToHex(SerializeUtils.serialize(vo));
-                } catch (IOException e) {
-                    throw new LogException("结果导出异常:" + e.getMessage());
-                }
-            default:
-                throw new LogException("使用了不支持的导出类型");
-        }
+        return toString(gson, toLogVO(result, packs));
+    }
+
+    // ********************子类方法********************
+
+    protected void setupResultInfo(QueryResult result, ResultInfo info) {
+        info.lastResultId = result.lastId;
+        info.curResultId = result.id;
+        info.nextResultId = result.nextId;
+        info.msg = result.getAllMsg();
+        info.endReason = result.endReason;
     }
 
     // ********************内部方法********************
-
-    private Object toObjectForRead(QueryResultVO vo) {
-        List<Object> output = new LinkedList<>();
-        // 添加结果信息
-        output.add(vo.info);
-        // 添加结果列表
-        output.addAll(vo.packs);
-        return output;
-    }
 
     private QueryResultVO toLogVO(QueryResult result, List<LogPack> packs) {
         QueryResultVO vo = new QueryResultVO();
@@ -75,14 +53,6 @@ public class StdLogExporter implements LogExporter {
         // 排序
         vo.packs.sort(Comparator.comparing(o -> o.time));
         return vo;
-    }
-
-    private void setupResultInfo(QueryResult result, ResultInfo info) {
-        info.lastResultId = result.lastId;
-        info.curResultId = result.id;
-        info.nextResultId = result.nextId;
-        info.msg = result.getAllMsg();
-        info.endReason = result.endReason;
     }
 
     private LogPackForRead toLogItem(LogPack pack) {
@@ -180,6 +150,10 @@ public class StdLogExporter implements LogExporter {
     private Date getDate(String timeString) {
         return TimeUtils.toDate(LocalDateTime.parse(timeString, logCollectConfig.lineTimeFormatter));
     }
+
+    // ********************抽象方法********************
+
+    protected abstract String toString(Gson gson, QueryResultVO vo);
 
     // ********************内部类********************
 

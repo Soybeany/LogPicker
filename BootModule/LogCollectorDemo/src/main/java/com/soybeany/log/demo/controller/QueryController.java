@@ -1,7 +1,10 @@
 package com.soybeany.log.demo.controller;
 
 import com.soybeany.log.collector.LogCollector;
+import com.soybeany.log.collector.common.data.LogCollectConfig;
 import com.soybeany.log.collector.query.QueryService;
+import com.soybeany.log.collector.query.exporter.DirectReadLogExporter;
+import com.soybeany.log.collector.query.exporter.PackLogExporter;
 import com.soybeany.log.core.model.Direction;
 import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.demo.config.AppConfig;
@@ -23,27 +26,17 @@ public class QueryController {
     @Autowired
     private AppConfig appConfig;
 
-    private QueryService queryService;
-
-    @PostMapping("/byParam")
-    public String byParam(@RequestParam Map<String, String> param) {
-        try {
-            return queryService.simpleQuery(param);
-        } catch (LogException e) {
-            return "出现异常:" + e.getMessage();
-        }
-    }
+    private QueryService directReadQueryService;
+    private QueryService packQueryService;
 
     @PostMapping(value = "/forDirectRead", produces = MediaType.APPLICATION_JSON_VALUE)
     public String forDirectRead(@RequestParam Map<String, String> param) {
-        param.put("exporter-exportType", "forDirectRead");
-        return byParam(param);
+        return byParam(directReadQueryService, param);
     }
 
     @PostMapping(value = "/forPack", produces = MediaType.APPLICATION_JSON_VALUE)
     public String forPack(@RequestParam Map<String, String> param) {
-        param.put("exporter-exportType", "forPack");
-        return byParam(param);
+        return byParam(packQueryService, param);
     }
 
     @GetMapping("/help")
@@ -53,7 +46,17 @@ public class QueryController {
 
     @PostConstruct
     private void onInit() {
-        queryService = LogCollector.query(appConfig.toLogCollectConfig()).build();
+        LogCollectConfig config = appConfig.toLogCollectConfig();
+        directReadQueryService = LogCollector.query(config).logExporter(new DirectReadLogExporter(config)).build();
+        packQueryService = LogCollector.query(config).logExporter(new PackLogExporter(config)).build();
+    }
+
+    private String byParam(QueryService queryService, @RequestParam Map<String, String> param) {
+        try {
+            return queryService.simpleQuery(param);
+        } catch (LogException e) {
+            return "出现异常:" + e.getMessage();
+        }
     }
 
 }
