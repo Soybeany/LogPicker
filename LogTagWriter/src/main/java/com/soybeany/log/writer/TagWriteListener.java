@@ -23,14 +23,13 @@ public abstract class TagWriteListener implements ServletRequestListener {
             return;
         }
         HttpServletRequest request = (HttpServletRequest) r;
-        String path = request.getRequestURI().substring(request.getContextPath().length());
-        if (!shouldWriteFlags(request, path)) {
+        if (!shouldWriteFlags(request)) {
             return;
         }
         // 设置并输出开始标签
         TagWriter.setupTraceId(true);
         tagWriter.writeStartTag();
-        tagWriter.writeUrlTag(path);
+        tagWriter.writeUrlTag(onGetUrlToWrite(request));
         request.setAttribute(KEY_TRACE_ID, TagWriter.getTraceId());
     }
 
@@ -57,7 +56,11 @@ public abstract class TagWriteListener implements ServletRequestListener {
         return new TagWriter();
     }
 
-    protected boolean shouldWriteFlags(HttpServletRequest request, String path) {
+    protected String onGetUrlToWrite(HttpServletRequest request) {
+        return request.getRequestURI().substring(request.getContextPath().length());
+    }
+
+    protected boolean shouldWriteFlags(HttpServletRequest request) {
         return true;
     }
 
