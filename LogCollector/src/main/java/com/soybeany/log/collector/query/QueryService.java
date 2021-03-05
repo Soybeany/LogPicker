@@ -111,7 +111,7 @@ public class QueryService {
     private QueryIndexes initContextWithFile(QueryParam queryParam, QueryContext context, List<RangeLimiter> limiters, File logFile) {
         // 更新索引，并创建查询索引
         LogIndexes indexes = scanService.updateAndGet(context.msgList::add, logFile);
-        QueryIndexes queryIndexes = QueryIndexes.getNew(logIndexService, indexes);
+        QueryIndexes queryIndexes = QueryIndexes.getNew(logIndexService, rangeService, indexes);
         context.indexesMap.put(logFile, indexes);
         // 设置待查询的范围
         FileRange timeRange = getTimeRange(indexes, queryParam.getFromTime(), queryParam.getToTime());
