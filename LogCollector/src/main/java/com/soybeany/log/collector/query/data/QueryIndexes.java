@@ -5,10 +5,7 @@ import com.soybeany.log.collector.common.data.LogIndexes;
 import com.soybeany.log.core.model.FileRange;
 import com.soybeany.log.core.model.LogPack;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Soybeany
@@ -16,45 +13,28 @@ import java.util.Set;
  */
 public class QueryIndexes {
 
-    public final LogIndexes logIndexes;
-
-    private final Map<String, LinkedList<FileRange>> uidRanges = new HashMap<>();
-    private final Map<String, Map<String, Set<String>>> tagUidMap = new HashMap<>();
+    public final Map<String, LinkedList<FileRange>> uidRanges = new HashMap<>();
+    public final Map<String, Map<String, Set<String>>> tagUidMap = new HashMap<>();
 
     public static QueryIndexes getNew(LogIndexService service, LogIndexes logIndexes) {
-        QueryIndexes indexes = new QueryIndexes(logIndexes);
-        for (LogPack logPack : logIndexes.uidTempMap.values()) {
-            service.indexTagAndUid(indexes.uidRanges, indexes.tagUidMap, logPack, false);
-        }
+        QueryIndexes indexes = new QueryIndexes();
+        merge(service, logIndexes, indexes);
         return indexes;
     }
 
-    private QueryIndexes(LogIndexes logIndexes) {
-        this.logIndexes = logIndexes;
+    private static void merge(LogIndexService service, LogIndexes logIndexes, QueryIndexes indexes) {
+        // 提取临时数据
+        for (LogPack logPack : logIndexes.uidTempMap.values()) {
+            service.indexTagAndUid(indexes.uidRanges, indexes.tagUidMap, logPack, false);
+        }
+        // 合并正式数据
+        logIndexes.tagUidMap.forEach((k, v) -> Optional.ofNullable(indexes.tagUidMap.get(k)).ifPresent(m -> m.forEach(
+                (k1, v1) -> v.computeIfAbsent(k1, k2 -> new HashSet<>()).addAll(v1))
+        ));
+        logIndexes.uidRanges.forEach((k, v) -> Optional.ofNullable(indexes.uidRanges.get(k)).ifPresent(v::addAll));
     }
 
-    public Map<String, Set<String>> getUidMap(String tag) {
-        Map<String, Set<String>> result = logIndexes.tagUidMap.get(tag);
-        if (null != result) {
-            return result;
-        }
-        return tagUidMap.get(tag);
-    }
-
-    public boolean containUid(String uid) {
-        boolean isContain = logIndexes.uidRanges.containsKey(uid);
-        if (isContain) {
-            return true;
-        }
-        return uidRanges.containsKey(uid);
-    }
-
-    public LinkedList<FileRange> getRanges(String uid) {
-        LinkedList<FileRange> result = logIndexes.uidRanges.get(uid);
-        if (null != result) {
-            return result;
-        }
-        return uidRanges.get(uid);
+    private QueryIndexes() {
     }
 
 }

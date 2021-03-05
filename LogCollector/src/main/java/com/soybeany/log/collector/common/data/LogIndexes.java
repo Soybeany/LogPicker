@@ -1,6 +1,5 @@
 package com.soybeany.log.collector.common.data;
 
-import com.google.gson.Gson;
 import com.soybeany.log.core.model.FileRange;
 import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.core.model.LogPack;
@@ -16,8 +15,6 @@ import java.util.*;
  * @date 2021/1/14
  */
 public class LogIndexes implements Serializable {
-
-    private static final Gson GSON = new Gson();
 
     /**
      * 日志文件
@@ -102,6 +99,9 @@ public class LogIndexes implements Serializable {
         String curConfigMd5 = getConfigMd5(logCollectConfig);
         if (!configMd5.equals(curConfigMd5)) {
             throw new LogException("配置发生了变更");
+        }
+        if (logFile.length() < scannedBytes) {
+            throw new LogException("文件变小了");
         }
         String curFirstLineText = readFirstLine(logFile);
         if (!firstLineText.equals(curFirstLineText)) {

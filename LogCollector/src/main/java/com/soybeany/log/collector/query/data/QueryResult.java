@@ -2,8 +2,10 @@ package com.soybeany.log.collector.query.data;
 
 import com.soybeany.log.core.util.UidUtils;
 
+import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Soybeany
@@ -13,6 +15,7 @@ public class QueryResult {
 
     public final String id = UidUtils.getNew();
     public final QueryContext context;
+    public final Map<File, QueryIndexes> indexesMap;
 
     public String lastId;
     public String nextId;
@@ -32,12 +35,9 @@ public class QueryResult {
      */
     public final List<String> msgList = new LinkedList<>();
 
-    public QueryResult(QueryContext context) {
+    public QueryResult(QueryContext context, Map<File, QueryIndexes> indexesMap) {
         this.context = context;
-    }
-
-    public QueryResult(QueryParam queryParam) {
-        this.context = new QueryContext(queryParam);
+        this.indexesMap = indexesMap;
     }
 
     // ********************公开方法********************
