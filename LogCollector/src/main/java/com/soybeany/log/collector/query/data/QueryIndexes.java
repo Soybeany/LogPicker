@@ -28,10 +28,15 @@ public class QueryIndexes {
             service.indexTagAndUid(indexes.uidRanges, indexes.tagUidMap, logPack, false);
         }
         // 合并正式数据
-        logIndexes.tagUidMap.forEach((k, v) -> Optional.ofNullable(indexes.tagUidMap.get(k)).ifPresent(m -> m.forEach(
-                (k1, v1) -> v.computeIfAbsent(k1, k2 -> new HashSet<>()).addAll(v1))
-        ));
-        logIndexes.uidRanges.forEach((k, v) -> Optional.ofNullable(indexes.uidRanges.get(k)).ifPresent(v::addAll));
+        logIndexes.tagUidMap.forEach((sTagName, sValueMap) -> {
+            Map<String, Set<String>> tValueMap = indexes.tagUidMap.get(sTagName);
+            if (null == tValueMap) {
+                indexes.tagUidMap.put(sTagName, new HashMap<>(sValueMap));
+                return;
+            }
+            sValueMap.forEach((sTagValue, uidSet) -> tValueMap.computeIfAbsent(sTagValue, k -> new HashSet<>()).addAll(uidSet));
+        });
+        logIndexes.uidRanges.forEach((sUid, sRanges) -> indexes.uidRanges.computeIfAbsent(sUid, k -> new LinkedList<>()).addAll(sRanges));
     }
 
     private QueryIndexes() {
