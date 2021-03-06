@@ -7,6 +7,7 @@ import com.soybeany.log.core.model.FileRange;
 import com.soybeany.log.core.model.LogPack;
 
 import java.util.*;
+import java.util.function.BiConsumer;
 
 /**
  * @author Soybeany
@@ -14,48 +15,57 @@ import java.util.*;
  */
 public class QueryIndexes {
 
-    public final Map<String, LinkedList<FileRange>> uidRanges = new HashMap<>();
-    public final Map<String, Map<String, Set<String>>> tagUidMap = new HashMap<>();
+    private final Map<String, LinkedList<FileRange>> uidRanges = new HashMap<>();
+    private final Map<String, Map<String, Set<String>>> tagUidMap = new HashMap<>();
+    private final LogIndexes logIndexes;
 
-    public static QueryIndexes getNew(LogIndexService indexService, RangeService rangeService, LogIndexes logIndexes) {
-        QueryIndexes indexes = new QueryIndexes();
-        merge(indexService, rangeService, logIndexes, indexes);
+    public static QueryIndexes getNew(LogIndexService indexService, LogIndexes logIndexes) {
+        QueryIndexes indexes = new QueryIndexes(logIndexes);
+        // 提取临时数据
+        for (LogPack logPack : logIndexes.uidTempMap.values()) {
+            indexService.indexTagAndUid(indexes.uidRanges, indexes.tagUidMap, logPack, false);
+        }
         return indexes;
     }
 
-    private static void merge(LogIndexService service, RangeService rangeService, LogIndexes logIndexes, QueryIndexes indexes) {
-        // 提取临时数据
-        for (LogPack logPack : logIndexes.uidTempMap.values()) {
-            service.indexTagAndUid(indexes.uidRanges, indexes.tagUidMap, logPack, false);
+    private QueryIndexes(LogIndexes logIndexes) {
+        this.logIndexes = logIndexes;
+    }
+
+    public void forEach(String tagKey, BiConsumer<String, Set<String>> consumer) {
+        forEach(logIndexes.tagUidMap, tagKey, consumer);
+        forEach(tagUidMap, tagKey, consumer);
+    }
+
+    public boolean containUid(String uid) {
+        boolean isContain = logIndexes.uidRanges.containsKey(uid);
+        if (isContain) {
+            return true;
         }
-        // 合并正式数据
-        mergeTagUidMap(logIndexes, indexes);
-        mergeUidRanges(rangeService, logIndexes, indexes);
+        return uidRanges.containsKey(uid);
     }
 
-    private static void mergeTagUidMap(LogIndexes logIndexes, QueryIndexes indexes) {
-        logIndexes.tagUidMap.forEach((sTagName, sValueMap) -> {
-            Map<String, Set<String>> tValueMap = indexes.tagUidMap.get(sTagName);
-            if (null == tValueMap) {
-                indexes.tagUidMap.put(sTagName, new HashMap<>(sValueMap));
-                return;
-            }
-            sValueMap.forEach((sTagValue, uidSet) -> tValueMap.computeIfAbsent(sTagValue, k -> new HashSet<>()).addAll(uidSet));
-        });
+    public LinkedList<FileRange> getMergedRanges(RangeService service, String uid) {
+        LinkedList<FileRange> ranges = getRanges(uid);
+        service.merge(ranges);
+        return ranges;
     }
 
-    private static void mergeUidRanges(RangeService rangeService, LogIndexes logIndexes, QueryIndexes indexes) {
-        logIndexes.uidRanges.forEach((sUid, sRanges) -> {
-            LinkedList<FileRange> ranges = indexes.uidRanges.get(sUid);
-            if (null == ranges) {
-                ranges = new LinkedList<>();
-            }
-            ranges.addAll(sRanges);
-            indexes.uidRanges.put(sUid, rangeService.merge(ranges));
-        });
+    public LinkedList<FileRange> getRanges(String uid) {
+        LinkedList<FileRange> result = new LinkedList<>();
+        Optional.ofNullable(logIndexes.uidRanges.get(uid)).ifPresent(result::addAll);
+        Optional.ofNullable(uidRanges.get(uid)).ifPresent(result::addAll);
+        return result;
     }
 
-    private QueryIndexes() {
+    // ********************内部方法********************
+
+    private void forEach(Map<String, Map<String, Set<String>>> tagUidMap, String tagKey, BiConsumer<String, Set<String>> consumer) {
+        Map<String, Set<String>> tagValueMap = tagUidMap.get(tagKey);
+        if (null == tagValueMap) {
+            return;
+        }
+        tagValueMap.forEach(consumer);
     }
 
 }

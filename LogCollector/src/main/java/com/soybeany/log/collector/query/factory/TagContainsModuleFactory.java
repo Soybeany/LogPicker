@@ -108,12 +108,8 @@ public class TagContainsModuleFactory implements ModuleFactory {
         // ********************内部方法********************
 
         private Set<String> getUidSet(QueryIndexes indexes, String tagKey, String tagValue) {
-            Map<String, Set<String>> tagValueMap = indexes.tagUidMap.get(tagKey);
-            if (null == tagValueMap) {
-                return Collections.emptySet();
-            }
             Set<String> result = new LinkedHashSet<>();
-            tagValueMap.forEach((value, uidSet) -> {
+            indexes.forEach(tagKey, (value, uidSet) -> {
                 if (value.contains(tagValue)) {
                     result.addAll(uidSet);
                 }

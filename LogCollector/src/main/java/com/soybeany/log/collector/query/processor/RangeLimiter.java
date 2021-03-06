@@ -34,7 +34,7 @@ public interface RangeLimiter extends Preprocessor {
         Iterator<String> uidIterator = uidSet.iterator();
         while (uidIterator.hasNext()) {
             String uid = uidIterator.next();
-            List<FileRange> uidRanges = indexes.uidRanges.get(uid);
+            List<FileRange> uidRanges = indexes.getMergedRanges(rangeService, uid);
             List<FileRange> intersect = rangeService.intersect(Arrays.asList(uidRanges, timeRanges));
             // 若时间无交集，则移除
             if (intersect.isEmpty()) {

@@ -53,7 +53,7 @@ public class UidModuleFactory implements ModuleFactory {
         public Set<String> onSetupUnfilteredUidSet(FileRange timeRange, QueryIndexes indexes) {
             Set<String> result = new LinkedHashSet<>();
             for (String uid : uidSet) {
-                if (indexes.uidRanges.containsKey(uid)) {
+                if (indexes.containUid(uid)) {
                     result.add(uid);
                 }
             }
