@@ -47,8 +47,7 @@ public class QueryIndexes {
 
     public LinkedList<FileRange> getMergedRanges(RangeService service, String uid) {
         LinkedList<FileRange> ranges = getRanges(uid);
-        service.merge(ranges);
-        return ranges;
+        return service.merge(ranges);
     }
 
     public LinkedList<FileRange> getRanges(String uid) {
