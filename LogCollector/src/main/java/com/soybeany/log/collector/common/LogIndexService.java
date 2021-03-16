@@ -40,15 +40,16 @@ public class LogIndexService {
         }
         // 更新索引
         long startTime = System.currentTimeMillis();
-        SimpleLogLineLoader lineLoader = new SimpleLogLineLoader(indexes.logFile, logCollectConfig.logCharset, logCollectConfig.lineParsePattern, logCollectConfig.tagParsePattern);
-        lineLoader.resetTo(startByte, null); // 因为不会有旧数据，理论上这里不会null异常
-        LogPackLoader packLoader = new LogPackLoader(lineLoader, logCollectConfig.noUidPlaceholder, logCollectConfig.maxLinesPerResultWithNoUid, indexes.uidTempMap);
-        packLoader.setListener(holder -> indexTime(indexes, holder.fromByte, holder.logLine));
-        LogPack logPack;
-        while (null != (logPack = packLoader.loadNextCompleteLogPack())) {
-            indexTagAndUid(indexes.uidRanges, indexes.tagUidMap, logPack, true);
+        try (SimpleLogLineLoader lineLoader = new SimpleLogLineLoader(indexes.logFile, logCollectConfig.logCharset, logCollectConfig.lineParsePattern, logCollectConfig.tagParsePattern);
+             LogPackLoader packLoader = new LogPackLoader(lineLoader, logCollectConfig.noUidPlaceholder, logCollectConfig.maxLinesPerResultWithNoUid, indexes.uidTempMap)) {
+            lineLoader.resetTo(startByte, null); // 因为不会有旧数据，理论上这里不会null异常
+            packLoader.setListener(holder -> indexTime(indexes, holder.fromByte, holder.logLine));
+            LogPack logPack;
+            while (null != (logPack = packLoader.loadNextCompleteLogPack())) {
+                indexTagAndUid(indexes.uidRanges, indexes.tagUidMap, logPack, true);
+            }
+            indexes.scannedBytes = lineLoader.getReadPointer();
         }
-        indexes.scannedBytes = lineLoader.getReadPointer();
         long spendTime = System.currentTimeMillis() - startTime;
         recorder.write("“" + file.getName() + "”的索引已更新(" + startByte + "~" + indexes.scannedBytes + ")，耗时" + spendTime + "ms");
         return indexes;
