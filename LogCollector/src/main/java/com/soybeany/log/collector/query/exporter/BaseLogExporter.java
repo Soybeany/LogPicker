@@ -41,6 +41,10 @@ public abstract class BaseLogExporter implements LogExporter {
         info.endReason = result.endReason;
     }
 
+    protected int compareTime(String time1, String time2) {
+        return time1.compareTo(time2);
+    }
+
     // ********************内部方法********************
 
     private QueryResultVO toLogVO(QueryResult result, List<LogPack> packs) {
@@ -51,7 +55,7 @@ public abstract class BaseLogExporter implements LogExporter {
             vo.packs.add(toLogItem(pack));
         }
         // 排序
-        vo.packs.sort(Comparator.comparing(o -> o.time));
+        vo.packs.sort((o1, o2) -> compareTime(o1.time, o2.time));
         return vo;
     }
 
@@ -118,9 +122,6 @@ public abstract class BaseLogExporter implements LogExporter {
     }
 
     private Date getEarliestTime(TimeInfo info) {
-        if (null != info.tagStartTime) {
-            return info.tagStartTime;
-        }
         if (null == info.firstTagTime) {
             return info.firstLogTime;
         }
@@ -134,17 +135,26 @@ public abstract class BaseLogExporter implements LogExporter {
         TimeInfo info = new TimeInfo();
         if (null != result.startTag) {
             info.tagStartTime = getDate(result.startTag.time);
+            setupFirstTagTime(info, info.tagStartTime);
         }
         if (null != result.endTag) {
             info.tagEndTime = getDate(result.endTag.time);
+            setupFirstTagTime(info, info.tagEndTime);
         }
         if (!result.tags.isEmpty()) {
-            info.firstTagTime = getDate(result.tags.get(0).time);
+            setupFirstTagTime(info, getDate(result.tags.get(0).time));
         }
         if (!result.logLines.isEmpty()) {
             info.firstLogTime = getDate(result.logLines.get(0).time);
         }
         return info;
+    }
+
+    private void setupFirstTagTime(TimeInfo info, Date candidate) {
+        if (null != info.firstTagTime && !candidate.before(info.firstTagTime)) {
+            return;
+        }
+        info.firstTagTime = candidate;
     }
 
     private Date getDate(String timeString) {
