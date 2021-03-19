@@ -9,6 +9,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,13 +26,14 @@ public class SimpleLogLineLoader implements ILogLineLoader {
     private final String charSet;
     private final Pattern linePattern;
     private final Pattern tagPattern;
+    private final DateTimeFormatter lineTimeFormatter;
 
     private final LastLogLineHolder lastLogLineHolder = new LastLogLineHolder();
     private long nextFromByte;
     private long readPointer;
     private long readBytes;
 
-    public SimpleLogLineLoader(File file, String charset, Pattern linePattern, Pattern tagPattern) throws IOException {
+    public SimpleLogLineLoader(File file, String charset, Pattern linePattern, Pattern tagPattern, DateTimeFormatter lineTimeFormatter) throws IOException {
         if (!file.exists()) {
             throw new LogException("找不到名称为“" + file.getName() + "”的日志文件");
         }
@@ -38,17 +41,18 @@ public class SimpleLogLineLoader implements ILogLineLoader {
         this.charSet = charset;
         this.linePattern = linePattern;
         this.tagPattern = tagPattern;
+        this.lineTimeFormatter = lineTimeFormatter;
     }
 
     // ********************静态方法********************
 
-    private static LogLine parseStringToLogLine(Pattern pattern, String lineString) {
+    private static LogLine parseStringToLogLine(Pattern pattern, String lineString, DateTimeFormatter lineTimeFormatter) {
         Matcher matcher = pattern.matcher(lineString);
         if (!matcher.find()) {
             return null;
         }
         LogLine logLine = new LogLine();
-        logLine.time = matcher.group(PARSER_KEY_TIME);
+        logLine.time = LocalDateTime.parse(matcher.group(PARSER_KEY_TIME), lineTimeFormatter);
         logLine.uid = matcher.group(PARSER_KEY_UID);
         logLine.thread = matcher.group(PARSER_KEY_THREAD);
         logLine.level = matcher.group(PARSER_KEY_LEVEL);
@@ -83,7 +87,7 @@ public class SimpleLogLineLoader implements ILogLineLoader {
             // 行解析
             String lineString = new String(line.getBytes(StandardCharsets.ISO_8859_1), charSet);
             long toByte = raf.getFilePointer();
-            LogLine curLogLine = parseStringToLogLine(linePattern, lineString);
+            LogLine curLogLine = parseStringToLogLine(linePattern, lineString, lineTimeFormatter);
             // 读取完整的一行
             if (null == curLogLine) {
                 appendLogToLastLogLine(toByte, lineString);

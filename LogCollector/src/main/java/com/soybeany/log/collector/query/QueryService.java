@@ -19,10 +19,12 @@ import com.soybeany.log.collector.scan.ScanService;
 import com.soybeany.log.core.model.FileRange;
 import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.core.model.LogPack;
+import com.soybeany.log.core.util.TimeUtils;
 import com.soybeany.util.file.BdFileUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -312,7 +314,7 @@ public class QueryService {
         LogPackLoader loader = loaderMap.get(file);
         if (null == loader) {
             RangesLogLineLoader lineLoader = new RangesLogLineLoader(file, logCollectConfig.logCharset,
-                    logCollectConfig.lineParsePattern, logCollectConfig.tagParsePattern);
+                    logCollectConfig.lineParsePattern, logCollectConfig.tagParsePattern, logCollectConfig.lineTimeFormatter);
             loader = new LogPackLoader(lineLoader, logCollectConfig.noUidPlaceholder, logCollectConfig.maxLinesPerResultWithNoUid, uidMap);
             loaderMap.put(file, loader);
         } else {
@@ -367,21 +369,23 @@ public class QueryService {
         return logExporter.export(result, formalLogPacks);
     }
 
-    private FileRange getTimeRange(LogIndexes indexes, String fromTime, String toTime) {
-        TreeMap<String, Long> timeIndexMap = indexes.timeIndexMap;
+    private FileRange getTimeRange(LogIndexes indexes, LocalDateTime fromTime, LocalDateTime toTime) {
+        TreeMap<Long, Long> timeIndexMap = indexes.timeIndexMap;
         if (timeIndexMap.isEmpty()) {
             return FileRange.EMPTY;
         }
         // 是否为极端位置
-        String firstTime = timeIndexMap.firstKey();
-        String lastTime = timeIndexMap.lastKey();
-        if (toTime.compareTo(firstTime) <= 0 || fromTime.compareTo(lastTime) >= 0) {
+        Long firstTime = timeIndexMap.firstKey();
+        Long lastTime = timeIndexMap.lastKey();
+        Long fTime = TimeUtils.toMillis(fromTime);
+        Long tTime = TimeUtils.toMillis(toTime);
+        if (tTime.compareTo(firstTime) <= 0 || fTime.compareTo(lastTime) >= 0) {
             return FileRange.EMPTY;
         }
         // 正常合并
-        long startByte = Optional.ofNullable(timeIndexMap.ceilingEntry(fromTime))
+        long startByte = Optional.ofNullable(timeIndexMap.ceilingEntry(fTime))
                 .map(Map.Entry::getValue).orElseThrow(() -> new LogException("不可能的开始时间"));
-        long endByte = Optional.ofNullable(timeIndexMap.ceilingEntry(toTime))
+        long endByte = Optional.ofNullable(timeIndexMap.ceilingEntry(tTime))
                 .map(Map.Entry::getValue).orElse(indexes.scannedBytes);
         return new FileRange(startByte, endByte);
     }

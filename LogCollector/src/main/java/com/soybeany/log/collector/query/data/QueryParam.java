@@ -33,8 +33,8 @@ public class QueryParam {
     private final Map<String, Map<String, String>> params = new HashMap<>();
     private final LogCollectConfig logCollectConfig;
 
-    private String fromTime;
-    private String toTime;
+    private LocalDateTime fromTime;
+    private LocalDateTime toTime;
     private Integer countLimit;
     private final Set<File> logFiles = new LinkedHashSet<>();
     private final Set<String> uidSet = new LinkedHashSet<>();
@@ -71,11 +71,11 @@ public class QueryParam {
 
     // ********************公开方法********************
 
-    public String getFromTime() {
+    public LocalDateTime getFromTime() {
         return fromTime;
     }
 
-    public String getToTime() {
+    public LocalDateTime getToTime() {
         return toTime;
     }
 
@@ -121,15 +121,13 @@ public class QueryParam {
     private void postHandleTime() {
         // 确保时间参数不为null
         if (null == fromTime) {
-            fromTime = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0).format(logCollectConfig.lineTimeFormatter);
+            fromTime = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
         }
         if (null == toTime) {
-            toTime = LocalDateTime.now().format(logCollectConfig.lineTimeFormatter);
+            toTime = LocalDateTime.now();
         }
         // 校验时间参数
-        LocalDateTime fTime = parseToDateTime(fromTime);
-        LocalDateTime tTime = parseToDateTime(toTime);
-        if (fTime.isAfter(tTime)) {
+        if (fromTime.isAfter(toTime)) {
             throw new LogException("开始时间不能晚于结束时间");
         }
     }
@@ -146,8 +144,8 @@ public class QueryParam {
             return;
         }
         // 补充日志文件
-        LocalDate fDate = parseToDateTime(fromTime).toLocalDate();
-        LocalDate tDate = parseToDateTime(toTime).toLocalDate();
+        LocalDate fDate = fromTime.toLocalDate();
+        LocalDate tDate = toTime.toLocalDate();
         LocalDate today = LocalDate.now();
         LocalDate tempDate = fDate;
         while (!tempDate.isAfter(tDate)) {
@@ -158,10 +156,6 @@ public class QueryParam {
         if (size > logCollectConfig.maxFilesToQuery) {
             throw new LogException("一次查询最多允许" + logCollectConfig.maxFilesToQuery + "个文件，当前为" + size + "个");
         }
-    }
-
-    private LocalDateTime parseToDateTime(String string) {
-        return LocalDateTime.parse(string, logCollectConfig.lineTimeFormatter);
     }
 
     private void addFiles(LocalDate today, LocalDate date) {
@@ -203,13 +197,13 @@ public class QueryParam {
         return true;
     }
 
-    private String parseTime(String string) {
+    private LocalDateTime parseTime(String string) {
         DateTimeParser parser = FORMATTER_MAP.get(string.length());
         if (null == parser) {
             throw new LogException("使用了不支持的时间格式");
         }
         try {
-            return parser.parse(string).format(logCollectConfig.lineTimeFormatter);
+            return parser.parse(string);
         } catch (DateTimeParseException e) {
             throw new LogException("“" + string + "”时间解析异常");
         }

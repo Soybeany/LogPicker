@@ -1,7 +1,6 @@
 package com.soybeany.log.collector.query.exporter;
 
 import com.google.gson.Gson;
-import com.soybeany.log.collector.common.data.LogCollectConfig;
 import com.soybeany.log.collector.query.data.QueryResult;
 import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.core.model.LogPack;
@@ -18,10 +17,6 @@ import java.util.List;
  * @date 2021/3/3
  */
 public class RawLogExporter extends BaseLogExporter {
-
-    public RawLogExporter(LogCollectConfig logCollectConfig) {
-        super(logCollectConfig);
-    }
 
     @Override
     public String export(QueryResult result, List<LogPack> packs) {

@@ -1,6 +1,7 @@
 package com.soybeany.log.core.model;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 /**
  * @author Soybeany
@@ -21,7 +22,7 @@ public class LogTag implements Serializable {
     /**
      * 创建该标记的时间
      */
-    public String time;
+    public LocalDateTime time;
 
     /**
      * 标签的键

@@ -47,8 +47,8 @@ public class QueryController {
     @PostConstruct
     private void onInit() {
         LogCollectConfig config = appConfig.toLogCollectConfig();
-        directReadQueryService = LogCollector.query(config).logExporter(new DirectReadLogExporter(config)).build();
-        packQueryService = LogCollector.query(config).logExporter(new PackLogExporter(config)).build();
+        directReadQueryService = LogCollector.query(config).logExporter(new DirectReadLogExporter()).build();
+        packQueryService = LogCollector.query(config).logExporter(new PackLogExporter()).build();
     }
 
     private String byParam(QueryService queryService, @RequestParam Map<String, String> param) {

@@ -39,7 +39,7 @@ public class LogIndexes implements Serializable {
     /**
      * 时间下标索引(开始时间使用匹配的值；结束时间使用匹配的下一值，若无则使用文件大小值)
      */
-    public final TreeMap<String, Long> timeIndexMap = new TreeMap<>();
+    public final TreeMap<Long, Long> timeIndexMap = new TreeMap<>();
 
     /**
      * 自定义标签索引，第一个key为tagName，第二个key为tagValue，value为uid集合

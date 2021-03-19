@@ -4,6 +4,7 @@ import com.soybeany.log.core.model.FileRange;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -19,8 +20,8 @@ public class RangesLogLineLoader implements ILogLineLoader {
     private long targetPointer;
     private long readBytes;
 
-    public RangesLogLineLoader(File file, String charset, Pattern linePattern, Pattern tagPattern) throws IOException {
-        this.delegate = new SimpleLogLineLoader(file, charset, linePattern, tagPattern);
+    public RangesLogLineLoader(File file, String charset, Pattern linePattern, Pattern tagPattern, DateTimeFormatter lineTimeFormatter) throws IOException {
+        this.delegate = new SimpleLogLineLoader(file, charset, linePattern, tagPattern, lineTimeFormatter);
     }
 
     public void switchRanges(List<FileRange> ranges) {

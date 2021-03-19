@@ -95,7 +95,7 @@ public class LogCollector {
         }
 
         private void setupDefaultExporter() {
-            logExporter = new DirectReadLogExporter(logCollectConfig);
+            logExporter = new DirectReadLogExporter();
         }
     }
 

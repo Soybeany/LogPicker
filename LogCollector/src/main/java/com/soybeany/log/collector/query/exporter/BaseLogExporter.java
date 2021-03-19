@@ -1,7 +1,6 @@
 package com.soybeany.log.collector.query.exporter;
 
 import com.google.gson.Gson;
-import com.soybeany.log.collector.common.data.LogCollectConfig;
 import com.soybeany.log.collector.query.data.QueryResult;
 import com.soybeany.log.core.model.*;
 import com.soybeany.log.core.util.TimeUtils;
@@ -19,12 +18,7 @@ public abstract class BaseLogExporter implements LogExporter {
     private static final DateTimeFormatter FORMATTER1 = DateTimeFormatter.ofPattern("yy-MM-dd HH:mm:ss");
     private static final DateTimeFormatter FORMATTER2 = DateTimeFormatter.ofPattern("HH:mm:ss");
 
-    private final LogCollectConfig logCollectConfig;
     private final Gson gson = new Gson();
-
-    public BaseLogExporter(LogCollectConfig logCollectConfig) {
-        this.logCollectConfig = logCollectConfig;
-    }
 
     @Override
     public String export(QueryResult result, List<LogPack> packs) {
@@ -80,9 +74,8 @@ public abstract class BaseLogExporter implements LogExporter {
     private List<String> getLogs(LocalDateTime earliestTime, LogPack logPack) {
         List<String> logs = new LinkedList<>();
         for (LogLine line : logPack.logLines) {
-            LocalDateTime dateTime = LocalDateTime.parse(line.time, logCollectConfig.lineTimeFormatter);
-            long deltaDays = dateTime.toLocalDate().toEpochDay() - earliestTime.toLocalDate().toEpochDay();
-            String time = dateTime.format(FORMATTER2) + (0 != deltaDays ? "(+" + deltaDays + ")" : "");
+            long deltaDays = line.time.toLocalDate().toEpochDay() - earliestTime.toLocalDate().toEpochDay();
+            String time = line.time.format(FORMATTER2) + (0 != deltaDays ? "(+" + deltaDays + ")" : "");
             String log = time + " " + line.level + " " + line.content;
             logs.add(log);
         }
@@ -157,8 +150,8 @@ public abstract class BaseLogExporter implements LogExporter {
         info.firstTagTime = candidate;
     }
 
-    private Date getDate(String timeString) {
-        return TimeUtils.toDate(LocalDateTime.parse(timeString, logCollectConfig.lineTimeFormatter));
+    private Date getDate(LocalDateTime time) {
+        return TimeUtils.toDate(time);
     }
 
     // ********************抽象方法********************

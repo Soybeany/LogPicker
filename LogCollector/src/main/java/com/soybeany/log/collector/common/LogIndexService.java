@@ -8,6 +8,7 @@ import com.soybeany.log.collector.common.model.loader.LogPackLoader;
 import com.soybeany.log.collector.common.model.loader.SimpleLogLineLoader;
 import com.soybeany.log.core.model.*;
 import com.soybeany.log.core.util.DataHolder;
+import com.soybeany.log.core.util.TimeUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,7 +41,7 @@ public class LogIndexService {
         }
         // 更新索引
         long startTime = System.currentTimeMillis();
-        try (SimpleLogLineLoader lineLoader = new SimpleLogLineLoader(indexes.logFile, logCollectConfig.logCharset, logCollectConfig.lineParsePattern, logCollectConfig.tagParsePattern);
+        try (SimpleLogLineLoader lineLoader = new SimpleLogLineLoader(indexes.logFile, logCollectConfig.logCharset, logCollectConfig.lineParsePattern, logCollectConfig.tagParsePattern, logCollectConfig.lineTimeFormatter);
              LogPackLoader packLoader = new LogPackLoader(lineLoader, logCollectConfig.noUidPlaceholder, logCollectConfig.maxLinesPerResultWithNoUid, indexes.uidTempMap)) {
             lineLoader.resetTo(startByte, null); // 因为不会有旧数据，理论上这里不会null异常
             packLoader.setListener(holder -> indexTime(indexes, holder.fromByte, holder.logLine));
@@ -117,7 +118,7 @@ public class LogIndexService {
     }
 
     private void indexTime(LogIndexes indexes, long fromByte, LogLine logLine) {
-        indexes.timeIndexMap.putIfAbsent(logLine.time, fromByte);
+        indexes.timeIndexMap.putIfAbsent(TimeUtils.toMillis(logLine.time), fromByte);
     }
 
     private String getIndexKey(File logFile) {
