@@ -25,7 +25,7 @@ public class DataHolder<T> {
 
     public synchronized static void destroyTimer() {
         if (null != SERVICE) {
-            SERVICE.shutdown();
+            SERVICE.shutdownNow();
             SERVICE = null;
         }
     }
