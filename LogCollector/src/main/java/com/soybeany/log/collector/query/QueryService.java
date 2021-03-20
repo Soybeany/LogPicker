@@ -53,14 +53,14 @@ public class QueryService {
 
     public String simpleQuery(Map<String, String> param) {
         QueryResult result = getResult(param);
+        // 如果context中已包含结果，则直接返回
+        if (null != result.text) {
+            return result.text;
+        }
         try {
             // 获取锁
             result.lock();
             READ_BYTES_LOCAL.set(0L);
-            // 如果context中已包含结果，则直接返回
-            if (null != result.text) {
-                return result.text;
-            }
             return result.text = query(result);
         } catch (Exception e) {
             throw new LogException(e);
