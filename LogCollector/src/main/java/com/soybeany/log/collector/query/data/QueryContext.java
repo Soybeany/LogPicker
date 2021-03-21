@@ -53,7 +53,7 @@ public class QueryContext {
     public final Map<String, LogPack> uidTempMap = new HashMap<>();
 
     /**
-     * 查询过程中的一些信息
+     * 查询过程中的一些信息（包括续查均显示）
      */
     public final List<String> msgList = new LinkedList<>();
 

@@ -172,10 +172,11 @@ public class QueryService {
         while (iterator.hasNext()) {
             LogPack logPack = iterator.next();
             iterator.remove();
-            if (result.context.usedUidSet.contains(logPack.uid)) {
+            if (result.context.usedUidSet.contains(logPack.uid)
+                    || isFiltered(result.context, logPack)) {
                 continue;
             }
-            boolean needMore = filterAndAddToResults(result, formalLogPacks, logPack);
+            boolean needMore = addToResults(result, formalLogPacks, logPack);
             if (!needMore) {
                 return;
             }
@@ -202,7 +203,7 @@ public class QueryService {
                     if (!logCollectConfig.noUidPlaceholder.equals(logPack.uid)) {
                         needMore = addResultsByUid(result, logPack.uid, formalLogPacks, loaderMapForUid);
                     } else {
-                        needMore = filterAndAddToResults(result, formalLogPacks, logPack);
+                        needMore = addToResults(result, formalLogPacks, logPack);
                     }
                 }
                 READ_BYTES_LOCAL.set(READ_BYTES_LOCAL.get() + rangesLogLineLoader.getReadBytes());
@@ -330,17 +331,6 @@ public class QueryService {
             result.endReason = "已找到指定数目的结果";
         }
         return needMore;
-    }
-
-    /**
-     * @return 是否需要更多结果
-     */
-    private boolean filterAndAddToResults(QueryResult result, List<LogPack> formalLogPacks, LogPack candidate) {
-        // 筛选
-        if (isFiltered(result.context, candidate)) {
-            return true;
-        }
-        return addToResults(result, formalLogPacks, candidate);
     }
 
     private boolean isFiltered(QueryContext context, LogPack logPack) {
