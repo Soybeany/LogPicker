@@ -56,6 +56,8 @@ class CollectResult {
                 logPart.add(pack);
             });
         });
+        // 排序
+        logPart.sort(Comparator.comparing(o -> o.time));
         // 组装
         List<Object> output = new LinkedList<>();
         output.add(infoPart);
