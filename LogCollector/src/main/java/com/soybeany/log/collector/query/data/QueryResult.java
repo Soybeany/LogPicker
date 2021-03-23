@@ -31,7 +31,7 @@ public class QueryResult {
     public long finishTime;
 
     /**
-     * 查询过程中的一些信息
+     * 查询过程中的一些信息（仅当次查询结果显示）
      */
     public final List<String> msgList = new LinkedList<>();
 
