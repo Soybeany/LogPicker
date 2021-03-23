@@ -4,6 +4,7 @@ import com.soybeany.config.BDCipherUtils;
 import com.soybeany.log.collector.common.data.LogCollectConfig;
 import com.soybeany.log.collector.common.data.LogIndexes;
 import com.soybeany.log.collector.common.model.MsgRecorder;
+import com.soybeany.log.collector.common.model.loader.ILogLineLoader;
 import com.soybeany.log.collector.common.model.loader.LogPackLoader;
 import com.soybeany.log.collector.common.model.loader.SimpleLogLineLoader;
 import com.soybeany.log.core.model.*;
@@ -42,7 +43,7 @@ public class LogIndexService {
         // 更新索引
         long startTime = System.currentTimeMillis();
         try (SimpleLogLineLoader lineLoader = new SimpleLogLineLoader(indexes.logFile, logCollectConfig.logCharset, logCollectConfig.lineParsePattern, logCollectConfig.tagParsePattern, logCollectConfig.lineTimeFormatter);
-             LogPackLoader packLoader = new LogPackLoader(lineLoader, logCollectConfig.noUidPlaceholder, logCollectConfig.maxLinesPerResultWithNoUid, indexes.uidTempMap)) {
+             LogPackLoader<ILogLineLoader> packLoader = new LogPackLoader<>(lineLoader, logCollectConfig.noUidPlaceholder, logCollectConfig.maxLinesPerResultWithNoUid, indexes.uidTempMap)) {
             lineLoader.resetTo(startByte, null); // 因为不会有旧数据，理论上这里不会null异常
             packLoader.setListener(holder -> indexTime(indexes, holder.fromByte, holder.logLine));
             LogPack logPack;

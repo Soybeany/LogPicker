@@ -66,9 +66,9 @@ public class QueryService {
         List<LogPack> formalLogPacks = new LinkedList<>();
         boolean needMore;
         // 如果有未使用的结果，则直接使用
-        needMore = queryByUnusedResults(result, formalLogPacks);
+        needMore = popUnusedResults(result, formalLogPacks);
         // 创建可复用的加载器持有器，遇到相同file时不需重新创建
-        Map<File, LogPackLoader> loaderMap = new HashMap<>();
+        Map<File, LogPackLoader<RangesLogLineLoader>> loaderMap = new HashMap<>();
         try {
             if (needMore) {
                 needMore = queryByUnfilteredUidSet(result, formalLogPacks, loaderMap);
@@ -80,38 +80,38 @@ public class QueryService {
             result.context.indexesMap.values().forEach(indexes -> indexes.withCheck(logCollectConfig));
         } finally {
             // 释放加载器持有器
-            for (LogPackLoader loader : loaderMap.values()) {
+            for (LogPackLoader<RangesLogLineLoader> loader : loaderMap.values()) {
                 BdFileUtils.closeStream(loader);
             }
         }
         // 如果记录数不够，则继续遍历临时列表并弹出记录
         if (needMore) {
-            queryByPopUidMap(result, formalLogPacks);
+            popResultsFromUidMap(result, formalLogPacks);
         }
         // 返回结果
         pagingAndSort(result, formalLogPacks);
         return formalLogPacks;
     }
 
-    private void queryByPopUidMap(QueryResult result, List<LogPack> formalLogPacks) {
+    private void popResultsFromUidMap(QueryResult result, List<LogPack> formalLogPacks) {
         Iterator<LogPack> iterator = result.context.uidTempMap.values().iterator();
         while (iterator.hasNext()) {
             LogPack logPack = iterator.next();
             iterator.remove();
             // 若已使用，或是被过滤，则继续遍历
-            if (result.context.usedUidSet.contains(logPack.uid)
+            if (result.context.returnedUidSet.contains(logPack.uid)
                     || isFiltered(result.context, logPack)) {
                 continue;
             }
-            boolean needMore = addToResults(result, formalLogPacks, logPack);
+            boolean needMore = addToFormalLogPacks(result, formalLogPacks, logPack);
             if (!needMore) {
                 return;
             }
         }
     }
 
-    private boolean queryByRanges(QueryResult result, List<LogPack> formalLogPacks, Map<File, LogPackLoader> loaderMap) throws IOException {
-        Map<File, LogPackLoader> loaderMapForUid = new HashMap<>();
+    private boolean queryByRanges(QueryResult result, List<LogPack> formalLogPacks, Map<File, LogPackLoader<RangesLogLineLoader>> loaderMap) throws IOException {
+        Map<File, LogPackLoader<RangesLogLineLoader>> loaderMapForUid = new HashMap<>();
         boolean needMore = true;
         try {
             Iterator<Map.Entry<File, List<FileRange>>> iterator = result.context.queryRanges.entrySet().iterator();
@@ -119,9 +119,7 @@ public class QueryService {
                 Map.Entry<File, List<FileRange>> entry = iterator.next();
                 File file = entry.getKey();
                 List<FileRange> ranges = entry.getValue();
-                LogPackLoader loader = getLoader(loaderMap, file, result.context.uidTempMap);
-                RangesLogLineLoader rangesLogLineLoader = (RangesLogLineLoader) loader.getLogLineLoader();
-                rangesLogLineLoader.switchRanges(ranges);
+                LogPackLoader<RangesLogLineLoader> loader = getLoader(loaderMap, file, result.context.uidTempMap, ranges);
                 LogPack logPack;
                 while (needMore && null != (logPack = loader.loadNextCompleteLogPack())) {
                     if (isFiltered(result.context, logPack)) {
@@ -130,9 +128,10 @@ public class QueryService {
                     if (!logCollectConfig.noUidPlaceholder.equals(logPack.uid)) {
                         needMore = addResultsByUid(result, logPack.uid, formalLogPacks, loaderMapForUid);
                     } else {
-                        needMore = addToResults(result, formalLogPacks, logPack);
+                        needMore = addToFormalLogPacks(result, formalLogPacks, logPack);
                     }
                 }
+                RangesLogLineLoader rangesLogLineLoader = loader.getLogLineLoader();
                 READ_BYTES_LOCAL.set(READ_BYTES_LOCAL.get() + rangesLogLineLoader.getReadBytes());
                 long readPointer = rangesLogLineLoader.getReadPointer();
                 // 使用已查询到的字节，再次进行范围合并
@@ -151,7 +150,7 @@ public class QueryService {
             }
         } finally {
             // 释放加载器持有器
-            for (LogPackLoader loader : loaderMapForUid.values()) {
+            for (LogPackLoader<RangesLogLineLoader> loader : loaderMapForUid.values()) {
                 BdFileUtils.closeStream(loader);
             }
         }
@@ -161,7 +160,7 @@ public class QueryService {
     /**
      * 是否需要继续添加记录
      */
-    private boolean queryByUnfilteredUidSet(QueryResult result, List<LogPack> logPacks, Map<File, LogPackLoader> loaderMap) throws IOException {
+    private boolean queryByUnfilteredUidSet(QueryResult result, List<LogPack> logPacks, Map<File, LogPackLoader<RangesLogLineLoader>> loaderMap) throws IOException {
         boolean needMore = true;
         Iterator<String> iterator = result.context.unfilteredUidSet.iterator();
         while (iterator.hasNext()) {
@@ -175,18 +174,18 @@ public class QueryService {
         return needMore;
     }
 
-    private boolean addResultsByUid(QueryResult result, String uid, List<LogPack> formalLogPacks, Map<File, LogPackLoader> loaderMap) throws IOException {
+    private boolean addResultsByUid(QueryResult result, String uid, List<LogPack> formalLogPacks, Map<File, LogPackLoader<RangesLogLineLoader>> loaderMap) throws IOException {
         QueryContext context = result.context;
-        if (context.usedUidSet.contains(uid)) {
+        if (context.returnedUidSet.contains(uid)) {
             return true;
         }
-        context.usedUidSet.add(uid);
+        context.returnedUidSet.add(uid);
         List<LogPack> packs = getFilteredLogPacksByUid(result, uid, loaderMap);
         context.unusedFilteredResults.addAll(packs);
-        return queryByUnusedResults(result, formalLogPacks);
+        return popUnusedResults(result, formalLogPacks);
     }
 
-    private List<LogPack> getFilteredLogPacksByUid(QueryResult queryResult, String uid, Map<File, LogPackLoader> loaderMap) throws IOException {
+    private List<LogPack> getFilteredLogPacksByUid(QueryResult queryResult, String uid, Map<File, LogPackLoader<RangesLogLineLoader>> loaderMap) throws IOException {
         List<LogPack> packs = uidToLogPacks(queryResult, uid, loaderMap);
         for (LogPack pack : packs) {
             if (!isFiltered(queryResult.context, pack)) {
@@ -196,26 +195,25 @@ public class QueryService {
         return Collections.emptyList();
     }
 
-    private List<LogPack> uidToLogPacks(QueryResult queryResult, String uid, Map<File, LogPackLoader> loaderMap) throws IOException {
+    private List<LogPack> uidToLogPacks(QueryResult queryResult, String uid, Map<File, LogPackLoader<RangesLogLineLoader>> loaderMap) throws IOException {
         List<LogPack> result = new LinkedList<>();
         Map<String, LogPack> uidMap = new HashMap<>();
         // 收集有结束标签的记录
         for (Map.Entry<File, QueryIndexes> entry : queryResult.indexesMap.entrySet()) {
             File file = entry.getKey();
             QueryIndexes indexes = entry.getValue();
-            LogPackLoader loader = getLoader(loaderMap, file, uidMap);
             List<FileRange> ranges = indexes.getMergedRanges(rangeService, uid);
             if (ranges.isEmpty()) {
                 continue;
             }
-            RangesLogLineLoader rangesLogLineLoader = (RangesLogLineLoader) loader.getLogLineLoader();
-            rangesLogLineLoader.switchRanges(ranges);
+            LogPackLoader<RangesLogLineLoader> loader = getLoader(loaderMap, file, uidMap, ranges);
             LogPack logPack;
             while (null != (logPack = loader.loadNextCompleteLogPack())) {
                 if (uid.equals(logPack.uid)) {
                     result.add(logPack);
                 }
             }
+            RangesLogLineLoader rangesLogLineLoader = loader.getLogLineLoader();
             READ_BYTES_LOCAL.set(READ_BYTES_LOCAL.get() + rangesLogLineLoader.getReadBytes());
         }
         // 收集无结束标签的记录
@@ -227,29 +225,31 @@ public class QueryService {
         return result;
     }
 
-    private boolean queryByUnusedResults(QueryResult result, List<LogPack> formalLogPacks) {
+    private boolean popUnusedResults(QueryResult result, List<LogPack> formalLogPacks) {
         LogPack pack;
         boolean needMore = true;
         while (needMore && null != (pack = result.context.unusedFilteredResults.poll())) {
-            needMore = addToResults(result, formalLogPacks, pack);
+            needMore = addToFormalLogPacks(result, formalLogPacks, pack);
         }
         return needMore;
     }
 
-    private LogPackLoader getLoader(Map<File, LogPackLoader> loaderMap, File file, Map<String, LogPack> uidMap) throws IOException {
-        LogPackLoader loader = loaderMap.get(file);
+    private LogPackLoader<RangesLogLineLoader> getLoader(Map<File, LogPackLoader<RangesLogLineLoader>> loaderMap, File file, Map<String, LogPack> uidMap, List<FileRange> ranges) throws IOException {
+        LogPackLoader<RangesLogLineLoader> loader = loaderMap.get(file);
         if (null == loader) {
             RangesLogLineLoader lineLoader = new RangesLogLineLoader(file, logCollectConfig.logCharset,
                     logCollectConfig.lineParsePattern, logCollectConfig.tagParsePattern, logCollectConfig.lineTimeFormatter);
-            loader = new LogPackLoader(lineLoader, logCollectConfig.noUidPlaceholder, logCollectConfig.maxLinesPerResultWithNoUid, uidMap);
+            loader = new LogPackLoader<>(lineLoader, logCollectConfig.noUidPlaceholder, logCollectConfig.maxLinesPerResultWithNoUid, uidMap);
             loaderMap.put(file, loader);
         } else {
             loader.switchUidMap(uidMap);
         }
+        RangesLogLineLoader rangesLogLineLoader = loader.getLogLineLoader();
+        rangesLogLineLoader.switchRanges(ranges);
         return loader;
     }
 
-    private boolean addToResults(QueryResult result, List<LogPack> formalLogPacks, LogPack candidate) {
+    private boolean addToFormalLogPacks(QueryResult result, List<LogPack> formalLogPacks, LogPack candidate) {
         // 添加到结果列表
         formalLogPacks.add(candidate);
         // 是否已达要求的结果数

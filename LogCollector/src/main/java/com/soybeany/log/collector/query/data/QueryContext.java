@@ -44,9 +44,9 @@ public class QueryContext {
      */
     public final LinkedList<LogPack> unusedFilteredResults = new LinkedList<>();
     /**
-     * 已经使用过(已返回)的uid记录
+     * 已经返回过的uid记录
      */
-    public final Set<String> usedUidSet = new HashSet<>();
+    public final Set<String> returnedUidSet = new HashSet<>();
     /**
      * 使用uid-thread作为key，存放查询范围时，未组装完成的临时记录
      */

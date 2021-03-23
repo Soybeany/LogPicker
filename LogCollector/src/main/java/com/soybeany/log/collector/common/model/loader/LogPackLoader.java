@@ -10,9 +10,9 @@ import java.util.Map;
  * @author Soybeany
  * @date 2021/1/24
  */
-public class LogPackLoader implements Closeable {
+public class LogPackLoader<T extends ILogLineLoader> implements Closeable {
 
-    private final ILogLineLoader logLineLoader;
+    private final T logLineLoader;
     private final String noUidPlaceholder;
     private final int maxLinesPerResultWithNoUid;
     private Map<String, LogPack> uidMap;
@@ -20,7 +20,7 @@ public class LogPackLoader implements Closeable {
     private final ILogLineLoader.ResultHolder holder = new SimpleLogLineLoader.ResultHolder();
     private IListener listener;
 
-    public LogPackLoader(ILogLineLoader logLineLoader, String noUidPlaceholder, int maxLinesPerResultWithNoUid, Map<String, LogPack> uidMap) {
+    public LogPackLoader(T logLineLoader, String noUidPlaceholder, int maxLinesPerResultWithNoUid, Map<String, LogPack> uidMap) {
         this.logLineLoader = logLineLoader;
         this.noUidPlaceholder = noUidPlaceholder;
         this.maxLinesPerResultWithNoUid = maxLinesPerResultWithNoUid;
@@ -40,7 +40,7 @@ public class LogPackLoader implements Closeable {
         this.listener = listener;
     }
 
-    public ILogLineLoader getLogLineLoader() {
+    public T getLogLineLoader() {
         return logLineLoader;
     }
 
