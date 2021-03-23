@@ -118,7 +118,11 @@ public class LogIndexService {
     }
 
     private void indexTime(LogIndexes indexes, long fromByte, LogLine logLine) {
-        indexes.timeIndexMap.putIfAbsent(TimeUtils.toMillis(logLine.time), fromByte);
+        indexes.timeIndexMap.putIfAbsent(getModifiedMillis(logLine), fromByte);
+    }
+
+    private long getModifiedMillis(LogLine logLine) {
+        return TimeUtils.toMillis(logLine.time) / 1000 * 1000;
     }
 
     private String getIndexKey(File logFile) {

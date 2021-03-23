@@ -379,7 +379,7 @@ public class QueryService {
         Long lastTime = timeIndexMap.lastKey();
         Long fTime = TimeUtils.toMillis(fromTime);
         Long tTime = TimeUtils.toMillis(toTime);
-        if (tTime.compareTo(firstTime) <= 0 || fTime.compareTo(lastTime) >= 0) {
+        if (tTime.compareTo(firstTime) < 0 || fTime.compareTo(lastTime) > 0) {
             return FileRange.EMPTY;
         }
         // 正常合并

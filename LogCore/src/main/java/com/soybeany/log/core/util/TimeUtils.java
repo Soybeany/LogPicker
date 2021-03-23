@@ -22,7 +22,7 @@ public class TimeUtils {
         return Date.from(time.atZone(ZoneId.systemDefault()).toInstant());
     }
 
-    public static Long toMillis(LocalDateTime time) {
+    public static long toMillis(LocalDateTime time) {
         return time.toInstant(ZoneOffset.ofHours(8)).toEpochMilli();
     }
 
