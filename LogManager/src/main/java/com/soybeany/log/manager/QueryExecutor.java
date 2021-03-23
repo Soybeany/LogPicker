@@ -1,7 +1,6 @@
 package com.soybeany.log.manager;
 
 import com.soybeany.log.core.model.*;
-import com.soybeany.log.core.util.DataHolder;
 import com.soybeany.log.core.util.UidUtils;
 
 import java.io.IOException;
@@ -20,10 +19,10 @@ public class QueryExecutor extends BaseExecutor {
     private static final String KEY_UID_LIST = "uidList";
     private static final String HOST_SEPARATE_REGEX = "[,;]";
 
-    private final DataHolder<ResultHolder> holderMap;
+    private final MemDataHolder<ResultHolder> holderMap;
 
     public QueryExecutor(int maxResultCount) {
-        holderMap = new DataHolder<>(maxResultCount);
+        holderMap = new MemDataHolder<>(maxResultCount);
     }
 
     public String getResult(String path, Map<String, String> headers, Map<String, String> param, int expiryInSec) {

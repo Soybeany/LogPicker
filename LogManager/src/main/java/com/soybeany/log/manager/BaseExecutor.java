@@ -18,34 +18,24 @@ public class BaseExecutor {
 
     private static final OkHttpClient CLIENT_FOR_READ = new OkHttpClient.Builder().readTimeout(5, TimeUnit.MINUTES).build();
     protected static final Gson GSON = new Gson();
-    @SuppressWarnings("AlibabaThreadPoolCreation")
-    private static ExecutorService SERVICE;
-
-    public synchronized static void createRequestPool() {
-        if (null == SERVICE) {
-            SERVICE = Executors.newCachedThreadPool();
-        }
-    }
-
-    public synchronized static void destroyRequestPool() {
-        if (null != SERVICE) {
-            SERVICE.shutdown();
-            SERVICE = null;
-        }
-    }
 
     protected static <T> Map<String, Dto<T>> invokeAll(Map<String, Callable<T>> tasks) {
-        Map<String, Future<T>> futures = new HashMap<>();
-        tasks.forEach((k, v) -> futures.put(k, SERVICE.submit(v)));
-        Map<String, Dto<T>> result = new HashMap<>();
-        futures.forEach((k, v) -> {
-            try {
-                result.put(k, new Dto<>(true, v.get(), null));
-            } catch (InterruptedException | ExecutionException e) {
-                result.put(k, new Dto<>(false, null, e.getMessage()));
-            }
-        });
-        return result;
+        ExecutorService service = Executors.newCachedThreadPool();
+        try {
+            Map<String, Future<T>> futures = new HashMap<>();
+            tasks.forEach((k, v) -> futures.put(k, service.submit(v)));
+            Map<String, Dto<T>> result = new HashMap<>();
+            futures.forEach((k, v) -> {
+                try {
+                    result.put(k, new Dto<>(true, v.get(), null));
+                } catch (InterruptedException | ExecutionException e) {
+                    result.put(k, new Dto<>(false, null, e.getMessage()));
+                }
+            });
+            return result;
+        } finally {
+            service.shutdownNow();
+        }
     }
 
     protected <T> T request(String url, Map<String, String> headers, Map<String, String> param, Type type) throws IOException {

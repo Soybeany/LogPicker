@@ -1,23 +1,12 @@
 package com.soybeany.log.manager;
 
 import com.soybeany.log.core.model.Direction;
-import com.soybeany.log.core.util.DataHolder;
 
 /**
  * @author Soybeany
  * @date 2021/2/5
  */
 public class LogManager {
-
-    public static void init() {
-        DataHolder.createTimer();
-        BaseExecutor.createRequestPool();
-    }
-
-    public static void release() {
-        BaseExecutor.destroyRequestPool();
-        DataHolder.destroyTimer();
-    }
 
     public static QueryExecutor query(int maxResultCount) {
         return new QueryExecutor(maxResultCount);

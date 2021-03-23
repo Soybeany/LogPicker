@@ -1,12 +1,9 @@
 package com.soybeany.log.demo.config;
 
-import com.soybeany.log.collector.LogCollector;
 import com.soybeany.log.collector.common.data.LogCollectConfig;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -32,16 +29,6 @@ public class AppConfig {
     public int maxLinesPerResultWithNoUid;
     public int defaultMaxResultCount;
     public int resultRetainSec;
-
-    @PostConstruct
-    void onInit() {
-        LogCollector.init();
-    }
-
-    @PreDestroy
-    void onDestroy() {
-        LogCollector.release();
-    }
 
     // ********************设置方法********************
 

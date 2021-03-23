@@ -1,6 +1,7 @@
 package com.soybeany.log.collector.query.service;
 
 import com.soybeany.log.collector.common.data.LogCollectConfig;
+import com.soybeany.log.collector.common.data.LogIndexes;
 import com.soybeany.log.collector.common.model.loader.LogPackLoader;
 import com.soybeany.log.collector.common.model.loader.RangesLogLineLoader;
 import com.soybeany.log.collector.common.service.RangeService;
@@ -12,6 +13,7 @@ import com.soybeany.log.collector.query.factory.ModuleFactory;
 import com.soybeany.log.collector.query.processor.LogFilter;
 import com.soybeany.log.collector.query.provider.FileProvider;
 import com.soybeany.log.core.model.FileRange;
+import com.soybeany.log.core.model.IDataHolder;
 import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.core.model.LogPack;
 import com.soybeany.util.file.BdFileUtils;
@@ -32,10 +34,11 @@ public class QueryService {
     private final QueryResultService queryResultService;
     private final RangeService rangeService;
 
-    public QueryService(LogCollectConfig logCollectConfig, FileProvider fileProvider, List<ModuleFactory> moduleFactories) {
+    public QueryService(LogCollectConfig logCollectConfig, FileProvider fileProvider, List<ModuleFactory> moduleFactories,
+                        IDataHolder<LogIndexes> indexesHolder, IDataHolder<QueryResult> resultHolder) {
         this.logCollectConfig = logCollectConfig;
         this.rangeService = new RangeService(logCollectConfig);
-        this.queryResultService = new QueryResultService(logCollectConfig, fileProvider, moduleFactories, rangeService);
+        this.queryResultService = new QueryResultService(logCollectConfig, fileProvider, moduleFactories, rangeService, indexesHolder, resultHolder);
     }
 
     public <T> T simpleQuery(Map<String, String> param, LogExporter<T> logExporter) {

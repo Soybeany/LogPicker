@@ -8,7 +8,6 @@ import com.soybeany.log.collector.common.model.loader.ILogLineLoader;
 import com.soybeany.log.collector.common.model.loader.LogPackLoader;
 import com.soybeany.log.collector.common.model.loader.SimpleLogLineLoader;
 import com.soybeany.log.core.model.*;
-import com.soybeany.log.core.util.DataHolder;
 import com.soybeany.log.core.util.TimeUtils;
 
 import java.io.File;
@@ -23,17 +22,15 @@ public class LogIndexService {
 
     private final LogCollectConfig logCollectConfig;
     private final RangeService rangeService;
-    private final DataHolder<LogIndexes> indexesHolder;
 
     public LogIndexService(LogCollectConfig logCollectConfig, RangeService rangeService) {
         this.logCollectConfig = logCollectConfig;
         this.rangeService = rangeService;
-        this.indexesHolder = new DataHolder<>(logCollectConfig.maxFileIndexesRetain);
     }
 
-    public LogIndexes updateAndGetIndexes(MsgRecorder recorder, File file) throws IOException {
+    public LogIndexes updateAndGetIndexes(MsgRecorder recorder, IDataHolder<LogIndexes> indexesHolder, File file) throws IOException {
         // 得到索引
-        LogIndexes indexes = getIndexes(recorder, file);
+        LogIndexes indexes = getIndexes(recorder, indexesHolder, file);
         long startByte = indexes.scannedBytes;
         // 若索引已是最新，则不再更新
         if (file.length() == startByte) {
@@ -73,7 +70,7 @@ public class LogIndexService {
 
     // ********************内部方法********************
 
-    private LogIndexes getIndexes(MsgRecorder recorder, File file) {
+    private LogIndexes getIndexes(MsgRecorder recorder, IDataHolder<LogIndexes> indexesHolder, File file) {
         String indexKey = getIndexKey(file);
         LogIndexes indexes = indexesHolder.updateAndGet(indexKey);
         try {

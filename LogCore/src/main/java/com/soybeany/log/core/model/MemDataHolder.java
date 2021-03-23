@@ -1,4 +1,6 @@
-package com.soybeany.log.core.util;
+package com.soybeany.log.core.model;
+
+import com.soybeany.log.core.util.UidUtils;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -10,36 +12,24 @@ import java.util.concurrent.TimeUnit;
  * @author Soybeany
  * @date 2021/2/10
  */
-public class DataHolder<T> {
+public class MemDataHolder<T> implements IDataHolder<T> {
 
-    private static ScheduledExecutorService SERVICE;
+    private ScheduledExecutorService service;
 
     private final Map<String, Task<T>> dataMap;
 
-    @SuppressWarnings("AlibabaThreadPoolCreation")
-    public synchronized static void createTimer() {
-        if (null == SERVICE) {
-            SERVICE = Executors.newScheduledThreadPool(1);
-        }
-    }
-
-    public synchronized static void destroyTimer() {
-        if (null != SERVICE) {
-            SERVICE.shutdownNow();
-            SERVICE = null;
-        }
-    }
-
-    public DataHolder(int maxCount) {
+    public MemDataHolder(int maxCount) {
         dataMap = new LruMap<>(maxCount);
     }
 
+    @Override
     public synchronized void put(String key, T data, int expiryInSec) {
         String uid = scheduleTask(key, expiryInSec);
         dataMap.put(key, new Task<>(uid, data, expiryInSec));
     }
 
-    public T updateAndGet(String key) {
+    @Override
+    public synchronized T updateAndGet(String key) {
         Task<T> task = dataMap.get(key);
         if (null == task) {
             return null;
@@ -48,6 +38,7 @@ public class DataHolder<T> {
         return task.data;
     }
 
+    @Override
     public synchronized void remove(String key) {
         dataMap.remove(key);
     }
@@ -56,7 +47,11 @@ public class DataHolder<T> {
 
     private String scheduleTask(String key, int expiryInSec) {
         String uid = UidUtils.getNew();
-        SERVICE.schedule(() -> removeData(key, uid), expiryInSec, TimeUnit.SECONDS);
+        if (null == service) {
+            service = Executors.newScheduledThreadPool(1);
+            System.out.println("开启线程池");
+        }
+        service.schedule(() -> removeData(key, uid), expiryInSec, TimeUnit.SECONDS);
         return uid;
     }
 
@@ -66,6 +61,10 @@ public class DataHolder<T> {
             return;
         }
         dataMap.remove(key);
+        if (dataMap.isEmpty() && null != service) {
+            service.shutdownNow();
+            service = null;
+        }
     }
 
     // ********************内部类********************

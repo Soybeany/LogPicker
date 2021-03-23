@@ -1,11 +1,7 @@
 package com.soybeany.log.demo.config;
 
-import com.soybeany.log.manager.LogManager;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 
 /**
  * @author Soybeany
@@ -20,16 +16,6 @@ public class AppConfig {
     public String helpPath;
     public int maxResultRetain;
     public int resultRetainSec;
-
-    @PostConstruct
-    void onInit() {
-        LogManager.init();
-    }
-
-    @PreDestroy
-    void onDestroy() {
-        LogManager.release();
-    }
 
     public void setQueryPath(String queryPath) {
         this.queryPath = queryPath;

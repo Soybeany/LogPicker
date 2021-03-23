@@ -16,8 +16,8 @@ import com.soybeany.log.collector.query.provider.FileProvider;
 import com.soybeany.log.collector.scan.ScanService;
 import com.soybeany.log.core.model.Constants;
 import com.soybeany.log.core.model.FileRange;
+import com.soybeany.log.core.model.IDataHolder;
 import com.soybeany.log.core.model.LogException;
-import com.soybeany.log.core.util.DataHolder;
 import com.soybeany.log.core.util.TimeUtils;
 
 import java.io.File;
@@ -36,16 +36,20 @@ public class QueryResultService {
     private final RangeService rangeService;
     private final LogIndexService logIndexService;
     private final ScanService scanService;
-    private final DataHolder<QueryResult> resultHolder;
+    private final IDataHolder<LogIndexes> indexesHolder;
+    private final IDataHolder<QueryResult> resultHolder;
 
-    public QueryResultService(LogCollectConfig logCollectConfig, FileProvider fileProvider, List<ModuleFactory> moduleFactories, RangeService rangeService) {
+    public QueryResultService(LogCollectConfig logCollectConfig, FileProvider fileProvider,
+                              List<ModuleFactory> moduleFactories, RangeService rangeService,
+                              IDataHolder<LogIndexes> indexesHolder, IDataHolder<QueryResult> resultHolder) {
         this.logCollectConfig = logCollectConfig;
         this.fileProvider = fileProvider;
         this.moduleFactories = moduleFactories;
         this.rangeService = rangeService;
         this.logIndexService = new LogIndexService(logCollectConfig, rangeService);
         this.scanService = new ScanService(logCollectConfig);
-        this.resultHolder = new DataHolder<>(logCollectConfig.maxResultRetain);
+        this.indexesHolder = indexesHolder;
+        this.resultHolder = resultHolder;
     }
 
     // ****************************************公开方法****************************************
@@ -106,7 +110,7 @@ public class QueryResultService {
 
     private QueryIndexes initContextWithFile(QueryParam queryParam, QueryContext context, List<RangeLimiter> limiters, File logFile) {
         // 更新索引，并创建查询索引
-        LogIndexes indexes = scanService.updateAndGet(context.msgList::add, logFile);
+        LogIndexes indexes = scanService.updateAndGet(context.msgList::add, indexesHolder, logFile);
         QueryIndexes queryIndexes = QueryIndexes.getNew(logIndexService, indexes);
         context.indexesMap.put(logFile, indexes);
         // 设置待查询的范围

@@ -1,14 +1,16 @@
 package com.soybeany.log.collector;
 
 import com.soybeany.log.collector.common.data.LogCollectConfig;
+import com.soybeany.log.collector.common.data.LogIndexes;
 import com.soybeany.log.collector.common.service.RangeService;
+import com.soybeany.log.collector.query.data.QueryResult;
 import com.soybeany.log.collector.query.factory.KeyContainsModuleFactory;
 import com.soybeany.log.collector.query.factory.ModuleFactory;
 import com.soybeany.log.collector.query.factory.TagContainsModuleFactory;
 import com.soybeany.log.collector.query.factory.UidModuleFactory;
 import com.soybeany.log.collector.query.provider.FileProvider;
 import com.soybeany.log.collector.query.service.QueryService;
-import com.soybeany.log.core.util.DataHolder;
+import com.soybeany.log.core.model.IDataHolder;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -19,16 +21,8 @@ import java.util.List;
  */
 public class LogCollector {
 
-    public static void init() {
-        DataHolder.createTimer();
-    }
-
-    public static void release() {
-        DataHolder.destroyTimer();
-    }
-
-    public static QueryBuilder query(LogCollectConfig logCollectConfig, FileProvider fileProvider) {
-        return new QueryBuilder(logCollectConfig, fileProvider);
+    public static QueryBuilder query(LogCollectConfig logCollectConfig) {
+        return new QueryBuilder(logCollectConfig);
     }
 
     // ********************内部类********************
@@ -36,11 +30,9 @@ public class LogCollector {
     public static class QueryBuilder {
         private final List<ModuleFactory> factories = new LinkedList<>();
         private final LogCollectConfig logCollectConfig;
-        private final FileProvider fileProvider;
 
-        public QueryBuilder(LogCollectConfig logCollectConfig, FileProvider fileProvider) {
+        public QueryBuilder(LogCollectConfig logCollectConfig) {
             this.logCollectConfig = logCollectConfig;
-            this.fileProvider = fileProvider;
             setupDefaultModuleFactories();
         }
 
@@ -55,8 +47,8 @@ public class LogCollector {
             return this;
         }
 
-        public QueryService build() {
-            return new QueryService(logCollectConfig, fileProvider, factories);
+        public QueryService build(FileProvider fileProvider, IDataHolder<LogIndexes> indexesHolder, IDataHolder<QueryResult> resultHolder) {
+            return new QueryService(logCollectConfig, fileProvider, factories, indexesHolder, resultHolder);
         }
 
         private void setupDefaultModuleFactories() {
