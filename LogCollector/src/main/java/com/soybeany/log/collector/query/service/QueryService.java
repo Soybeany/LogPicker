@@ -1,4 +1,4 @@
-package com.soybeany.log.collector.query;
+package com.soybeany.log.collector.query.service;
 
 import com.soybeany.log.collector.common.LogIndexService;
 import com.soybeany.log.collector.common.RangeService;

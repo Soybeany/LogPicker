@@ -2,12 +2,12 @@ package com.soybeany.log.demo.controller;
 
 import com.soybeany.log.collector.LogCollector;
 import com.soybeany.log.collector.common.data.LogCollectConfig;
-import com.soybeany.log.collector.query.QueryService;
 import com.soybeany.log.collector.query.exporter.DirectReadLogExporter;
 import com.soybeany.log.collector.query.exporter.LogExporter;
 import com.soybeany.log.collector.query.exporter.PackLogExporter;
 import com.soybeany.log.collector.query.provider.DayBasedRollingFileProvider;
 import com.soybeany.log.collector.query.provider.FileProvider;
+import com.soybeany.log.collector.query.service.QueryService;
 import com.soybeany.log.core.model.Direction;
 import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.demo.config.AppConfig;
