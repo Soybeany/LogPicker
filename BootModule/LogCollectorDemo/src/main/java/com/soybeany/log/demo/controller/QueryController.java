@@ -10,7 +10,6 @@ import com.soybeany.log.collector.query.provider.FileProvider;
 import com.soybeany.log.collector.query.service.QueryService;
 import com.soybeany.log.core.model.Direction;
 import com.soybeany.log.core.model.LogException;
-import com.soybeany.log.core.model.MemDataHolder;
 import com.soybeany.log.demo.config.AppConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -53,7 +52,7 @@ public class QueryController {
     private void onInit() {
         LogCollectConfig config = appConfig.toLogCollectConfig();
         FileProvider fileProvider = new DayBasedRollingFileProvider(appConfig.dirToScan, appConfig.logTodayFileName, appConfig.logHistoryFileName);
-        queryService = LogCollector.query(config).build(fileProvider, new MemDataHolder<>(config.maxFileIndexesRetain), new MemDataHolder<>(config.maxResultRetain));
+        queryService = LogCollector.query(config).build(fileProvider);
     }
 
     private String byParam(@RequestParam Map<String, String> param, GsonLogExporter exporter) {

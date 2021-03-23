@@ -11,6 +11,7 @@ import com.soybeany.log.collector.query.factory.UidModuleFactory;
 import com.soybeany.log.collector.query.provider.FileProvider;
 import com.soybeany.log.collector.query.service.QueryService;
 import com.soybeany.log.core.model.IDataHolder;
+import com.soybeany.log.core.model.MemDataHolder;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -28,12 +29,15 @@ public class LogCollector {
     // ********************内部类********************
 
     public static class QueryBuilder {
-        private final List<ModuleFactory> factories = new LinkedList<>();
         private final LogCollectConfig logCollectConfig;
+        private final List<ModuleFactory> factories = new LinkedList<>();
+        private IDataHolder<LogIndexes> indexesHolder;
+        private IDataHolder<QueryResult> resultHolder;
 
         public QueryBuilder(LogCollectConfig logCollectConfig) {
             this.logCollectConfig = logCollectConfig;
             setupDefaultModuleFactories();
+            setupDefaultDataHolder();
         }
 
         public QueryBuilder moduleFactories(List<ModuleFactory> factories) {
@@ -47,7 +51,17 @@ public class LogCollector {
             return this;
         }
 
-        public QueryService build(FileProvider fileProvider, IDataHolder<LogIndexes> indexesHolder, IDataHolder<QueryResult> resultHolder) {
+        public QueryBuilder indexesHolder(IDataHolder<LogIndexes> holder) {
+            this.indexesHolder = holder;
+            return this;
+        }
+
+        public QueryBuilder resultHolder(IDataHolder<QueryResult> holder) {
+            this.resultHolder = holder;
+            return this;
+        }
+
+        public QueryService build(FileProvider fileProvider) {
             return new QueryService(logCollectConfig, fileProvider, factories, indexesHolder, resultHolder);
         }
 
@@ -55,6 +69,11 @@ public class LogCollector {
             factories.add(new KeyContainsModuleFactory());
             factories.add(new TagContainsModuleFactory(logCollectConfig));
             factories.add(new UidModuleFactory(new RangeService(logCollectConfig)));
+        }
+
+        private void setupDefaultDataHolder() {
+            indexesHolder = new MemDataHolder<>(logCollectConfig.maxFileIndexesRetain);
+            resultHolder = new MemDataHolder<>(logCollectConfig.maxResultRetain);
         }
     }
 
