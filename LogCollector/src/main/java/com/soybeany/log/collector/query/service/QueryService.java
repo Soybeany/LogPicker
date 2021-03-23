@@ -1,31 +1,23 @@
 package com.soybeany.log.collector.query.service;
 
-import com.soybeany.log.collector.common.LogIndexService;
-import com.soybeany.log.collector.common.RangeService;
 import com.soybeany.log.collector.common.data.LogCollectConfig;
-import com.soybeany.log.collector.common.data.LogIndexes;
 import com.soybeany.log.collector.common.model.loader.LogPackLoader;
 import com.soybeany.log.collector.common.model.loader.RangesLogLineLoader;
+import com.soybeany.log.collector.common.service.RangeService;
 import com.soybeany.log.collector.query.data.QueryContext;
 import com.soybeany.log.collector.query.data.QueryIndexes;
-import com.soybeany.log.collector.query.data.QueryParam;
 import com.soybeany.log.collector.query.data.QueryResult;
 import com.soybeany.log.collector.query.exporter.LogExporter;
 import com.soybeany.log.collector.query.factory.ModuleFactory;
 import com.soybeany.log.collector.query.processor.LogFilter;
-import com.soybeany.log.collector.query.processor.Preprocessor;
-import com.soybeany.log.collector.query.processor.RangeLimiter;
 import com.soybeany.log.collector.query.provider.FileProvider;
-import com.soybeany.log.collector.scan.ScanService;
 import com.soybeany.log.core.model.FileRange;
 import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.core.model.LogPack;
-import com.soybeany.log.core.util.TimeUtils;
 import com.soybeany.util.file.BdFileUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -37,25 +29,17 @@ public class QueryService {
     private static final ThreadLocal<Long> READ_BYTES_LOCAL = new ThreadLocal<>();
 
     private final LogCollectConfig logCollectConfig;
-    private final FileProvider fileProvider;
     private final QueryResultService queryResultService;
     private final RangeService rangeService;
-    private final List<ModuleFactory> moduleFactories;
-    private final LogIndexService logIndexService;
-    private final ScanService scanService;
 
     public QueryService(LogCollectConfig logCollectConfig, FileProvider fileProvider, List<ModuleFactory> moduleFactories) {
         this.logCollectConfig = logCollectConfig;
-        this.fileProvider = fileProvider;
-        this.queryResultService = new QueryResultService(logCollectConfig);
         this.rangeService = new RangeService(logCollectConfig);
-        this.moduleFactories = moduleFactories;
-        this.logIndexService = new LogIndexService(logCollectConfig, rangeService);
-        this.scanService = new ScanService(logCollectConfig);
+        this.queryResultService = new QueryResultService(logCollectConfig, fileProvider, moduleFactories, rangeService);
     }
 
     public <T> T simpleQuery(Map<String, String> param, LogExporter<T> logExporter) {
-        QueryResult result = getResult(param);
+        QueryResult result = queryResultService.getResult(param);
         // 如果context中已包含结果，则直接返回
         if (null == result.logPacks) {
             try {
@@ -63,7 +47,7 @@ public class QueryService {
                 result.lock();
                 READ_BYTES_LOCAL.set(0L);
                 result.startTimeRecord();
-                result.logPacks = query(result);
+                result.logPacks = queryLogPacks(result);
             } catch (Exception e) {
                 throw new LogException(e);
             } finally {
@@ -78,71 +62,7 @@ public class QueryService {
 
     // ********************内部方法********************
 
-    private QueryResult getResult(Map<String, String> param) {
-        QueryResult result = queryResultService.loadResultFromParam(param);
-        // 若已有result，则直接使用
-        if (null != result) {
-            return result;
-        }
-        // 若还没有，则创建新result
-        return getNewResult(param);
-    }
-
-    private QueryResult getNewResult(Map<String, String> param) {
-        QueryParam queryParam = new QueryParam(logCollectConfig, param);
-        QueryContext context = new QueryContext(queryParam);
-        List<Preprocessor> preprocessors = new LinkedList<>();
-        moduleFactories.forEach(factory -> factory.onSetupPreprocessors(context, preprocessors));
-        List<RangeLimiter> limiters = new LinkedList<>();
-        for (Preprocessor processor : preprocessors) {
-            if (processor instanceof RangeLimiter) {
-                limiters.add((RangeLimiter) processor);
-            } else if (processor instanceof LogFilter) {
-                context.filters.add((LogFilter) processor);
-            } else {
-                throw new LogException("使用了未知的Preprocessor");
-            }
-        }
-        Map<File, QueryIndexes> indexesMap = new LinkedHashMap<>();
-        for (File logFile : fileProvider.onGetFiles(queryParam)) {
-            QueryIndexes indexes = initContextWithFile(queryParam, context, limiters, logFile);
-            indexesMap.put(logFile, indexes);
-        }
-        QueryResult result = new QueryResult(context, indexesMap);
-        queryResultService.registerResult(result);
-        return result;
-    }
-
-    private QueryIndexes initContextWithFile(QueryParam queryParam, QueryContext context, List<RangeLimiter> limiters, File logFile) {
-        // 更新索引，并创建查询索引
-        LogIndexes indexes = scanService.updateAndGet(context.msgList::add, logFile);
-        QueryIndexes queryIndexes = QueryIndexes.getNew(logIndexService, indexes);
-        context.indexesMap.put(logFile, indexes);
-        // 设置待查询的范围
-        FileRange timeRange = getTimeRange(indexes, queryParam.getFromTime(), queryParam.getToTime());
-        List<List<FileRange>> rangeList = new LinkedList<>();
-        rangeList.add(Collections.singletonList(timeRange));
-        boolean[] shouldInitUidSet = {true};
-        for (RangeLimiter limiter : limiters) {
-            Optional.ofNullable(limiter.onSetupUnfilteredUidSet(timeRange, queryIndexes)).ifPresent(set -> {
-                if (shouldInitUidSet[0]) {
-                    context.unfilteredUidSet.addAll(set);
-                    shouldInitUidSet[0] = false;
-                } else {
-                    context.unfilteredUidSet.retainAll(set);
-                }
-            });
-            Optional.ofNullable(limiter.onSetupQueryRanges(timeRange, queryIndexes)).ifPresent(rangeList::add);
-        }
-        // 合并范围并保存到context
-        List<FileRange> intersectedRanges = rangeService.intersect(rangeList);
-        if (!intersectedRanges.isEmpty()) {
-            context.queryRanges.put(logFile, intersectedRanges);
-        }
-        return queryIndexes;
-    }
-
-    private List<LogPack> query(QueryResult result) throws IOException {
+    private List<LogPack> queryLogPacks(QueryResult result) throws IOException {
         List<LogPack> formalLogPacks = new LinkedList<>();
         boolean needMore;
         // 如果有未使用的结果，则直接使用
@@ -178,10 +98,12 @@ public class QueryService {
         while (iterator.hasNext()) {
             LogPack logPack = iterator.next();
             iterator.remove();
-            if (result.context.usedUidSet.contains(logPack.uid)) {
+            // 若已使用，或是被过滤，则继续遍历
+            if (result.context.usedUidSet.contains(logPack.uid)
+                    || isFiltered(result.context, logPack)) {
                 continue;
             }
-            boolean needMore = filterAndAddToResults(result, formalLogPacks, logPack);
+            boolean needMore = addToResults(result, formalLogPacks, logPack);
             if (!needMore) {
                 return;
             }
@@ -208,7 +130,7 @@ public class QueryService {
                     if (!logCollectConfig.noUidPlaceholder.equals(logPack.uid)) {
                         needMore = addResultsByUid(result, logPack.uid, formalLogPacks, loaderMapForUid);
                     } else {
-                        needMore = filterAndAddToResults(result, formalLogPacks, logPack);
+                        needMore = addToResults(result, formalLogPacks, logPack);
                     }
                 }
                 READ_BYTES_LOCAL.set(READ_BYTES_LOCAL.get() + rangesLogLineLoader.getReadBytes());
@@ -338,17 +260,6 @@ public class QueryService {
         return needMore;
     }
 
-    /**
-     * @return 是否需要更多结果
-     */
-    private boolean filterAndAddToResults(QueryResult result, List<LogPack> formalLogPacks, LogPack candidate) {
-        // 筛选
-        if (isFiltered(result.context, candidate)) {
-            return true;
-        }
-        return addToResults(result, formalLogPacks, candidate);
-    }
-
     private boolean isFiltered(QueryContext context, LogPack logPack) {
         for (LogFilter filter : context.filters) {
             if (filter.filterLogPack(logPack)) {
@@ -368,27 +279,6 @@ public class QueryService {
         // 设置结果
         result.msgList.add("总查询字节数:" + READ_BYTES_LOCAL.get());
         result.msgList.add("结果条数:" + formalLogPacks.size() + "(max:" + result.context.queryParam.getCountLimit() + ")");
-    }
-
-    private FileRange getTimeRange(LogIndexes indexes, LocalDateTime fromTime, LocalDateTime toTime) {
-        TreeMap<Long, Long> timeIndexMap = indexes.timeIndexMap;
-        if (timeIndexMap.isEmpty()) {
-            return FileRange.EMPTY;
-        }
-        // 是否为极端位置
-        Long firstTime = timeIndexMap.firstKey();
-        Long lastTime = timeIndexMap.lastKey();
-        Long fTime = TimeUtils.toMillis(fromTime);
-        Long tTime = TimeUtils.toMillis(toTime);
-        if (tTime.compareTo(firstTime) < 0 || fTime.compareTo(lastTime) > 0) {
-            return FileRange.EMPTY;
-        }
-        // 正常合并
-        long startByte = Optional.ofNullable(timeIndexMap.ceilingEntry(fTime))
-                .map(Map.Entry::getValue).orElseThrow(() -> new LogException("不可能的开始时间"));
-        long endByte = Optional.ofNullable(timeIndexMap.ceilingEntry(tTime))
-                .map(Map.Entry::getValue).orElse(indexes.scannedBytes);
-        return new FileRange(startByte, endByte);
     }
 
     private void setPageable(QueryResult result) {

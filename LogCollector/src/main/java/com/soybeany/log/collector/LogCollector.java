@@ -1,7 +1,7 @@
 package com.soybeany.log.collector;
 
-import com.soybeany.log.collector.common.RangeService;
 import com.soybeany.log.collector.common.data.LogCollectConfig;
+import com.soybeany.log.collector.common.service.RangeService;
 import com.soybeany.log.collector.query.factory.KeyContainsModuleFactory;
 import com.soybeany.log.collector.query.factory.ModuleFactory;
 import com.soybeany.log.collector.query.factory.TagContainsModuleFactory;

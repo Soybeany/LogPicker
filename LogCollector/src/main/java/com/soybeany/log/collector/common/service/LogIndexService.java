@@ -1,4 +1,4 @@
-package com.soybeany.log.collector.common;
+package com.soybeany.log.collector.common.service;
 
 import com.soybeany.config.BDCipherUtils;
 import com.soybeany.log.collector.common.data.LogCollectConfig;

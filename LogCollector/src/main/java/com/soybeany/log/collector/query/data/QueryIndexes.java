@@ -1,8 +1,8 @@
 package com.soybeany.log.collector.query.data;
 
-import com.soybeany.log.collector.common.LogIndexService;
-import com.soybeany.log.collector.common.RangeService;
 import com.soybeany.log.collector.common.data.LogIndexes;
+import com.soybeany.log.collector.common.service.LogIndexService;
+import com.soybeany.log.collector.common.service.RangeService;
 import com.soybeany.log.core.model.FileRange;
 import com.soybeany.log.core.model.LogPack;
 
@@ -10,6 +10,8 @@ import java.util.*;
 import java.util.function.BiConsumer;
 
 /**
+ * 查询用的索引，因每次查询都会发生变化，所以与结果绑定
+ *
  * @author Soybeany
  * @date 2021/2/22
  */

@@ -1,8 +1,8 @@
 package com.soybeany.log.collector.query.factory;
 
-import com.soybeany.log.collector.common.LogIndexService;
-import com.soybeany.log.collector.common.RangeService;
 import com.soybeany.log.collector.common.data.LogCollectConfig;
+import com.soybeany.log.collector.common.service.LogIndexService;
+import com.soybeany.log.collector.common.service.RangeService;
 import com.soybeany.log.collector.query.data.QueryContext;
 import com.soybeany.log.collector.query.data.QueryIndexes;
 import com.soybeany.log.collector.query.processor.LogFilter;

@@ -1,4 +1,4 @@
-package com.soybeany.log.collector.common;
+package com.soybeany.log.collector.common.service;
 
 import com.soybeany.log.collector.common.data.LogCollectConfig;
 import com.soybeany.log.core.model.FileRange;

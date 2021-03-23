@@ -1,6 +1,6 @@
 package com.soybeany.log.collector.query.processor;
 
-import com.soybeany.log.collector.common.RangeService;
+import com.soybeany.log.collector.common.service.RangeService;
 import com.soybeany.log.collector.query.data.QueryIndexes;
 import com.soybeany.log.core.model.FileRange;
 
