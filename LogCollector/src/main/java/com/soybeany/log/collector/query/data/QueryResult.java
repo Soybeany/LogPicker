@@ -1,5 +1,6 @@
 package com.soybeany.log.collector.query.data;
 
+import com.soybeany.log.core.model.LogPack;
 import com.soybeany.log.core.util.UidUtils;
 
 import java.io.File;
@@ -21,9 +22,9 @@ public class QueryResult {
     public String nextId;
 
     /**
-     * 结果的内容
+     * 日志包列表，即结果
      */
-    public Object content;
+    public List<LogPack> logPacks;
 
     public String endReason = "已完成搜索";
 

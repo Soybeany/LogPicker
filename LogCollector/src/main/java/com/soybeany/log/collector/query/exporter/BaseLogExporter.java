@@ -20,8 +20,8 @@ public abstract class BaseLogExporter<T> implements LogExporter<T> {
     // ********************重写方法********************
 
     @Override
-    public T export(QueryResult result, List<LogPack> packs) {
-        return output(toLogVO(result, packs));
+    public T export(QueryResult result) {
+        return output(toLogVO(result));
     }
 
     // ********************子类方法********************
@@ -32,11 +32,12 @@ public abstract class BaseLogExporter<T> implements LogExporter<T> {
 
     // ********************内部方法********************
 
-    private QueryResultVO toLogVO(QueryResult result, List<LogPack> packs) {
+    private QueryResultVO toLogVO(QueryResult result) {
+        checkQueryResult(result);
         QueryResultVO vo = new QueryResultVO();
         LogExporter.setupResultInfo(result, vo.info);
         // 添加结果列表
-        for (LogPack pack : packs) {
+        for (LogPack pack : result.logPacks) {
             vo.packs.add(toLogItem(pack));
         }
         // 排序

@@ -17,10 +17,11 @@ import java.util.List;
 public class RawLogExporter implements LogExporter<String> {
 
     @Override
-    public String export(QueryResult result, List<LogPack> packs) {
+    public String export(QueryResult result) {
+        checkQueryResult(result);
         QueryRawResultVO vo = new QueryRawResultVO();
         LogExporter.setupResultInfo(result, vo.info);
-        vo.packs.addAll(packs);
+        vo.packs.addAll(result.logPacks);
         try {
             return HexUtils.bytesToHex(SerializeUtils.serialize(vo));
         } catch (IOException e) {

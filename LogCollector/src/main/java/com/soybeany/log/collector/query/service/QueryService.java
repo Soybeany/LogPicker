@@ -54,26 +54,26 @@ public class QueryService {
         this.scanService = new ScanService(logCollectConfig);
     }
 
-    public Object simpleQuery(Map<String, String> param, LogExporter<?> logExporter) {
+    public <T> T simpleQuery(Map<String, String> param, LogExporter<T> logExporter) {
         QueryResult result = getResult(param);
-        try {
-            // 获取锁
-            result.lock();
-            READ_BYTES_LOCAL.set(0L);
-            // 如果context中已包含结果，则直接返回
-            if (null != result.content) {
-                return result.content;
+        // 如果context中已包含结果，则直接返回
+        if (null == result.logPacks) {
+            try {
+                // 获取锁
+                result.lock();
+                READ_BYTES_LOCAL.set(0L);
+                result.startTimeRecord();
+                result.logPacks = query(result);
+            } catch (Exception e) {
+                throw new LogException(e);
+            } finally {
+                result.stopTimeRecord();
+                READ_BYTES_LOCAL.remove();
+                // 释放锁
+                result.unlock();
             }
-            result.startTimeRecord();
-            return result.content = query(result, logExporter);
-        } catch (Exception e) {
-            throw new LogException(e);
-        } finally {
-            result.stopTimeRecord();
-            READ_BYTES_LOCAL.remove();
-            // 释放锁
-            result.unlock();
         }
+        return logExporter.export(result);
     }
 
     // ********************内部方法********************
@@ -142,7 +142,7 @@ public class QueryService {
         return queryIndexes;
     }
 
-    private Object query(QueryResult result, LogExporter<?> logExporter) throws IOException {
+    private List<LogPack> query(QueryResult result) throws IOException {
         List<LogPack> formalLogPacks = new LinkedList<>();
         boolean needMore;
         // 如果有未使用的结果，则直接使用
@@ -169,7 +169,8 @@ public class QueryService {
             queryByPopUidMap(result, formalLogPacks);
         }
         // 返回结果
-        return exportLogs(result, logExporter, formalLogPacks);
+        pagingAndSort(result, formalLogPacks);
+        return formalLogPacks;
     }
 
     private void queryByPopUidMap(QueryResult result, List<LogPack> formalLogPacks) {
@@ -357,7 +358,7 @@ public class QueryService {
         return false;
     }
 
-    private Object exportLogs(QueryResult result, LogExporter<?> logExporter, List<LogPack> formalLogPacks) {
+    private void pagingAndSort(QueryResult result, List<LogPack> formalLogPacks) {
         // 按需分页
         setPageable(result);
         // 日志排序
@@ -367,8 +368,6 @@ public class QueryService {
         // 设置结果
         result.msgList.add("总查询字节数:" + READ_BYTES_LOCAL.get());
         result.msgList.add("结果条数:" + formalLogPacks.size() + "(max:" + result.context.queryParam.getCountLimit() + ")");
-        // 导出日志
-        return logExporter.export(result, formalLogPacks);
     }
 
     private FileRange getTimeRange(LogIndexes indexes, LocalDateTime fromTime, LocalDateTime toTime) {

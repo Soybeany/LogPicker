@@ -3,7 +3,7 @@ package com.soybeany.log.demo.controller;
 import com.soybeany.log.collector.LogCollector;
 import com.soybeany.log.collector.common.data.LogCollectConfig;
 import com.soybeany.log.collector.query.exporter.DirectReadLogExporter;
-import com.soybeany.log.collector.query.exporter.LogExporter;
+import com.soybeany.log.collector.query.exporter.GsonLogExporter;
 import com.soybeany.log.collector.query.exporter.PackLogExporter;
 import com.soybeany.log.collector.query.provider.DayBasedRollingFileProvider;
 import com.soybeany.log.collector.query.provider.FileProvider;
@@ -29,17 +29,17 @@ public class QueryController {
     @Autowired
     private AppConfig appConfig;
 
-    private final LogExporter<?> directReadLogExporter = new DirectReadLogExporter();
-    private final LogExporter<?> packLogExporter = new PackLogExporter();
+    private final GsonLogExporter directReadLogExporter = new DirectReadLogExporter();
+    private final GsonLogExporter packLogExporter = new PackLogExporter();
     private QueryService queryService;
 
     @PostMapping(value = "/forDirectRead", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Object forDirectRead(@RequestParam Map<String, String> param) {
+    public String forDirectRead(@RequestParam Map<String, String> param) {
         return byParam(param, directReadLogExporter);
     }
 
     @PostMapping(value = "/forPack", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Object forPack(@RequestParam Map<String, String> param) {
+    public String forPack(@RequestParam Map<String, String> param) {
         return byParam(param, packLogExporter);
     }
 
@@ -55,7 +55,7 @@ public class QueryController {
         queryService = LogCollector.query(config, fileProvider).build();
     }
 
-    private Object byParam(@RequestParam Map<String, String> param, LogExporter<?> exporter) {
+    private String byParam(@RequestParam Map<String, String> param, GsonLogExporter exporter) {
         try {
             return queryService.simpleQuery(param, exporter);
         } catch (LogException e) {

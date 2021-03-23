@@ -1,6 +1,7 @@
 package com.soybeany.log.collector.query.exporter;
 
 import com.soybeany.log.collector.query.data.QueryResult;
+import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.core.model.LogPack;
 import com.soybeany.log.core.model.ResultInfo;
 
@@ -22,6 +23,12 @@ public interface LogExporter<T> {
         info.endReason = result.endReason;
     }
 
-    T export(QueryResult result, List<LogPack> packs);
+    default void checkQueryResult(QueryResult result) {
+        if (null == result.logPacks) {
+            throw new LogException("未初始化QueryResult中的logPacks");
+        }
+    }
+
+    T export(QueryResult result);
 
 }
