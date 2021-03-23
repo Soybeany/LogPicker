@@ -64,10 +64,12 @@ public class QueryService {
             if (null != result.content) {
                 return result.content;
             }
+            result.startTimeRecord();
             return result.content = query(result, logExporter);
         } catch (Exception e) {
             throw new LogException(e);
         } finally {
+            result.stopTimeRecord();
             READ_BYTES_LOCAL.remove();
             // 释放锁
             result.unlock();
@@ -365,7 +367,6 @@ public class QueryService {
         // 设置结果
         result.msgList.add("总查询字节数:" + READ_BYTES_LOCAL.get());
         result.msgList.add("结果条数:" + formalLogPacks.size() + "(max:" + result.context.queryParam.getCountLimit() + ")");
-        result.setFinished();
         // 导出日志
         return logExporter.export(result, formalLogPacks);
     }

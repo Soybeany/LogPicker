@@ -27,7 +27,7 @@ public class QueryResult {
 
     public String endReason = "已完成搜索";
 
-    public final long createTime = System.currentTimeMillis();
+    public long createTime;
     public long finishTime;
 
     /**
@@ -50,7 +50,11 @@ public class QueryResult {
         context.lock.unlock();
     }
 
-    public void setFinished() {
+    public void startTimeRecord() {
+        createTime = System.currentTimeMillis();
+    }
+
+    public void stopTimeRecord() {
         finishTime = System.currentTimeMillis();
         msgList.add("查询耗时:" + (finishTime - createTime) + "ms");
     }
