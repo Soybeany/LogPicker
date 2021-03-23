@@ -4,7 +4,10 @@ import com.soybeany.log.collector.LogCollector;
 import com.soybeany.log.collector.common.data.LogCollectConfig;
 import com.soybeany.log.collector.query.QueryService;
 import com.soybeany.log.collector.query.exporter.DirectReadLogExporter;
+import com.soybeany.log.collector.query.exporter.LogExporter;
 import com.soybeany.log.collector.query.exporter.PackLogExporter;
+import com.soybeany.log.collector.query.provider.DayBasedRollingFileProvider;
+import com.soybeany.log.collector.query.provider.FileProvider;
 import com.soybeany.log.core.model.Direction;
 import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.demo.config.AppConfig;
@@ -26,17 +29,18 @@ public class QueryController {
     @Autowired
     private AppConfig appConfig;
 
-    private QueryService directReadQueryService;
-    private QueryService packQueryService;
+    private final LogExporter<?> directReadLogExporter = new DirectReadLogExporter();
+    private final LogExporter<?> packLogExporter = new PackLogExporter();
+    private QueryService queryService;
 
     @PostMapping(value = "/forDirectRead", produces = MediaType.APPLICATION_JSON_VALUE)
     public Object forDirectRead(@RequestParam Map<String, String> param) {
-        return byParam(directReadQueryService, param);
+        return byParam(param, directReadLogExporter);
     }
 
     @PostMapping(value = "/forPack", produces = MediaType.APPLICATION_JSON_VALUE)
     public Object forPack(@RequestParam Map<String, String> param) {
-        return byParam(packQueryService, param);
+        return byParam(param, packLogExporter);
     }
 
     @GetMapping("/help")
@@ -47,13 +51,13 @@ public class QueryController {
     @PostConstruct
     private void onInit() {
         LogCollectConfig config = appConfig.toLogCollectConfig();
-        directReadQueryService = LogCollector.query(config).logExporter(new DirectReadLogExporter()).build();
-        packQueryService = LogCollector.query(config).logExporter(new PackLogExporter()).build();
+        FileProvider fileProvider = new DayBasedRollingFileProvider(appConfig.dirToScan, appConfig.logTodayFileName, appConfig.logHistoryFileName);
+        queryService = LogCollector.query(config, fileProvider).build();
     }
 
-    private Object byParam(QueryService queryService, @RequestParam Map<String, String> param) {
+    private Object byParam(@RequestParam Map<String, String> param, LogExporter<?> exporter) {
         try {
-            return queryService.simpleQuery(param);
+            return queryService.simpleQuery(param, exporter);
         } catch (LogException e) {
             return "出现异常:" + e.getMessage();
         }

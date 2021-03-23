@@ -15,42 +15,15 @@ import java.io.File;
  */
 public class ScanService {
 
-    private final LogCollectConfig logCollectConfig;
     private final LogIndexService logIndexService;
 
     public ScanService(LogCollectConfig logCollectConfig) {
-        this.logCollectConfig = logCollectConfig;
         RangeService rangeService = new RangeService(logCollectConfig);
         this.logIndexService = new LogIndexService(logCollectConfig, rangeService);
     }
 
     public LogIndexes updateAndGet(MsgRecorder recorder, File logFile) {
         return scanFile(recorder, logFile);
-    }
-
-    /**
-     * 执行全扫描
-     */
-    public void fullScan() {
-        MsgRecorder recorder = msg -> {
-            // todo 修改为写日志
-        };
-        for (String dir : logCollectConfig.dirsToScan) {
-            File[] files = new File(dir).listFiles();
-            if (null == files) {
-                throw new LogException("指定的日志目录不存在");
-            }
-            for (File file : files) {
-                scanFile(recorder, file);
-            }
-        }
-    }
-
-    /**
-     * 扫描指定的文件，多个文件使用“;”进行分隔
-     */
-    public void scanFiles(String paths) {
-
     }
 
     // ********************内部方法********************

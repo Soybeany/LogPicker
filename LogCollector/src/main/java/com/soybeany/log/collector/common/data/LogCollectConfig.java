@@ -15,18 +15,6 @@ import java.util.regex.Pattern;
 public class LogCollectConfig {
 
     /**
-     * 待扫描的目录，多个使用“;”进行分隔
-     */
-    public String[] dirsToScan;
-    /**
-     * 当天日志文件的命名
-     */
-    public String logTodayFileName;
-    /**
-     * 历史日志文件的命名，使用<?TimeFormat?>作时间占位
-     */
-    public String logHistoryFileName;
-    /**
      * 日志的字符集
      */
     public String logCharset = "GBK";
@@ -67,10 +55,6 @@ public class LogCollectConfig {
      */
     public int defaultMaxResultCount = 30;
     /**
-     * 一次查询最多能查询的文件数
-     */
-    public int maxFilesToQuery = 10;
-    /**
      * 在内存中最多持有的文件索引数
      */
     public int maxFileIndexesRetain = 10;
@@ -87,12 +71,8 @@ public class LogCollectConfig {
      */
     public int resultRetainSec = 300;
 
-    public LogCollectConfig(String[] dirsToScan, String logTodayFileName,
-                            String logHistoryFileName, String lineParseRegex, String tagParseRegex,
+    public LogCollectConfig(String lineParseRegex, String tagParseRegex,
                             String lineTimeFormat) {
-        this.dirsToScan = dirsToScan;
-        this.logTodayFileName = logTodayFileName;
-        this.logHistoryFileName = logHistoryFileName;
         this.lineParsePattern = Pattern.compile(lineParseRegex);
         this.tagParsePattern = Pattern.compile(tagParseRegex);
         this.lineTimeFormat = lineTimeFormat;
@@ -136,11 +116,6 @@ public class LogCollectConfig {
 
     public LogCollectConfig withMaxResultRetain(int count) {
         this.maxResultRetain = count;
-        return this;
-    }
-
-    public LogCollectConfig withMaxFilesToQuery(int count) {
-        this.maxFilesToQuery = count;
         return this;
     }
 

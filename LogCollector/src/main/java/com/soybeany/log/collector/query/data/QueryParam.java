@@ -10,8 +10,6 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author Soybeany
@@ -26,8 +24,6 @@ public class QueryParam {
     private static final String P_KEY_LOG_FILES = "logFiles";
     private static final String P_KEY_UID_LIST = "uidList";
 
-    private static final Pattern LOG_FILE_TIME_PATTERN = Pattern.compile("<\\?(.+)\\?>");
-
     private static final Map<Integer, DateTimeParser> FORMATTER_MAP = new HashMap<>();
 
     private final Map<String, Map<String, String>> params = new HashMap<>();
@@ -36,8 +32,8 @@ public class QueryParam {
     private LocalDateTime fromTime;
     private LocalDateTime toTime;
     private Integer countLimit;
-    private final Set<File> logFiles = new LinkedHashSet<>();
-    private final Set<String> uidSet = new LinkedHashSet<>();
+    private final LinkedHashSet<File> logFiles = new LinkedHashSet<>();
+    private final LinkedHashSet<String> uidSet = new LinkedHashSet<>();
 
     static {
         initFormatterMap();
@@ -66,7 +62,6 @@ public class QueryParam {
         // 后处理参数
         postHandleTime();
         postHandleCountLimit();
-        postHandleLogFiles();
     }
 
     // ********************公开方法********************
@@ -83,11 +78,11 @@ public class QueryParam {
         return countLimit;
     }
 
-    public Set<File> getLogFiles() {
+    public LinkedHashSet<File> getLogFiles() {
         return logFiles;
     }
 
-    public Set<String> getUidSet() {
+    public LinkedHashSet<String> getUidSet() {
         return uidSet;
     }
 
@@ -136,52 +131,6 @@ public class QueryParam {
         if (null == countLimit) {
             countLimit = logCollectConfig.defaultMaxResultCount;
         }
-    }
-
-    private void postHandleLogFiles() {
-        // 若已指定日志文件，则不需再添加
-        if (!logFiles.isEmpty()) {
-            return;
-        }
-        // 补充日志文件
-        LocalDate fDate = fromTime.toLocalDate();
-        LocalDate tDate = toTime.toLocalDate();
-        LocalDate today = LocalDate.now();
-        LocalDate tempDate = fDate;
-        while (!tempDate.isAfter(tDate)) {
-            addFiles(today, tempDate);
-            tempDate = tempDate.plusDays(1);
-        }
-        int size = logFiles.size();
-        if (size > logCollectConfig.maxFilesToQuery) {
-            throw new LogException("一次查询最多允许" + logCollectConfig.maxFilesToQuery + "个文件，当前为" + size + "个");
-        }
-    }
-
-    private void addFiles(LocalDate today, LocalDate date) {
-        if (today.isEqual(date)) {
-            addFiles(logCollectConfig.logTodayFileName);
-        } else {
-            addFiles(toFileName(logCollectConfig.logHistoryFileName, date));
-        }
-    }
-
-    private void addFiles(String fileName) {
-        for (String dir : logCollectConfig.dirsToScan) {
-            File file = new File(dir, fileName);
-            if (file.exists()) {
-                logFiles.add(file);
-            }
-        }
-    }
-
-    private String toFileName(String template, LocalDate date) {
-        Matcher matcher = LOG_FILE_TIME_PATTERN.matcher(template);
-        if (!matcher.find()) {
-            return template;
-        }
-        String timeString = date.format(DateTimeFormatter.ofPattern(matcher.group(1)));
-        return matcher.replaceAll(timeString);
     }
 
     /**

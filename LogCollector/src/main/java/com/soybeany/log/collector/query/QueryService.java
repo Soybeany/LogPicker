@@ -15,6 +15,7 @@ import com.soybeany.log.collector.query.factory.ModuleFactory;
 import com.soybeany.log.collector.query.processor.LogFilter;
 import com.soybeany.log.collector.query.processor.Preprocessor;
 import com.soybeany.log.collector.query.processor.RangeLimiter;
+import com.soybeany.log.collector.query.provider.FileProvider;
 import com.soybeany.log.collector.scan.ScanService;
 import com.soybeany.log.core.model.FileRange;
 import com.soybeany.log.core.model.LogException;
@@ -36,24 +37,24 @@ public class QueryService {
     private static final ThreadLocal<Long> READ_BYTES_LOCAL = new ThreadLocal<>();
 
     private final LogCollectConfig logCollectConfig;
+    private final FileProvider fileProvider;
     private final QueryResultService queryResultService;
     private final RangeService rangeService;
     private final List<ModuleFactory> moduleFactories;
-    private final LogExporter<?> logExporter;
     private final LogIndexService logIndexService;
     private final ScanService scanService;
 
-    public QueryService(LogCollectConfig logCollectConfig, List<ModuleFactory> moduleFactories, LogExporter<?> logExporter) {
+    public QueryService(LogCollectConfig logCollectConfig, FileProvider fileProvider, List<ModuleFactory> moduleFactories) {
         this.logCollectConfig = logCollectConfig;
+        this.fileProvider = fileProvider;
         this.queryResultService = new QueryResultService(logCollectConfig);
         this.rangeService = new RangeService(logCollectConfig);
         this.moduleFactories = moduleFactories;
-        this.logExporter = logExporter;
         this.logIndexService = new LogIndexService(logCollectConfig, rangeService);
         this.scanService = new ScanService(logCollectConfig);
     }
 
-    public Object simpleQuery(Map<String, String> param) {
+    public Object simpleQuery(Map<String, String> param, LogExporter<?> logExporter) {
         QueryResult result = getResult(param);
         try {
             // 获取锁
@@ -63,7 +64,7 @@ public class QueryService {
             if (null != result.content) {
                 return result.content;
             }
-            return result.content = query(result);
+            return result.content = query(result, logExporter);
         } catch (Exception e) {
             throw new LogException(e);
         } finally {
@@ -101,7 +102,7 @@ public class QueryService {
             }
         }
         Map<File, QueryIndexes> indexesMap = new LinkedHashMap<>();
-        for (File logFile : queryParam.getLogFiles()) {
+        for (File logFile : fileProvider.onGetFiles(queryParam)) {
             QueryIndexes indexes = initContextWithFile(queryParam, context, limiters, logFile);
             indexesMap.put(logFile, indexes);
         }
@@ -139,7 +140,7 @@ public class QueryService {
         return queryIndexes;
     }
 
-    private Object query(QueryResult result) throws IOException {
+    private Object query(QueryResult result, LogExporter<?> logExporter) throws IOException {
         List<LogPack> formalLogPacks = new LinkedList<>();
         boolean needMore;
         // 如果有未使用的结果，则直接使用
@@ -166,7 +167,7 @@ public class QueryService {
             queryByPopUidMap(result, formalLogPacks);
         }
         // 返回结果
-        return exportLogs(result, formalLogPacks);
+        return exportLogs(result, logExporter, formalLogPacks);
     }
 
     private void queryByPopUidMap(QueryResult result, List<LogPack> formalLogPacks) {
@@ -354,7 +355,7 @@ public class QueryService {
         return false;
     }
 
-    private Object exportLogs(QueryResult result, List<LogPack> formalLogPacks) {
+    private Object exportLogs(QueryResult result, LogExporter<?> logExporter, List<LogPack> formalLogPacks) {
         // 按需分页
         setPageable(result);
         // 日志排序

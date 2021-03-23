@@ -19,7 +19,7 @@ import java.util.List;
 @ConfigurationProperties(prefix = "config")
 public class AppConfig {
 
-    public String[] dirsToScan;
+    public String dirToScan;
     public String logTodayFileName;
     public String logHistoryFileName;
     public String logCharset;
@@ -45,8 +45,8 @@ public class AppConfig {
 
     // ********************设置方法********************
 
-    public void setDirsToScan(String dirsToScan) {
-        this.dirsToScan = dirsToScan.split(";");
+    public void setDirToScan(String dirToScan) {
+        this.dirToScan = dirToScan;
     }
 
     public void setLogTodayFileName(String logTodayFileName) {
@@ -100,8 +100,7 @@ public class AppConfig {
     // ********************自定义方法********************
 
     public LogCollectConfig toLogCollectConfig() {
-        return new LogCollectConfig(dirsToScan, logTodayFileName,
-                logHistoryFileName, lineParseRegex, tagParseRegex, lineTimeFormat)
+        return new LogCollectConfig(lineParseRegex, tagParseRegex, lineTimeFormat)
                 .withLogCharset(logCharset)
                 .withNoUidPlaceholder(noUidPlaceholder)
                 .withTagsToIndex(tagsToIndex)
