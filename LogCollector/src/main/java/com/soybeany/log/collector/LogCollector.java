@@ -59,7 +59,7 @@ public class LogCollector {
     public static class QueryBuilder extends BaseBuilder<QueryService> {
         private final LogCollectConfig logCollectConfig;
         private final List<ModuleFactory> factories = new LinkedList<>();
-        private LogExporter logExporter;
+        private LogExporter<?> logExporter;
 
         public QueryBuilder(LogCollectConfig logCollectConfig) {
             this.logCollectConfig = logCollectConfig;
@@ -83,7 +83,7 @@ public class LogCollector {
             return this;
         }
 
-        public QueryBuilder logExporter(LogExporter logExporter) {
+        public QueryBuilder logExporter(LogExporter<?> logExporter) {
             this.logExporter = logExporter;
             return this;
         }

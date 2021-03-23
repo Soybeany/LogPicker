@@ -39,11 +39,11 @@ public class QueryService {
     private final QueryResultService queryResultService;
     private final RangeService rangeService;
     private final List<ModuleFactory> moduleFactories;
-    private final LogExporter logExporter;
+    private final LogExporter<?> logExporter;
     private final LogIndexService logIndexService;
     private final ScanService scanService;
 
-    public QueryService(LogCollectConfig logCollectConfig, List<ModuleFactory> moduleFactories, LogExporter logExporter) {
+    public QueryService(LogCollectConfig logCollectConfig, List<ModuleFactory> moduleFactories, LogExporter<?> logExporter) {
         this.logCollectConfig = logCollectConfig;
         this.queryResultService = new QueryResultService(logCollectConfig);
         this.rangeService = new RangeService(logCollectConfig);
@@ -53,17 +53,17 @@ public class QueryService {
         this.scanService = new ScanService(logCollectConfig);
     }
 
-    public String simpleQuery(Map<String, String> param) {
+    public Object simpleQuery(Map<String, String> param) {
         QueryResult result = getResult(param);
         try {
             // 获取锁
             result.lock();
             READ_BYTES_LOCAL.set(0L);
             // 如果context中已包含结果，则直接返回
-            if (null != result.text) {
-                return result.text;
+            if (null != result.content) {
+                return result.content;
             }
-            return result.text = query(result);
+            return result.content = query(result);
         } catch (Exception e) {
             throw new LogException(e);
         } finally {
@@ -139,7 +139,7 @@ public class QueryService {
         return queryIndexes;
     }
 
-    private String query(QueryResult result) throws IOException {
+    private Object query(QueryResult result) throws IOException {
         List<LogPack> formalLogPacks = new LinkedList<>();
         boolean needMore;
         // 如果有未使用的结果，则直接使用
@@ -354,7 +354,7 @@ public class QueryService {
         return false;
     }
 
-    private String exportLogs(QueryResult result, List<LogPack> formalLogPacks) {
+    private Object exportLogs(QueryResult result, List<LogPack> formalLogPacks) {
         // 按需分页
         setPageable(result);
         // 日志排序

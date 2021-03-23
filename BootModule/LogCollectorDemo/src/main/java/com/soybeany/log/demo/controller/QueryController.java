@@ -30,12 +30,12 @@ public class QueryController {
     private QueryService packQueryService;
 
     @PostMapping(value = "/forDirectRead", produces = MediaType.APPLICATION_JSON_VALUE)
-    public String forDirectRead(@RequestParam Map<String, String> param) {
+    public Object forDirectRead(@RequestParam Map<String, String> param) {
         return byParam(directReadQueryService, param);
     }
 
     @PostMapping(value = "/forPack", produces = MediaType.APPLICATION_JSON_VALUE)
-    public String forPack(@RequestParam Map<String, String> param) {
+    public Object forPack(@RequestParam Map<String, String> param) {
         return byParam(packQueryService, param);
     }
 
@@ -51,7 +51,7 @@ public class QueryController {
         packQueryService = LogCollector.query(config).logExporter(new PackLogExporter()).build();
     }
 
-    private String byParam(QueryService queryService, @RequestParam Map<String, String> param) {
+    private Object byParam(QueryService queryService, @RequestParam Map<String, String> param) {
         try {
             return queryService.simpleQuery(param);
         } catch (LogException e) {

@@ -10,7 +10,7 @@ import java.util.List;
  * @author Soybeany
  * @date 2021/3/3
  */
-public class DirectReadLogExporter extends BaseLogExporter {
+public class DirectReadLogExporter extends GsonLogExporter {
 
     @Override
     protected String toString(Gson gson, QueryResultVO vo) {

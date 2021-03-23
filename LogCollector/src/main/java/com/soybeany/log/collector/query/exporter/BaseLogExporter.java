@@ -1,6 +1,5 @@
 package com.soybeany.log.collector.query.exporter;
 
-import com.google.gson.Gson;
 import com.soybeany.log.collector.query.data.QueryResult;
 import com.soybeany.log.core.model.*;
 import com.soybeany.log.core.util.TimeUtils;
@@ -13,43 +12,35 @@ import java.util.*;
  * @author Soybeany
  * @date 2021/3/3
  */
-public abstract class BaseLogExporter implements LogExporter {
+public abstract class BaseLogExporter<T> implements LogExporter<T> {
 
     private static final DateTimeFormatter FORMATTER1 = DateTimeFormatter.ofPattern("yy-MM-dd HH:mm:ss");
     private static final DateTimeFormatter FORMATTER2 = DateTimeFormatter.ofPattern("HH:mm:ss");
 
-    private final Gson gson = new Gson();
+    // ********************重写方法********************
 
     @Override
-    public String export(QueryResult result, List<LogPack> packs) {
-        return toString(gson, toLogVO(result, packs));
+    public T export(QueryResult result, List<LogPack> packs) {
+        return output(toLogVO(result, packs));
     }
 
     // ********************子类方法********************
 
-    protected void setupResultInfo(QueryResult result, ResultInfo info) {
-        info.lastResultId = result.lastId;
-        info.curResultId = result.id;
-        info.nextResultId = result.nextId;
-        info.msg = result.getAllMsg();
-        info.endReason = result.endReason;
-    }
-
-    protected int compareTime(String time1, String time2) {
-        return time1.compareTo(time2);
+    protected void onSortLogs(List<LogPackForRead> packs) {
+        packs.sort(Comparator.comparing(o -> o.time));
     }
 
     // ********************内部方法********************
 
     private QueryResultVO toLogVO(QueryResult result, List<LogPack> packs) {
         QueryResultVO vo = new QueryResultVO();
-        setupResultInfo(result, vo.info);
+        LogExporter.setupResultInfo(result, vo.info);
         // 添加结果列表
         for (LogPack pack : packs) {
             vo.packs.add(toLogItem(pack));
         }
         // 排序
-        vo.packs.sort((o1, o2) -> compareTime(o1.time, o2.time));
+        onSortLogs(vo.packs);
         return vo;
     }
 
@@ -156,7 +147,7 @@ public abstract class BaseLogExporter implements LogExporter {
 
     // ********************抽象方法********************
 
-    protected abstract String toString(Gson gson, QueryResultVO vo);
+    protected abstract T output(QueryResultVO vo);
 
     // ********************内部类********************
 

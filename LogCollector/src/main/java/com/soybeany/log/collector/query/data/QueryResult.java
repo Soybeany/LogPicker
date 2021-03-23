@@ -21,9 +21,9 @@ public class QueryResult {
     public String nextId;
 
     /**
-     * 结果的文本
+     * 结果的内容
      */
-    public String text;
+    public Object content;
 
     public String endReason = "已完成搜索";
 

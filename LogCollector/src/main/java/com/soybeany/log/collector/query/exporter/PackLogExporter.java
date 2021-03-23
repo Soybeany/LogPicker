@@ -7,7 +7,7 @@ import com.soybeany.log.core.model.QueryResultVO;
  * @author Soybeany
  * @date 2021/3/3
  */
-public class PackLogExporter extends BaseLogExporter {
+public class PackLogExporter extends GsonLogExporter {
 
     @Override
     protected String toString(Gson gson, QueryResultVO vo) {

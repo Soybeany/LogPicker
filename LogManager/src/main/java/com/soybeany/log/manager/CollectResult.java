@@ -12,6 +12,11 @@ import java.util.*;
 class CollectResult {
     private final Map<String, String> errMsgMap = new HashMap<>();
     private final Map<String, QueryResultVO> voMap = new HashMap<>();
+    private final Comparator<LogPackForRead> comparator;
+
+    public CollectResult(Comparator<LogPackForRead> comparator) {
+        this.comparator = comparator;
+    }
 
     public void add(Map<String, BaseExecutor.Dto<QueryResultVO>> dtoList) {
         dtoList.forEach((server, dto) -> {
@@ -57,7 +62,7 @@ class CollectResult {
             });
         });
         // 排序
-        logPart.sort(Comparator.comparing(o -> o.time));
+        logPart.sort(comparator);
         // 组装
         List<Object> output = new LinkedList<>();
         output.add(infoPart);

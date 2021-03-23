@@ -1,9 +1,6 @@
 package com.soybeany.log.manager;
 
-import com.soybeany.log.core.model.Constants;
-import com.soybeany.log.core.model.IdOwner;
-import com.soybeany.log.core.model.LogException;
-import com.soybeany.log.core.model.QueryResultVO;
+import com.soybeany.log.core.model.*;
 import com.soybeany.log.core.util.DataHolder;
 import com.soybeany.log.core.util.UidUtils;
 
@@ -30,6 +27,10 @@ public class QueryExecutor extends BaseExecutor {
     }
 
     public String getResult(String path, Map<String, String> headers, Map<String, String> param, int expiryInSec) {
+        return getResult(path, headers, param, expiryInSec, Comparator.comparing(o -> o.time));
+    }
+
+    public String getResult(String path, Map<String, String> headers, Map<String, String> param, int expiryInSec, Comparator<LogPackForRead> comparator) {
         String resultId = param.get(Constants.PARAM_RESULT_ID);
         ResultHolder holder;
         Map<String, String> nextResultIdMap = new HashMap<>();
@@ -43,13 +44,13 @@ public class QueryExecutor extends BaseExecutor {
                 return holder.getResultString();
             }
             // 使用resultId进行查找
-            holder.result = getNewResultsByResultId(path, holder.uidSearchHosts, holder.resultIdMap, holder.headers, holder.param, nextResultIdMap);
+            holder.result = getNewResultsByResultId(path, holder.uidSearchHosts, holder.resultIdMap, holder.headers, holder.param, nextResultIdMap, comparator);
         } else {
             // 使用参数进行查找
             Set<String> logSearchHosts = toHostSet(param.remove(KEY_LOG_SEARCH_HOSTS));
             Set<String> uidSearchHosts = toHostSet(param.remove(KEY_UID_SEARCH_HOSTS));
             checkHosts(logSearchHosts, uidSearchHosts);
-            List<Object> list = getNewResultsByParam(logSearchHosts, uidSearchHosts, path, headers, param, nextResultIdMap);
+            List<Object> list = getNewResultsByParam(logSearchHosts, uidSearchHosts, path, headers, param, nextResultIdMap, comparator);
             holder = getNewHolder(headers, param, list, uidSearchHosts, expiryInSec);
         }
         // 按需分页
@@ -63,8 +64,8 @@ public class QueryExecutor extends BaseExecutor {
 
     // ********************内部方法********************
 
-    private List<Object> getNewResultsByParam(Set<String> logSearchHosts, Set<String> uidSearchHosts, String path, Map<String, String> headers, Map<String, String> param, Map<String, String> nextResultIdMap) {
-        CollectResult result = new CollectResult();
+    private List<Object> getNewResultsByParam(Set<String> logSearchHosts, Set<String> uidSearchHosts, String path, Map<String, String> headers, Map<String, String> param, Map<String, String> nextResultIdMap, Comparator<LogPackForRead> comparator) {
+        CollectResult result = new CollectResult(comparator);
         // 获取第一批结果(根据查询条件)
         Map<String, Dto<QueryResultVO>> firstDtoMap = batchInvoke(logSearchHosts, host -> getResultByParam(host, path, headers, param));
         result.add(firstDtoMap);
@@ -72,8 +73,8 @@ public class QueryExecutor extends BaseExecutor {
         return getSecondPartResultsByUid(path, headers, param, result, uidSearchHosts, nextResultIdMap);
     }
 
-    private List<Object> getNewResultsByResultId(String path, Set<String> uidSearchHosts, Map<String, String> resultIdMap, Map<String, String> headers, Map<String, String> param, Map<String, String> nextResultIdMap) {
-        CollectResult result = new CollectResult();
+    private List<Object> getNewResultsByResultId(String path, Set<String> uidSearchHosts, Map<String, String> resultIdMap, Map<String, String> headers, Map<String, String> param, Map<String, String> nextResultIdMap, Comparator<LogPackForRead> comparator) {
+        CollectResult result = new CollectResult(comparator);
         // 获取第一批结果(根据查询条件)
         Map<String, Dto<QueryResultVO>> firstDtoMap = batchInvoke(resultIdMap.keySet(), host -> getResultByResultId(host, path, headers, param, resultIdMap.get(host)));
         result.add(firstDtoMap);
