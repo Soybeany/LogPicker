@@ -11,4 +11,6 @@ public interface IDataHolder<T> {
 
     void remove(String key);
 
+    void clear();
+
 }

@@ -43,6 +43,11 @@ public class MemDataHolder<T> implements IDataHolder<T> {
         dataMap.remove(key);
     }
 
+    @Override
+    public synchronized void clear() {
+        dataMap.clear();
+    }
+
     // ********************内部方法********************
 
     @SuppressWarnings("AlibabaThreadPoolCreation")
