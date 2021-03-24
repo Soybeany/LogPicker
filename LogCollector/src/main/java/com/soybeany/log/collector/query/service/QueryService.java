@@ -129,7 +129,7 @@ public class QueryService {
                         continue;
                     }
                     if (!logCollectConfig.noUidPlaceholder.equals(logPack.uid)) {
-                        needMore = addResultsByUid(result, logPack.uid, formalLogPacks, loaderMapForUid);
+                        needMore = addResultsByUid(result, logPack.uid, formalLogPacks, loaderMapForUid, false);
                     } else {
                         needMore = addToFormalLogPacks(result, formalLogPacks, logPack);
                     }
@@ -169,7 +169,7 @@ public class QueryService {
         while (iterator.hasNext()) {
             String uid = iterator.next();
             iterator.remove();
-            needMore = addResultsByUid(result, uid, logPacks, loaderMap);
+            needMore = addResultsByUid(result, uid, logPacks, loaderMap, true);
             if (!needMore) {
                 break;
             }
@@ -177,19 +177,22 @@ public class QueryService {
         return needMore;
     }
 
-    private boolean addResultsByUid(QueryResult result, String uid, List<LogPack> formalLogPacks, Map<File, LogPackLoader<RangesLogLineLoader>> loaderMap) throws IOException {
+    private boolean addResultsByUid(QueryResult result, String uid, List<LogPack> formalLogPacks, Map<File, LogPackLoader<RangesLogLineLoader>> loaderMap, boolean needFilter) throws IOException {
         QueryContext context = result.context;
         if (context.returnedUidSet.contains(uid)) {
             return true;
         }
         context.returnedUidSet.add(uid);
-        List<LogPack> packs = getFilteredLogPacksByUid(result, uid, loaderMap);
+        List<LogPack> packs = getFilteredLogPacksByUid(result, uid, loaderMap, needFilter);
         context.unusedFilteredResults.addAll(packs);
         return popUnusedResults(result, formalLogPacks);
     }
 
-    private List<LogPack> getFilteredLogPacksByUid(QueryResult queryResult, String uid, Map<File, LogPackLoader<RangesLogLineLoader>> loaderMap) throws IOException {
+    private List<LogPack> getFilteredLogPacksByUid(QueryResult queryResult, String uid, Map<File, LogPackLoader<RangesLogLineLoader>> loaderMap, boolean needFilter) throws IOException {
         List<LogPack> packs = uidToLogPacks(queryResult, uid, loaderMap);
+        if (!needFilter) {
+            return packs;
+        }
         for (LogPack pack : packs) {
             if (!isFiltered(queryResult.context, pack)) {
                 return packs;
