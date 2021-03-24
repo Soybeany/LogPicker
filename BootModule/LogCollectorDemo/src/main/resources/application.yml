@@ -9,8 +9,8 @@ logging:
     path: D:\logCollectorDemo
 
 config:
-  # 待扫描的目录，多个使用“;”进行分隔
-  dirs-to-scan: D:\logCollectorDemo
+  # 待扫描的目录
+  dir-to-scan: D:\logCollectorDemo
   # 当天日志文件的命名
   log-today-file-name: spring.log
   # 历史日志文件的命名，使用<?TimeFormat?>作时间占位

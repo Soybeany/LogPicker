@@ -7,9 +7,9 @@
       "defaultValue": 20
     },
     {
-      "name": "config.dirs-to-scan",
+      "name": "config.dir-to-scan",
       "type": "java.lang.String",
-      "description": "待扫描的目录，多个使用“;”进行分隔."
+      "description": "待扫描的目录."
     },
     {
       "name": "config.line-parse-regex",

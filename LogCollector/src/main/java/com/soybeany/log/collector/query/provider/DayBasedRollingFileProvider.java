@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -31,9 +32,9 @@ public class DayBasedRollingFileProvider implements FileProvider {
      * @param logHistoryFileName 历史日志文件的命名，使用<?TimeFormat?>作时间占位
      */
     public DayBasedRollingFileProvider(String dirToScan, String logTodayFileName, String logHistoryFileName) {
-        this.dirToScan = dirToScan;
-        this.logTodayFileName = logTodayFileName;
-        this.logHistoryFileName = logHistoryFileName;
+        this.dirToScan = Optional.ofNullable(dirToScan).orElseThrow(() -> new LogException("dirToScan不能为null"));
+        this.logTodayFileName = Optional.ofNullable(logTodayFileName).orElseThrow(() -> new LogException("logTodayFileName不能为null"));
+        this.logHistoryFileName = Optional.ofNullable(logHistoryFileName).orElseThrow(() -> new LogException("logHistoryFileName不能为null"));
     }
 
     @Override
