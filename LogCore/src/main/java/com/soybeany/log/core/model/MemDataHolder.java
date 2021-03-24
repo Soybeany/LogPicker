@@ -45,11 +45,11 @@ public class MemDataHolder<T> implements IDataHolder<T> {
 
     // ********************内部方法********************
 
+    @SuppressWarnings("AlibabaThreadPoolCreation")
     private String scheduleTask(String key, int expiryInSec) {
         String uid = UidUtils.getNew();
         if (null == service) {
             service = Executors.newScheduledThreadPool(1);
-            System.out.println("开启线程池");
         }
         service.schedule(() -> removeData(key, uid), expiryInSec, TimeUnit.SECONDS);
         return uid;

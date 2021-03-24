@@ -19,6 +19,7 @@ public class BaseExecutor {
     private static final OkHttpClient CLIENT_FOR_READ = new OkHttpClient.Builder().readTimeout(5, TimeUnit.MINUTES).build();
     protected static final Gson GSON = new Gson();
 
+    @SuppressWarnings("AlibabaThreadPoolCreation")
     protected static <T> Map<String, Dto<T>> invokeAll(Map<String, Callable<T>> tasks) {
         ExecutorService service = Executors.newCachedThreadPool();
         try {
