@@ -77,7 +77,15 @@ public class QueryService {
                 needMore = queryByUnfilteredUidSet(result, formalLogPacks, loaderMap);
             }
             if (needMore) {
-                needMore = queryByRanges(result, formalLogPacks, loaderMap);
+                Map<File, LogPackLoader<RangesLogLineLoader>> loaderMapForUid = new HashMap<>();
+                try {
+                    needMore = queryByRanges(result, formalLogPacks, loaderMap, loaderMapForUid);
+                } finally {
+                    // 释放加载器持有器
+                    for (LogPackLoader<RangesLogLineLoader> loader : loaderMapForUid.values()) {
+                        BdFileUtils.closeStream(loader);
+                    }
+                }
             }
             // 检测文件是否有变更
             result.context.indexesMap.values().forEach(indexes -> indexes.withCheck(logCollectConfig));
@@ -113,48 +121,40 @@ public class QueryService {
         }
     }
 
-    private boolean queryByRanges(QueryResult result, List<LogPack> formalLogPacks, Map<File, LogPackLoader<RangesLogLineLoader>> loaderMap) throws IOException {
-        Map<File, LogPackLoader<RangesLogLineLoader>> loaderMapForUid = new HashMap<>();
+    private boolean queryByRanges(QueryResult result, List<LogPack> formalLogPacks, Map<File, LogPackLoader<RangesLogLineLoader>> loaderMap, Map<File, LogPackLoader<RangesLogLineLoader>> loaderMapForUid) throws IOException {
         boolean needMore = true;
-        try {
-            Iterator<Map.Entry<File, List<FileRange>>> iterator = result.context.queryRanges.entrySet().iterator();
-            while (iterator.hasNext()) {
-                Map.Entry<File, List<FileRange>> entry = iterator.next();
-                File file = entry.getKey();
-                List<FileRange> ranges = entry.getValue();
-                LogPackLoader<RangesLogLineLoader> loader = getLoader(loaderMap, file, result.context.uidTempMap, ranges);
-                LogPack logPack;
-                while (needMore && null != (logPack = loader.loadNextCompleteLogPack())) {
-                    if (isFiltered(result.context, logPack)) {
-                        continue;
-                    }
-                    if (!logCollectConfig.noUidPlaceholder.equals(logPack.uid)) {
-                        needMore = addResultsByUid(result, logPack.uid, formalLogPacks, loaderMapForUid, false);
-                    } else {
-                        needMore = addToFormalLogPacks(result, formalLogPacks, logPack);
-                    }
+        Iterator<Map.Entry<File, List<FileRange>>> iterator = result.context.queryRanges.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<File, List<FileRange>> entry = iterator.next();
+            File file = entry.getKey();
+            List<FileRange> ranges = entry.getValue();
+            LogPackLoader<RangesLogLineLoader> loader = getLoader(loaderMap, file, result.context.uidTempMap, ranges);
+            LogPack logPack;
+            while (needMore && null != (logPack = loader.loadNextCompleteLogPack())) {
+                if (isFiltered(result.context, logPack)) {
+                    continue;
                 }
-                RangesLogLineLoader rangesLogLineLoader = loader.getLogLineLoader();
-                READ_BYTES_LOCAL.set(READ_BYTES_LOCAL.get() + rangesLogLineLoader.getReadBytes());
-                long readPointer = rangesLogLineLoader.getReadPointer();
-                // 使用已查询到的字节，再次进行范围合并
-                List<FileRange> nextRange = Collections.singletonList(new FileRange(readPointer, Long.MAX_VALUE));
-                List<FileRange> newRanges = rangeService.intersect(Arrays.asList(ranges, nextRange));
-                // 合并后范围为空，则移除该范围
-                if (newRanges.isEmpty()) {
-                    iterator.remove();
+                if (!logCollectConfig.noUidPlaceholder.equals(logPack.uid)) {
+                    needMore = addResultsByUid(result, logPack.uid, formalLogPacks, loaderMapForUid, false);
                 } else {
-                    result.context.queryRanges.put(file, newRanges);
-                }
-                // 如果不需更多结果，则中断
-                if (!needMore) {
-                    break;
+                    needMore = addToFormalLogPacks(result, formalLogPacks, logPack);
                 }
             }
-        } finally {
-            // 释放加载器持有器
-            for (LogPackLoader<RangesLogLineLoader> loader : loaderMapForUid.values()) {
-                BdFileUtils.closeStream(loader);
+            RangesLogLineLoader rangesLogLineLoader = loader.getLogLineLoader();
+            READ_BYTES_LOCAL.set(READ_BYTES_LOCAL.get() + rangesLogLineLoader.getReadBytes());
+            long readPointer = rangesLogLineLoader.getReadPointer();
+            // 使用已查询到的字节，再次进行范围合并
+            List<FileRange> nextRange = Collections.singletonList(new FileRange(readPointer, Long.MAX_VALUE));
+            List<FileRange> newRanges = rangeService.intersect(Arrays.asList(ranges, nextRange));
+            // 合并后范围为空，则移除该范围
+            if (newRanges.isEmpty()) {
+                iterator.remove();
+            } else {
+                result.context.queryRanges.put(file, newRanges);
+            }
+            // 如果不需更多结果，则中断
+            if (!needMore) {
+                break;
             }
         }
         return needMore;
