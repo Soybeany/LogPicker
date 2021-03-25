@@ -40,8 +40,8 @@ public class TagContainsModuleFactory implements ModuleFactory {
         }
         // tag预处理并分类
         tags = logIndexService.getTreatedTagMap(tags);
-        Map<String, String> indexedTagsReceiver = new HashMap<>();
-        Map<String, String> ordinaryTagsReceiver = new HashMap<>();
+        Map<String, String> indexedTagsReceiver = new LinkedHashMap<>();
+        Map<String, String> ordinaryTagsReceiver = new LinkedHashMap<>();
         sortTags(tags, indexedTagsReceiver, ordinaryTagsReceiver);
         // 按需创建处理器
         if (!indexedTagsReceiver.isEmpty()) {
