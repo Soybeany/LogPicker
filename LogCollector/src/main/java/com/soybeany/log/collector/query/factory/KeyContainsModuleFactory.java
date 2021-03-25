@@ -5,6 +5,7 @@ import com.soybeany.log.collector.query.processor.LogFilter;
 import com.soybeany.log.collector.query.processor.Preprocessor;
 import com.soybeany.log.core.model.LogLine;
 import com.soybeany.log.core.model.LogPack;
+import com.soybeany.log.core.util.AllKeyContainChecker;
 
 import java.util.List;
 
@@ -18,28 +19,29 @@ public class KeyContainsModuleFactory implements ModuleFactory {
 
     @Override
     public void onSetupPreprocessors(QueryContext context, List<Preprocessor> preprocessors) {
-        String key = context.getParam(LogFilter.PREFIX, P_KEY_CONTAINS_KEY);
+        String[] keys = context.queryParam.getParam(LogFilter.PREFIX, P_KEY_CONTAINS_KEY);
         // 若没有配置，则不作预处理
-        if (null == key) {
+        if (null == keys) {
             return;
         }
         // 设置新的过滤器
-        preprocessors.add(new FilterImpl(key));
+        preprocessors.add(new FilterImpl(keys));
     }
 
     // ********************内部类********************
 
     private static class FilterImpl implements LogFilter {
-        private final String key;
+        private final AllKeyContainChecker checker;
 
-        public FilterImpl(String key) {
-            this.key = key;
+        public FilterImpl(String[] keys) {
+            this.checker = new AllKeyContainChecker(keys);
         }
 
         @Override
         public boolean filterLogPack(LogPack logPack) {
+            checker.init();
             for (LogLine logLine : logPack.logLines) {
-                if (logLine.content.contains(key)) {
+                if (checker.match(logLine.content)) {
                     return false;
                 }
             }

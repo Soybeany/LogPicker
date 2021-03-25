@@ -25,23 +25,6 @@ public interface Constants {
      */
     String TAG_BORDER_END = "border_end";
 
-    // ********************EXPORT********************
-
-    /**
-     * 导出原始数据(可更高级地加工)
-     */
-    String EXPORT_ROF_RAW = "forRaw";
-
-    /**
-     * 导出打包数据(可二次加工)
-     */
-    String EXPORT_FOR_PACK = "forPack";
-
-    /**
-     * 导出供阅读(不再加工)
-     */
-    String EXPORT_FOR_DIRECT_READ = "forDirectRead";
-
     // ********************PARSER_KEY********************
 
     String PARSER_KEY_TIME = "time";

@@ -1,6 +1,7 @@
 package com.soybeany.log.collector.query.data;
 
 import com.soybeany.log.collector.common.data.LogCollectConfig;
+import com.soybeany.log.core.model.Constants;
 import com.soybeany.log.core.model.LogException;
 
 import java.io.File;
@@ -26,7 +27,7 @@ public class QueryParam {
 
     private static final Map<Integer, DateTimeParser> FORMATTER_MAP = new HashMap<>();
 
-    private final Map<String, Map<String, String>> params = new HashMap<>();
+    private final Map<String, Map<String, String[]>> params = new HashMap<>();
     private final LogCollectConfig logCollectConfig;
 
     private LocalDateTime fromTime;
@@ -39,6 +40,16 @@ public class QueryParam {
         initFormatterMap();
     }
 
+    public static String getResultId(Map<String, String[]> param) {
+        return Optional.ofNullable(param.get(Constants.PARAM_RESULT_ID)).map(v -> 0 != v.length ? v[0] : null).orElse(null);
+    }
+
+    public static Map<String, String[]> toMultiValueMap(Map<String, String> param) {
+        Map<String, String[]> result = new HashMap<>();
+        param.forEach((k, v) -> result.put(k, new String[]{v}));
+        return result;
+    }
+
     private static void initFormatterMap() {
         FORMATTER_MAP.put(19, time -> LocalDateTime.parse(time, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         FORMATTER_MAP.put(16, time -> LocalDateTime.parse(time, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
@@ -48,16 +59,20 @@ public class QueryParam {
         FORMATTER_MAP.put(5, time -> LocalDateTime.of(LocalDate.now(), LocalTime.parse(time, DateTimeFormatter.ofPattern("HH:mm"))));
     }
 
-    public QueryParam(LogCollectConfig logCollectConfig, Map<String, String> param) {
+    public QueryParam(LogCollectConfig logCollectConfig, Map<String, String[]> param) {
         this.logCollectConfig = logCollectConfig;
         // 处理入参
-        for (Map.Entry<String, String> entry : param.entrySet()) {
+        for (Map.Entry<String, String[]> entry : param.entrySet()) {
+            String[] value = entry.getValue();
+            if (null == value || 0 == value.length) {
+                continue;
+            }
             // 处理动态kv
             if (handleKv(entry)) {
                 continue;
             }
             // 处理固定key
-            handleFixKey(entry.getKey(), entry.getValue());
+            handleFixKey(entry.getKey(), value[0]);
         }
         // 后处理参数
         postHandleTime();
@@ -86,8 +101,12 @@ public class QueryParam {
         return uidSet;
     }
 
-    public Map<String, String> getParams(String prefix) {
-        return Optional.ofNullable(params.get(prefix)).orElseGet(HashMap::new);
+    public Map<String, String[]> getParams(String prefix) {
+        return Optional.ofNullable(params.get(prefix)).orElse(Collections.emptyMap());
+    }
+
+    public String[] getParam(String prefix, String key) {
+        return getParams(prefix).get(key);
     }
 
     // ********************内部方法********************
@@ -136,12 +155,12 @@ public class QueryParam {
     /**
      * @return 是否匹配
      */
-    private boolean handleKv(Map.Entry<String, String> entry) {
+    private boolean handleKv(Map.Entry<String, String[]> entry) {
         String[] parts = entry.getKey().split(SEPARATOR);
         if (parts.length < 2) {
             return false;
         }
-        Map<String, String> map = params.computeIfAbsent(parts[0], k -> new LinkedHashMap<>());
+        Map<String, String[]> map = params.computeIfAbsent(parts[0], k -> new LinkedHashMap<>());
         map.put(parts[1], entry.getValue());
         return true;
     }

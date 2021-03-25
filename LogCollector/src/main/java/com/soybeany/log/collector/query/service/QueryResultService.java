@@ -14,7 +14,6 @@ import com.soybeany.log.collector.query.processor.Preprocessor;
 import com.soybeany.log.collector.query.processor.RangeLimiter;
 import com.soybeany.log.collector.query.provider.FileProvider;
 import com.soybeany.log.collector.scan.ScanService;
-import com.soybeany.log.core.model.Constants;
 import com.soybeany.log.core.model.FileRange;
 import com.soybeany.log.core.model.IDataHolder;
 import com.soybeany.log.core.model.LogException;
@@ -58,7 +57,7 @@ public class QueryResultService {
         resultHolder.put(result.id, result, logCollectConfig.resultRetainSec);
     }
 
-    public QueryResult getResult(Map<String, String> param) {
+    public QueryResult getResult(Map<String, String[]> param) {
         QueryResult result = loadResultFromParam(param);
         // 若已有result，则直接使用
         if (null != result) {
@@ -70,8 +69,8 @@ public class QueryResultService {
 
     // ****************************************内部方法****************************************
 
-    private QueryResult loadResultFromParam(Map<String, String> param) {
-        String resultId = param.get(Constants.PARAM_RESULT_ID);
+    private QueryResult loadResultFromParam(Map<String, String[]> param) {
+        String resultId = QueryParam.getResultId(param);
         if (null == resultId) {
             return null;
         }
@@ -83,7 +82,7 @@ public class QueryResultService {
         return result;
     }
 
-    private QueryResult getNewResult(Map<String, String> param) {
+    private QueryResult getNewResult(Map<String, String[]> param) {
         QueryParam queryParam = new QueryParam(logCollectConfig, param);
         QueryContext context = new QueryContext(queryParam);
         List<Preprocessor> preprocessors = new LinkedList<>();

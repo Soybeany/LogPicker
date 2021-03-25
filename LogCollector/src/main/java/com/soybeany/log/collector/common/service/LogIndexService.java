@@ -54,10 +54,16 @@ public class LogIndexService {
         return indexes;
     }
 
-    public Map<String, String> getTreatedTagMap(Map<String, String> tags) {
-        Map<String, String> result = new HashMap<>();
+    public Map<String, String[]> getTreatedTagMap(Map<String, String[]> tags) {
+        Map<String, String[]> result = new HashMap<>();
         // 将tag的值转成小写
-        tags.forEach((k, v) -> result.put(k, v.toLowerCase()));
+        tags.forEach((k, arr) -> {
+            String[] newArr = new String[arr.length];
+            for (int i = 0; i < arr.length; i++) {
+                newArr[i] = arr[i].toLowerCase();
+            }
+            result.put(k, newArr);
+        });
         return result;
     }
 

@@ -13,10 +13,13 @@ import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.demo.config.AppConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.PostConstruct;
-import java.util.Map;
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Soybeany
@@ -34,13 +37,13 @@ public class QueryController {
     private QueryService queryService;
 
     @PostMapping(value = "/forDirectRead", produces = MediaType.APPLICATION_JSON_VALUE)
-    public String forDirectRead(@RequestParam Map<String, String> param) {
-        return byParam(param, directReadLogExporter);
+    public String forDirectRead(HttpServletRequest request) {
+        return byParam(request, directReadLogExporter);
     }
 
     @PostMapping(value = "/forPack", produces = MediaType.APPLICATION_JSON_VALUE)
-    public String forPack(@RequestParam Map<String, String> param) {
-        return byParam(param, packLogExporter);
+    public String forPack(HttpServletRequest request) {
+        return byParam(request, packLogExporter);
     }
 
     @GetMapping("/help")
@@ -55,9 +58,9 @@ public class QueryController {
         queryService = LogCollector.query(config).build(fileProvider);
     }
 
-    private String byParam(@RequestParam Map<String, String> param, GsonLogExporter exporter) {
+    private String byParam(HttpServletRequest request, GsonLogExporter exporter) {
         try {
-            return queryService.simpleQuery(param, exporter);
+            return queryService.simpleQueryWithMultiValueParam(request.getParameterMap(), exporter);
         } catch (LogException e) {
             return "出现异常:" + e.getMessage();
         }

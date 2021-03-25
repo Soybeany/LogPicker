@@ -10,6 +10,7 @@ import com.soybeany.log.collector.query.processor.Preprocessor;
 import com.soybeany.log.collector.query.processor.RangeLimiter;
 import com.soybeany.log.core.model.FileRange;
 import com.soybeany.log.core.model.LogPack;
+import com.soybeany.log.core.util.AllKeyContainChecker;
 
 import java.util.*;
 
@@ -33,7 +34,7 @@ public class TagContainsModuleFactory implements ModuleFactory {
 
     @Override
     public void onSetupPreprocessors(QueryContext context, List<Preprocessor> preprocessors) {
-        Map<String, String> tags = context.queryParam.getParams(PREFIX);
+        Map<String, String[]> tags = context.queryParam.getParams(PREFIX);
         // 若没有指定tag，则不需要tag预处理
         if (tags.isEmpty()) {
             return;
@@ -41,7 +42,7 @@ public class TagContainsModuleFactory implements ModuleFactory {
         // tag预处理并分类
         tags = logIndexService.getTreatedTagMap(tags);
         Map<String, String> indexedTagsReceiver = new LinkedHashMap<>();
-        Map<String, String> ordinaryTagsReceiver = new LinkedHashMap<>();
+        Map<String, AllKeyContainChecker> ordinaryTagsReceiver = new LinkedHashMap<>();
         sortTags(tags, indexedTagsReceiver, ordinaryTagsReceiver);
         // 按需创建处理器
         if (!indexedTagsReceiver.isEmpty()) {
@@ -56,12 +57,12 @@ public class TagContainsModuleFactory implements ModuleFactory {
 
     // ********************内部方法********************
 
-    private void sortTags(Map<String, String> unsortedTags, Map<String, String> indexedTagsReceiver, Map<String, String> ordinaryTagsReceiver) {
+    private void sortTags(Map<String, String[]> unsortedTags, Map<String, String> indexedTagsReceiver, Map<String, AllKeyContainChecker> ordinaryTagsReceiver) {
         unsortedTags.forEach((k, v) -> {
             if (logCollectConfig.tagsToIndex.contains(k)) {
-                Optional.ofNullable(indexedTagsReceiver).ifPresent(m -> m.put(k, v));
+                Optional.ofNullable(indexedTagsReceiver).ifPresent(m -> m.put(k, v[0]));
             } else {
-                Optional.ofNullable(ordinaryTagsReceiver).ifPresent(m -> m.put(k, v));
+                Optional.ofNullable(ordinaryTagsReceiver).ifPresent(m -> m.put(k, new AllKeyContainChecker(v)));
             }
         });
     }
@@ -121,17 +122,17 @@ public class TagContainsModuleFactory implements ModuleFactory {
     private static class FilterImpl implements LogFilter {
 
         private final LogIndexService logIndexService;
-        private final Map<String, String> tags;
+        private final Map<String, AllKeyContainChecker> checkers;
 
-        public FilterImpl(LogIndexService logIndexService, Map<String, String> tags) {
+        public FilterImpl(LogIndexService logIndexService, Map<String, AllKeyContainChecker> checkers) {
             this.logIndexService = logIndexService;
-            this.tags = tags;
+            this.checkers = checkers;
         }
 
         @Override
         public boolean filterLogPack(LogPack logPack) {
             List<Map.Entry<String, String>> tagList = logIndexService.getTreatedTagList(logPack.tags);
-            for (Map.Entry<String, String> entry : tags.entrySet()) {
+            for (Map.Entry<String, AllKeyContainChecker> entry : checkers.entrySet()) {
                 if (!containValue(tagList, entry.getKey(), entry.getValue())) {
                     return true;
                 }
@@ -139,9 +140,10 @@ public class TagContainsModuleFactory implements ModuleFactory {
             return false;
         }
 
-        private boolean containValue(List<Map.Entry<String, String>> tagList, String tagKey, String tagValue) {
+        private boolean containValue(List<Map.Entry<String, String>> tagList, String tagKey, AllKeyContainChecker checker) {
+            checker.init();
             for (Map.Entry<String, String> entry : tagList) {
-                if (tagKey.equals(entry.getKey()) && entry.getValue().contains(tagValue)) {
+                if (tagKey.equals(entry.getKey()) && checker.match(entry.getValue())) {
                     return true;
                 }
             }

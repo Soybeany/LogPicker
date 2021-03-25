@@ -7,6 +7,7 @@ import com.soybeany.log.collector.common.model.loader.RangesLogLineLoader;
 import com.soybeany.log.collector.common.service.RangeService;
 import com.soybeany.log.collector.query.data.QueryContext;
 import com.soybeany.log.collector.query.data.QueryIndexes;
+import com.soybeany.log.collector.query.data.QueryParam;
 import com.soybeany.log.collector.query.data.QueryResult;
 import com.soybeany.log.collector.query.exporter.LogExporter;
 import com.soybeany.log.collector.query.factory.ModuleFactory;
@@ -42,6 +43,10 @@ public class QueryService {
     }
 
     public <T> T simpleQuery(Map<String, String> param, LogExporter<T> logExporter) {
+        return simpleQueryWithMultiValueParam(QueryParam.toMultiValueMap(param), logExporter);
+    }
+
+    public <T> T simpleQueryWithMultiValueParam(Map<String, String[]> param, LogExporter<T> logExporter) {
         QueryResult result = queryResultService.getResult(param);
         // 如果context中已包含结果，则直接返回
         if (null == result.logPacks) {

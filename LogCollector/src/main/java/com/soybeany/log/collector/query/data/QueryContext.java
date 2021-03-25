@@ -61,10 +61,4 @@ public class QueryContext {
         this.queryParam = queryParam;
     }
 
-    // ********************公开方法********************
-
-    public String getParam(String prefix, String key) {
-        return queryParam.getParams(prefix).get(key);
-    }
-
 }
