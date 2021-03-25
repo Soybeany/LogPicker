@@ -41,13 +41,20 @@ public class QueryParam {
     }
 
     public static String getResultId(Map<String, String[]> param) {
-        return Optional.ofNullable(param.get(Constants.PARAM_RESULT_ID)).map(v -> 0 != v.length ? v[0] : null).orElse(null);
+        return getSingleValue(param.get(Constants.PARAM_RESULT_ID));
     }
 
     public static Map<String, String[]> toMultiValueMap(Map<String, String> param) {
         Map<String, String[]> result = new HashMap<>();
         param.forEach((k, v) -> result.put(k, new String[]{v}));
         return result;
+    }
+
+    private static String getSingleValue(String[] arr) {
+        if (null == arr) {
+            return null;
+        }
+        return 0 != arr.length ? arr[0] : null;
     }
 
     private static void initFormatterMap() {
@@ -107,6 +114,10 @@ public class QueryParam {
 
     public String[] getParam(String prefix, String key) {
         return getParams(prefix).get(key);
+    }
+
+    public String getSingleParam(String prefix, String key) {
+        return getSingleValue(getParam(prefix, key));
     }
 
     // ********************内部方法********************
