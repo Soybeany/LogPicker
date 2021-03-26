@@ -23,6 +23,42 @@ public class LogIndexService {
     private final LogCollectConfig logCollectConfig;
     private final RangeService rangeService;
 
+    // ********************静态方法********************
+
+    public static Map<String, String[]> valueToLowerCase(Map<String, String[]> tags) {
+        Map<String, String[]> result = new HashMap<>();
+        // 将tag的值转成小写
+        tags.forEach((k, arr) -> {
+            String[] newArr = new String[arr.length];
+            for (int i = 0; i < arr.length; i++) {
+                newArr[i] = arr[i].toLowerCase();
+            }
+            result.put(k, newArr);
+        });
+        return result;
+    }
+
+    public static List<Map.Entry<String, String>> valueToLowerCase(List<LogTag> tags) {
+        List<Map.Entry<String, String>> result = new LinkedList<>();
+        // 将tag的值转成小写
+        tags.forEach(tag -> result.add(new AbstractMap.SimpleEntry<>(tag.key, tag.value.toLowerCase())));
+        return result;
+    }
+
+    public static String[] valueToLowerCase(String[] values) {
+        String[] result = new String[values.length];
+        for (int i = 0; i < values.length; i++) {
+            result[i] = values[i].toLowerCase();
+        }
+        return result;
+    }
+
+    public static String valueToLowerCase(String value) {
+        return value.toLowerCase();
+    }
+
+    // ********************实例方法********************
+
     public LogIndexService(LogCollectConfig logCollectConfig, RangeService rangeService) {
         this.logCollectConfig = logCollectConfig;
         this.rangeService = rangeService;
@@ -52,26 +88,6 @@ public class LogIndexService {
         long spendTime = System.currentTimeMillis() - startTime;
         recorder.write("“" + file.getName() + "”的索引已更新(" + startByte + "~" + indexes.scannedBytes + ")，耗时" + spendTime + "ms");
         return indexes;
-    }
-
-    public Map<String, String[]> getTreatedTagMap(Map<String, String[]> tags) {
-        Map<String, String[]> result = new HashMap<>();
-        // 将tag的值转成小写
-        tags.forEach((k, arr) -> {
-            String[] newArr = new String[arr.length];
-            for (int i = 0; i < arr.length; i++) {
-                newArr[i] = arr[i].toLowerCase();
-            }
-            result.put(k, newArr);
-        });
-        return result;
-    }
-
-    public List<Map.Entry<String, String>> getTreatedTagList(List<LogTag> tags) {
-        List<Map.Entry<String, String>> result = new LinkedList<>();
-        // 将tag的值转成小写
-        tags.forEach(tag -> result.add(new AbstractMap.SimpleEntry<>(tag.key, tag.value.toLowerCase())));
-        return result;
     }
 
     // ********************内部方法********************

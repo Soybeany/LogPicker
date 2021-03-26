@@ -24,12 +24,10 @@ public class TagContainsModuleFactory implements ModuleFactory {
 
     private final LogCollectConfig logCollectConfig;
     private final RangeService rangeService;
-    private final LogIndexService logIndexService;
 
     public TagContainsModuleFactory(LogCollectConfig logCollectConfig) {
         this.logCollectConfig = logCollectConfig;
         this.rangeService = new RangeService(logCollectConfig);
-        this.logIndexService = new LogIndexService(logCollectConfig, rangeService);
     }
 
     @Override
@@ -40,7 +38,7 @@ public class TagContainsModuleFactory implements ModuleFactory {
             return;
         }
         // tag预处理并分类
-        tags = logIndexService.getTreatedTagMap(tags);
+        tags = LogIndexService.valueToLowerCase(tags);
         Map<String, String[]> indexedTagsReceiver = new LinkedHashMap<>();
         Map<String, AllKeyContainChecker> ordinaryTagsReceiver = new LinkedHashMap<>();
         sortTags(tags, indexedTagsReceiver, ordinaryTagsReceiver);
@@ -50,7 +48,7 @@ public class TagContainsModuleFactory implements ModuleFactory {
             context.msgList.add("使用索引型的tags:" + indexedTagsReceiver.keySet());
         }
         if (!ordinaryTagsReceiver.isEmpty()) {
-            preprocessors.add(new FilterImpl(logIndexService, ordinaryTagsReceiver));
+            preprocessors.add(new FilterImpl(ordinaryTagsReceiver));
             context.msgList.add("使用过滤型的tags:" + ordinaryTagsReceiver.keySet());
         }
     }
@@ -123,17 +121,15 @@ public class TagContainsModuleFactory implements ModuleFactory {
 
     private static class FilterImpl implements LogFilter {
 
-        private final LogIndexService logIndexService;
         private final Map<String, AllKeyContainChecker> checkers;
 
-        public FilterImpl(LogIndexService logIndexService, Map<String, AllKeyContainChecker> checkers) {
-            this.logIndexService = logIndexService;
+        public FilterImpl(Map<String, AllKeyContainChecker> checkers) {
             this.checkers = checkers;
         }
 
         @Override
         public boolean filterLogPack(LogPack logPack) {
-            List<Map.Entry<String, String>> tagList = logIndexService.getTreatedTagList(logPack.tags);
+            List<Map.Entry<String, String>> tagList = LogIndexService.valueToLowerCase(logPack.tags);
             for (Map.Entry<String, AllKeyContainChecker> entry : checkers.entrySet()) {
                 if (!containValue(tagList, entry.getKey(), entry.getValue())) {
                     return true;

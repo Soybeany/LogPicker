@@ -1,5 +1,6 @@
 package com.soybeany.log.collector.query.factory;
 
+import com.soybeany.log.collector.common.service.LogIndexService;
 import com.soybeany.log.collector.query.data.QueryContext;
 import com.soybeany.log.collector.query.processor.LogFilter;
 import com.soybeany.log.collector.query.processor.Preprocessor;
@@ -26,6 +27,7 @@ public class KeyContainsModuleFactory implements ModuleFactory {
             return;
         }
         // 设置新的过滤器
+        keys = LogIndexService.valueToLowerCase(keys);
         preprocessors.add(new FilterImpl(keys));
     }
 
@@ -42,7 +44,7 @@ public class KeyContainsModuleFactory implements ModuleFactory {
         public boolean filterLogPack(LogPack logPack) {
             checker.init();
             for (LogLine logLine : logPack.logLines) {
-                if (checker.match(logLine.content)) {
+                if (checker.match(LogIndexService.valueToLowerCase(logLine.content))) {
                     return false;
                 }
             }
