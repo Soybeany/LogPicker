@@ -41,7 +41,7 @@ public class TagContainsModuleFactory implements ModuleFactory {
         }
         // tag预处理并分类
         tags = logIndexService.getTreatedTagMap(tags);
-        Map<String, String> indexedTagsReceiver = new LinkedHashMap<>();
+        Map<String, String[]> indexedTagsReceiver = new LinkedHashMap<>();
         Map<String, AllKeyContainChecker> ordinaryTagsReceiver = new LinkedHashMap<>();
         sortTags(tags, indexedTagsReceiver, ordinaryTagsReceiver);
         // 按需创建处理器
@@ -57,10 +57,10 @@ public class TagContainsModuleFactory implements ModuleFactory {
 
     // ********************内部方法********************
 
-    private void sortTags(Map<String, String[]> unsortedTags, Map<String, String> indexedTagsReceiver, Map<String, AllKeyContainChecker> ordinaryTagsReceiver) {
+    private void sortTags(Map<String, String[]> unsortedTags, Map<String, String[]> indexedTagsReceiver, Map<String, AllKeyContainChecker> ordinaryTagsReceiver) {
         unsortedTags.forEach((k, v) -> {
             if (logCollectConfig.tagsToIndex.contains(k)) {
-                Optional.ofNullable(indexedTagsReceiver).ifPresent(m -> m.put(k, v[0]));
+                Optional.ofNullable(indexedTagsReceiver).ifPresent(m -> m.put(k, v));
             } else {
                 Optional.ofNullable(ordinaryTagsReceiver).ifPresent(m -> m.put(k, new AllKeyContainChecker(v)));
             }
@@ -71,9 +71,9 @@ public class TagContainsModuleFactory implements ModuleFactory {
 
     private static class LimiterImpl implements RangeLimiter {
         private final RangeService rangeService;
-        private final Map<String, String> tags;
+        private final Map<String, String[]> tags;
 
-        public LimiterImpl(RangeService rangeService, Map<String, String> tags) {
+        public LimiterImpl(RangeService rangeService, Map<String, String[]> tags) {
             this.rangeService = rangeService;
             this.tags = tags;
         }
@@ -88,17 +88,19 @@ public class TagContainsModuleFactory implements ModuleFactory {
         public Set<String> onSetupUnfilteredUidSet(FileRange timeRange, QueryIndexes indexes) {
             Set<String> uidSet = null, tempUidSet;
             // 筛选出符合值限制的uid
-            for (Map.Entry<String, String> entry : tags.entrySet()) {
-                // 得到uid交集
-                tempUidSet = getUidSet(indexes, entry.getKey(), entry.getValue());
-                if (null == uidSet) {
-                    uidSet = tempUidSet;
-                } else {
-                    uidSet.retainAll(tempUidSet);
-                }
-                // 若已无交集，提前返回
-                if (uidSet.isEmpty()) {
-                    return uidSet;
+            for (Map.Entry<String, String[]> entry : tags.entrySet()) {
+                for (String tagValue : entry.getValue()) {
+                    // 得到uid交集
+                    tempUidSet = getUidSet(indexes, entry.getKey(), tagValue);
+                    if (null == uidSet) {
+                        uidSet = tempUidSet;
+                    } else {
+                        uidSet.retainAll(tempUidSet);
+                    }
+                    // 若已无交集，提前返回
+                    if (uidSet.isEmpty()) {
+                        return uidSet;
+                    }
                 }
             }
             // 筛选出时间范围内的记录
