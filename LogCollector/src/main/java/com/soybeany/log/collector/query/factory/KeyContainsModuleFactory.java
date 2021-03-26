@@ -15,11 +15,12 @@ import java.util.List;
  */
 public class KeyContainsModuleFactory implements ModuleFactory {
 
+    private static final String PREFIX = "filter";
     private static final String P_KEY_CONTAINS_KEY = "containsKey";
 
     @Override
     public void onSetupPreprocessors(QueryContext context, List<Preprocessor> preprocessors) {
-        String[] keys = context.queryParam.getParam(LogFilter.PREFIX, P_KEY_CONTAINS_KEY);
+        String[] keys = context.queryParam.getParam(PREFIX, P_KEY_CONTAINS_KEY);
         // 若没有配置，则不作预处理
         if (null == keys) {
             return;

@@ -8,8 +8,6 @@ import com.soybeany.log.core.model.LogPack;
  */
 public interface LogFilter extends Preprocessor {
 
-    String PREFIX = "filter";
-
     /**
      * 对查询到的logPack进行过滤
      *
