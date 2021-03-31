@@ -6,7 +6,6 @@ import com.soybeany.log.core.model.LogException;
 import java.io.File;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -41,7 +40,7 @@ public class DayBasedRollingFileProvider implements FileProvider {
     public Set<File> onGetFiles(QueryParam param) {
         // 若已指定日志文件，则不需再添加
         if (!param.getLogFiles().isEmpty()) {
-            return Collections.emptySet();
+            return param.getLogFiles();
         }
         // 补充日志文件
         LocalDate fDate = param.getFromTime().toLocalDate();
