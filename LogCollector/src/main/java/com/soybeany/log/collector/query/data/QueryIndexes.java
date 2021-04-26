@@ -23,9 +23,14 @@ public class QueryIndexes {
 
     public static QueryIndexes getNew(LogIndexService indexService, LogIndexes logIndexes) {
         QueryIndexes indexes = new QueryIndexes(logIndexes);
-        // 提取临时数据
-        for (LogPack logPack : logIndexes.uidTempMap.values()) {
-            indexService.indexTagAndUid(indexes.uidRanges, indexes.tagUidMap, logPack, false);
+        try {
+            logIndexes.lock.lock();
+            // 提取临时数据
+            for (LogPack logPack : logIndexes.uidTempMap.values()) {
+                indexService.indexTagAndUid(indexes.uidRanges, indexes.tagUidMap, logPack, false);
+            }
+        } finally {
+            logIndexes.lock.unlock();
         }
         return indexes;
     }
@@ -35,8 +40,13 @@ public class QueryIndexes {
     }
 
     public void forEach(String tagKey, BiConsumer<String, Set<String>> consumer) {
-        forEach(logIndexes.tagUidMap, tagKey, consumer);
-        forEach(tagUidMap, tagKey, consumer);
+        try {
+            logIndexes.lock.lock();
+            forEach(logIndexes.tagUidMap, tagKey, consumer);
+            forEach(tagUidMap, tagKey, consumer);
+        } finally {
+            logIndexes.lock.unlock();
+        }
     }
 
     public boolean containUid(String uid) {

@@ -9,12 +9,16 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author Soybeany
  * @date 2021/1/14
  */
 public class LogIndexes implements Serializable {
+
+    public final Lock lock = new ReentrantLock();
 
     /**
      * 日志文件

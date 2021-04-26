@@ -48,22 +48,22 @@ public class QueryService {
 
     public <T> T simpleQueryWithMultiValueParam(Map<String, String[]> param, LogExporter<T> logExporter) {
         QueryResult result = queryResultService.getResult(param);
-        // 如果context中已包含结果，则直接返回
-        if (null == result.logPacks) {
-            try {
-                // 获取锁
-                result.lock();
-                READ_BYTES_LOCAL.set(0L);
-                result.startTimeRecord();
-                result.logPacks = queryLogPacks(result);
-            } catch (Exception e) {
-                throw new LogException(e);
-            } finally {
-                result.stopTimeRecord();
-                READ_BYTES_LOCAL.remove();
-                // 释放锁
-                result.unlock();
+        try {
+            result.lock();
+            if (null == result.logPacks) {
+                try {
+                    READ_BYTES_LOCAL.set(0L);
+                    result.startTimeRecord();
+                    result.logPacks = queryLogPacks(result);
+                } finally {
+                    result.stopTimeRecord();
+                    READ_BYTES_LOCAL.remove();
+                }
             }
+        } catch (Exception e) {
+            throw new LogException(e);
+        } finally {
+            result.unlock();
         }
         return logExporter.export(result);
     }
