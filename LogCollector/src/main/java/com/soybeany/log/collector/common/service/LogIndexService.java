@@ -9,6 +9,7 @@ import com.soybeany.log.collector.common.model.loader.LogPackLoader;
 import com.soybeany.log.collector.common.model.loader.SimpleLogLineLoader;
 import com.soybeany.log.core.model.*;
 import com.soybeany.log.core.util.TimeUtils;
+import com.soybeany.util.cache.IDataHolder;
 
 import java.io.File;
 import java.io.IOException;

@@ -14,9 +14,9 @@ import com.soybeany.log.collector.query.factory.ModuleFactory;
 import com.soybeany.log.collector.query.processor.LogFilter;
 import com.soybeany.log.collector.query.provider.FileProvider;
 import com.soybeany.log.core.model.FileRange;
-import com.soybeany.log.core.model.IDataHolder;
 import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.core.model.LogPack;
+import com.soybeany.util.cache.IDataHolder;
 import com.soybeany.util.file.BdFileUtils;
 
 import java.io.File;

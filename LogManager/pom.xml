@@ -19,10 +19,14 @@
         </dependency>
 
         <dependency>
+            <groupId>com.github.Soybeany.bdlib-server</groupId>
+            <artifactId>bd-util</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
         </dependency>
-
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>

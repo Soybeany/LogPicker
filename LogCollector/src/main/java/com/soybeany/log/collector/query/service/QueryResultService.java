@@ -15,9 +15,9 @@ import com.soybeany.log.collector.query.processor.RangeLimiter;
 import com.soybeany.log.collector.query.provider.FileProvider;
 import com.soybeany.log.collector.scan.ScanService;
 import com.soybeany.log.core.model.FileRange;
-import com.soybeany.log.core.model.IDataHolder;
 import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.core.util.TimeUtils;
+import com.soybeany.util.cache.IDataHolder;
 
 import java.io.File;
 import java.time.LocalDateTime;

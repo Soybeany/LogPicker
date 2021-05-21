@@ -10,8 +10,8 @@ import com.soybeany.log.collector.query.factory.TagContainsModuleFactory;
 import com.soybeany.log.collector.query.factory.UidModuleFactory;
 import com.soybeany.log.collector.query.provider.FileProvider;
 import com.soybeany.log.collector.query.service.QueryService;
-import com.soybeany.log.core.model.IDataHolder;
-import com.soybeany.log.core.model.MemDataHolder;
+import com.soybeany.util.cache.IDataHolder;
+import com.soybeany.util.cache.MemDataHolder;
 
 import java.util.LinkedList;
 import java.util.List;

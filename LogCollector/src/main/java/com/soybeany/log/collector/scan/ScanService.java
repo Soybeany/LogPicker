@@ -5,8 +5,8 @@ import com.soybeany.log.collector.common.data.LogIndexes;
 import com.soybeany.log.collector.common.model.MsgRecorder;
 import com.soybeany.log.collector.common.service.LogIndexService;
 import com.soybeany.log.collector.common.service.RangeService;
-import com.soybeany.log.core.model.IDataHolder;
 import com.soybeany.log.core.model.LogException;
+import com.soybeany.util.cache.IDataHolder;
 
 import java.io.File;
 

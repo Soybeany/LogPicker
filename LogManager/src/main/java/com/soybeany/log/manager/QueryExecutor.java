@@ -2,6 +2,7 @@ package com.soybeany.log.manager;
 
 import com.soybeany.log.core.model.*;
 import com.soybeany.log.core.util.UidUtils;
+import com.soybeany.util.cache.MemDataHolder;
 
 import java.io.IOException;
 import java.util.*;
