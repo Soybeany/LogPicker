@@ -1,25 +1,25 @@
 # LogPicker(日志提取工具)
-###接入指引
+### 接入指引
 * 在pom中引入依赖(版本号只作参考，请使用当前最新版本)
-自定义仓库(必选)
-<repository>
+	* 自定义仓库(必选)
+`<repository>
     <id>jitpack.io</id>
     <url>https://www.jitpack.io</url>
-</repository>
+</repository>`
 
-核心模块（必选）
-<dependency>
+	* 核心模块（必选）
+`<dependency>
 <groupId>com.github.Soybeany.LogPicker</groupId>
 <artifactId>LogCollector</artifactId>
-	<version>4.3.15</version>
-</dependency>
+<version>4.3.15</version>
+</dependency>`
 
-标签模块（可选）
-<dependency>
+	* 标签模块（可选）
+`<dependency>
    <groupId>com.github.Soybeany.LogPicker</groupId>
    <artifactId>LogTagWriter</artifactId>
    <version>4.3.15</version>
-</dependency>
+</dependency>`
 
 * 定义配置(下载源码后，每个属性有说明)
 * 在@PostConstruct时初始化并创建一个QueryService单例
