@@ -26,12 +26,12 @@ public class QueryExecutor extends BaseExecutor {
         holderMap = new MemDataHolder<>(maxResultCount);
     }
 
-    public String getResult(String path, Map<String, String> headers, Map<String, String> param, int expiryInSec) {
+    public String getResult(String path, Map<String, String> headers, Map<String, String[]> param, int expiryInSec) {
         return getResult(path, headers, param, expiryInSec, Comparator.comparing(o -> o.time));
     }
 
-    public String getResult(String path, Map<String, String> headers, Map<String, String> param, int expiryInSec, Comparator<LogPackForRead> comparator) {
-        String resultId = param.get(Constants.PARAM_RESULT_ID);
+    public String getResult(String path, Map<String, String> headers, Map<String, String[]> param, int expiryInSec, Comparator<LogPackForRead> comparator) {
+        String resultId = getSingleValueFromMap(param, Constants.PARAM_RESULT_ID);
         ResultHolder holder;
         Map<String, String> nextResultIdMap = new HashMap<>();
         if (null != resultId) {
@@ -64,7 +64,7 @@ public class QueryExecutor extends BaseExecutor {
 
     // ********************内部方法********************
 
-    private List<Object> getNewResultsByParam(Set<String> logSearchHosts, Set<String> uidSearchHosts, String path, Map<String, String> headers, Map<String, String> param, Map<String, String> nextResultIdMap, Comparator<LogPackForRead> comparator) {
+    private List<Object> getNewResultsByParam(Set<String> logSearchHosts, Set<String> uidSearchHosts, String path, Map<String, String> headers, Map<String, String[]> param, Map<String, String> nextResultIdMap, Comparator<LogPackForRead> comparator) {
         CollectResult result = new CollectResult(comparator);
         // 获取第一批结果(根据查询条件)
         Map<String, Dto<QueryResultVO>> firstDtoMap = batchInvoke(logSearchHosts, host -> getResultByParam(host, path, headers, param));
@@ -73,7 +73,7 @@ public class QueryExecutor extends BaseExecutor {
         return getSecondPartResultsByUid(path, headers, param, result, uidSearchHosts, nextResultIdMap);
     }
 
-    private List<Object> getNewResultsByResultId(String path, Set<String> uidSearchHosts, Map<String, String> resultIdMap, Map<String, String> headers, Map<String, String> param, Map<String, String> nextResultIdMap, Comparator<LogPackForRead> comparator) {
+    private List<Object> getNewResultsByResultId(String path, Set<String> uidSearchHosts, Map<String, String> resultIdMap, Map<String, String> headers, Map<String, String[]> param, Map<String, String> nextResultIdMap, Comparator<LogPackForRead> comparator) {
         CollectResult result = new CollectResult(comparator);
         // 获取第一批结果(根据查询条件)
         Map<String, Dto<QueryResultVO>> firstDtoMap = batchInvoke(resultIdMap.keySet(), host -> getResultByResultId(host, path, headers, param, resultIdMap.get(host)));
@@ -82,14 +82,14 @@ public class QueryExecutor extends BaseExecutor {
         return getSecondPartResultsByUid(path, headers, param, result, uidSearchHosts, nextResultIdMap);
     }
 
-    private List<Object> getSecondPartResultsByUid(String path, Map<String, String> headers, Map<String, String> param, CollectResult result, Set<String> uidSearchHosts, Map<String, String> nextResultIdMap) {
+    private List<Object> getSecondPartResultsByUid(String path, Map<String, String> headers, Map<String, String[]> param, CollectResult result, Set<String> uidSearchHosts, Map<String, String> nextResultIdMap) {
         Set<String> uidSet;
         if (null != uidSearchHosts && !(uidSet = result.getUidSet()).isEmpty()) {
             Map<String, Dto<QueryResultVO>> secondDtoMap = batchInvoke(uidSearchHosts, host -> getResultByUid(host, path, headers, param, uidSet));
             result.add(secondDtoMap);
         }
         // 转换为最终结果
-        return result.output(!Boolean.parseBoolean(param.get(KEY_HIDE_MSG)), nextResultIdMap);
+        return result.output(!Boolean.parseBoolean(getSingleValueFromMap(param, KEY_HIDE_MSG)), nextResultIdMap);
     }
 
     private void checkHosts(Set<String> logSearchHosts, Set<String> uidSearchHosts) {
@@ -106,7 +106,11 @@ public class QueryExecutor extends BaseExecutor {
         }
     }
 
-    private Set<String> toHostSet(String hosts) {
+    private Set<String> toHostSet(String[] hostsArr) {
+        if (null == hostsArr || hostsArr.length == 0) {
+            return null;
+        }
+        String hosts = hostsArr[0];
         if (null == hosts) {
             return null;
         }
@@ -121,28 +125,28 @@ public class QueryExecutor extends BaseExecutor {
         return invokeAll(callables);
     }
 
-    private QueryResultVO getResultByResultId(String host, String path, Map<String, String> headers, Map<String, String> param, String resultId) throws IOException {
-        Map<String, String> newParam = new HashMap<>(param);
-        newParam.put(Constants.PARAM_RESULT_ID, resultId);
+    private QueryResultVO getResultByResultId(String host, String path, Map<String, String> headers, Map<String, String[]> param, String resultId) throws IOException {
+        Map<String, String[]> newParam = new HashMap<>(param);
+        setSingleValueToMap(newParam, Constants.PARAM_RESULT_ID, resultId);
         return getResultByParam(host, path, headers, newParam);
     }
 
-    private QueryResultVO getResultByUid(String host, String path, Map<String, String> headers, Map<String, String> param, Set<String> uidSet) throws IOException {
-        Map<String, String> newParam = new HashMap<>(param);
+    private QueryResultVO getResultByUid(String host, String path, Map<String, String> headers, Map<String, String[]> param, Set<String> uidSet) throws IOException {
+        Map<String, String[]> newParam = new HashMap<>(param);
         Iterator<String> it = uidSet.iterator();
         StringBuilder uidListBuilder = new StringBuilder(it.next());
         while (it.hasNext()) {
             uidListBuilder.append(";").append(it.next());
         }
-        newParam.put(KEY_UID_LIST, uidListBuilder.toString());
+        setSingleValueToMap(newParam, KEY_UID_LIST, uidListBuilder.toString());
         return getResultByParam(host, path, headers, newParam);
     }
 
-    private QueryResultVO getResultByParam(String host, String path, Map<String, String> headers, Map<String, String> param) throws IOException {
+    private QueryResultVO getResultByParam(String host, String path, Map<String, String> headers, Map<String, String[]> param) throws IOException {
         return request(host + path, headers, param, QueryResultVO.class);
     }
 
-    private ResultHolder getNewHolder(Map<String, String> headers, Map<String, String> param, List<Object> result, Set<String> uidSearchHosts, int expiryInSec) {
+    private ResultHolder getNewHolder(Map<String, String> headers, Map<String, String[]> param, List<Object> result, Set<String> uidSearchHosts, int expiryInSec) {
         return new ResultHolder(headers, param, null, result, uidSearchHosts, expiryInSec);
     }
 
@@ -150,6 +154,16 @@ public class QueryExecutor extends BaseExecutor {
         ResultHolder next = new ResultHolder(last.headers, last.param, resultIdMap, null, last.uidSearchHosts, last.expiryInSec);
         last.idOwner.nextResultId = next.idOwner.curResultId;
         next.idOwner.lastResultId = last.idOwner.curResultId;
+    }
+
+    private String getSingleValueFromMap(Map<String, String[]> map, String key) {
+        return Optional.ofNullable(map.get(key))
+                .map(v -> v.length > 0 ? v[0] : null)
+                .orElse(null);
+    }
+
+    private void setSingleValueToMap(Map<String, String[]> map, String key, String value) {
+        map.put(key, new String[]{value});
     }
 
     // ********************内部类********************
@@ -161,13 +175,13 @@ public class QueryExecutor extends BaseExecutor {
     private class ResultHolder {
         public final IdOwner idOwner = new IdOwner();
         public final Map<String, String> headers;
-        public final Map<String, String> param;
+        public final Map<String, String[]> param;
         public final Map<String, String> resultIdMap;
         public final Set<String> uidSearchHosts;
         private final int expiryInSec;
         public List<Object> result;
 
-        private ResultHolder(Map<String, String> headers, Map<String, String> param, Map<String, String> resultIdMap, List<Object> result, Set<String> uidSearchHosts, int expiryInSec) {
+        private ResultHolder(Map<String, String> headers, Map<String, String[]> param, Map<String, String> resultIdMap, List<Object> result, Set<String> uidSearchHosts, int expiryInSec) {
             this.headers = headers;
             this.param = param;
             this.resultIdMap = resultIdMap;

@@ -6,7 +6,6 @@ import com.soybeany.log.manager.QueryExecutor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.PostConstruct;
@@ -32,7 +31,7 @@ public class ManagerController {
     private QueryExecutor queryExecutor;
 
     @RequestMapping("/**")
-    public void forDirectRead(HttpServletRequest request, HttpServletResponse response, @RequestParam Map<String, String> param) throws IOException {
+    public void forDirectRead(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String uri = request.getRequestURI();
         String path = uri.substring(request.getContextPath().length());
         IAction action = actionMap.get(path);
@@ -50,7 +49,7 @@ public class ManagerController {
         }
         String msg;
         try {
-            msg = action.onInvoke(headers, param);
+            msg = action.onInvoke(headers, request.getParameterMap());
         } catch (Exception e) {
             msg = e.getMessage();
         }
@@ -62,7 +61,7 @@ public class ManagerController {
         queryExecutor = LogManager.query(appConfig.maxResultRetain);
         actionMap.put(appConfig.queryPath, new IAction() {
             @Override
-            public String onInvoke(Map<String, String> headers, Map<String, String> param) {
+            public String onInvoke(Map<String, String> headers, Map<String, String[]> param) {
                 return queryExecutor.getResult(appConfig.outerQueryPath, headers, param, appConfig.resultRetainSec);
             }
 
@@ -75,7 +74,7 @@ public class ManagerController {
     }
 
     private interface IAction {
-        String onInvoke(Map<String, String> headers, Map<String, String> param);
+        String onInvoke(Map<String, String> headers, Map<String, String[]> param);
 
         default String onGetContentType() {
             return MediaType.TEXT_PLAIN_VALUE;

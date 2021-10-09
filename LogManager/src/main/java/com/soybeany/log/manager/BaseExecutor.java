@@ -39,7 +39,7 @@ public class BaseExecutor {
         }
     }
 
-    protected <T> T request(String url, Map<String, String> headers, Map<String, String> param, Type type) throws IOException {
+    protected <T> T request(String url, Map<String, String> headers, Map<String, String[]> param, Type type) throws IOException {
         if (!url.startsWith("http")) {
             url = "http://" + url;
         }
@@ -47,7 +47,11 @@ public class BaseExecutor {
             headers = Collections.emptyMap();
         }
         FormBody.Builder bodyBuilder = new FormBody.Builder();
-        param.forEach(bodyBuilder::add);
+        param.forEach((name, values) -> {
+            for (String value : values) {
+                bodyBuilder.addEncoded(name, value);
+            }
+        });
         Request request = new Request.Builder()
                 .post(bodyBuilder.build())
                 .url(url)
