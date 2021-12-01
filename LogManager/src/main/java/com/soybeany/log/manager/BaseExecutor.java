@@ -5,6 +5,7 @@ import okhttp3.*;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.net.URLEncoder;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -49,13 +50,17 @@ public class BaseExecutor {
         headers.put("content-type", "application/x-www-form-urlencoded;charset=utf-8");
         StringBuilder stringBuilder = new StringBuilder();
         param.forEach((name, values) -> {
-            for (String value : values) {
-                stringBuilder.append(name).append("=").append(value).append("&");
+            try {
+                for (String value : values) {
+                    stringBuilder.append(name).append("=").append(URLEncoder.encode(value, "utf-8")).append("&");
+                }
+            } catch (IOException e) {
+                throw new RuntimeException("编码异常", e);
             }
         });
         stringBuilder.deleteCharAt(stringBuilder.length() - 1);
         Request request = new Request.Builder()
-                .post(RequestBody.create(MediaType.parse("application/x-www-form-urlencoded"), stringBuilder.toString()))
+                .post(RequestBody.create(MediaType.parse("application/x-www-form-urlencoded;charset=utf-8"), stringBuilder.toString()))
                 .url(url)
                 .headers(Headers.of(headers))
                 .build();
