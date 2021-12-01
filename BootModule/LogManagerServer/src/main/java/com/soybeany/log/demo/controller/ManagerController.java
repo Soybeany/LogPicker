@@ -49,7 +49,7 @@ public class ManagerController {
         }
         String msg;
         try {
-            msg = action.onInvoke(headers, request.getParameterMap());
+            msg = action.onInvoke(headers, new HashMap<>(request.getParameterMap()));
         } catch (Exception e) {
             msg = e.getMessage();
         }
@@ -59,7 +59,7 @@ public class ManagerController {
     @PostConstruct
     private void init() {
         queryExecutor = LogManager.query(appConfig.maxResultRetain);
-        actionMap.put(appConfig.queryPath, new IAction() {
+        addAction(appConfig.queryPath, new IAction() {
             @Override
             public String onInvoke(Map<String, String> headers, Map<String, String[]> param) {
                 return queryExecutor.getResult(appConfig.outerQueryPath, headers, param, appConfig.resultRetainSec);
@@ -70,7 +70,12 @@ public class ManagerController {
                 return MediaType.APPLICATION_JSON_VALUE;
             }
         });
-        actionMap.put(appConfig.helpPath, (headers, param) -> LogManager.queryHelp(appConfig.helpPath, appConfig.queryPath));
+        addAction(appConfig.helpPath, (headers, param) -> LogManager.queryHelp(appConfig.helpPath, appConfig.queryPath));
+    }
+
+    private void addAction(String key, IAction action) {
+        actionMap.put(key, action);
+        actionMap.put(key + ".do", action);
     }
 
     private interface IAction {

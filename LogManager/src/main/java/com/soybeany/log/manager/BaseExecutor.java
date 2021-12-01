@@ -46,14 +46,16 @@ public class BaseExecutor {
         if (null == headers) {
             headers = Collections.emptyMap();
         }
-        FormBody.Builder bodyBuilder = new FormBody.Builder();
+        headers.put("content-type", "application/x-www-form-urlencoded;charset=utf-8");
+        StringBuilder stringBuilder = new StringBuilder();
         param.forEach((name, values) -> {
             for (String value : values) {
-                bodyBuilder.addEncoded(name, value);
+                stringBuilder.append(name).append("=").append(value).append("&");
             }
         });
+        stringBuilder.deleteCharAt(stringBuilder.length() - 1);
         Request request = new Request.Builder()
-                .post(bodyBuilder.build())
+                .post(RequestBody.create(MediaType.parse("application/x-www-form-urlencoded"), stringBuilder.toString()))
                 .url(url)
                 .headers(Headers.of(headers))
                 .build();
