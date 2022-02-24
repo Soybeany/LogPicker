@@ -11,6 +11,7 @@ import java.io.RandomAccessFile;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -57,6 +58,7 @@ public class SimpleLogLineLoader implements ILogLineLoader {
         logLine.thread = matcher.group(PARSER_KEY_THREAD);
         logLine.level = matcher.group(PARSER_KEY_LEVEL);
         logLine.content = matcher.group(PARSER_KEY_CONTENT);
+        logLine.pos = Optional.ofNullable(matcher.group(PARSER_KEY_POS)).orElse("");
         return logLine;
     }
 

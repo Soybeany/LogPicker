@@ -34,6 +34,11 @@ public class LogLine implements Serializable, Comparable<LogLine> {
      */
     public String content;
 
+    /**
+     * 位置
+     */
+    public String pos;
+
     @Override
     public int compareTo(LogLine o) {
         return time.compareTo(o.time);

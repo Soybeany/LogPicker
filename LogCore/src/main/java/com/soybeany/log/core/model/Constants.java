@@ -32,6 +32,7 @@ public interface Constants {
     String PARSER_KEY_THREAD = "thread";
     String PARSER_KEY_LEVEL = "level";
     String PARSER_KEY_CONTENT = "content";
+    String PARSER_KEY_POS = "pos";
     String PARSER_KEY_KEY = "key";
     String PARSER_KEY_VALUE = "value";
 

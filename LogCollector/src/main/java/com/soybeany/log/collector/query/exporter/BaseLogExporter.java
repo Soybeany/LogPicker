@@ -69,6 +69,9 @@ public abstract class BaseLogExporter<T> implements LogExporter<T> {
             long deltaDays = line.time.toLocalDate().toEpochDay() - earliestTime.toLocalDate().toEpochDay();
             String time = line.time.format(FORMATTER2) + (0 != deltaDays ? "(+" + deltaDays + ")" : "");
             String log = time + " " + line.level + " " + line.content;
+            if (!line.pos.isEmpty()) {
+                log += "(" + line.pos + ")";
+            }
             logs.add(log);
         }
         return logs;
