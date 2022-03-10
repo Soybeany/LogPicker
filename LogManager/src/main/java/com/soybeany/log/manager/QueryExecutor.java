@@ -2,7 +2,8 @@ package com.soybeany.log.manager;
 
 import com.soybeany.log.core.model.*;
 import com.soybeany.log.core.util.UidUtils;
-import com.soybeany.util.cache.MemDataHolder;
+import com.soybeany.util.cache.IDataHolder;
+import com.soybeany.util.cache.StdMemDataHolder;
 
 import java.io.IOException;
 import java.util.*;
@@ -20,10 +21,10 @@ public class QueryExecutor extends BaseExecutor {
     private static final String KEY_UID_LIST = "uidList";
     private static final String HOST_SEPARATE_REGEX = "[,;]";
 
-    private final MemDataHolder<ResultHolder> holderMap;
+    private final IDataHolder<ResultHolder> holderMap;
 
     public QueryExecutor(int maxResultCount) {
-        holderMap = new MemDataHolder<>(maxResultCount);
+        holderMap = new StdMemDataHolder<>(maxResultCount, true);
     }
 
     public String getResult(String path, Map<String, String> headers, Map<String, String[]> param, int expiryInSec) {
@@ -35,7 +36,7 @@ public class QueryExecutor extends BaseExecutor {
         ResultHolder holder;
         Map<String, String> nextResultIdMap = new HashMap<>();
         if (null != resultId) {
-            holder = holderMap.updateAndGet(resultId);
+            holder = holderMap.get(resultId);
             if (null == holder) {
                 throw new LogException("找不到指定resultId对应的result");
             }

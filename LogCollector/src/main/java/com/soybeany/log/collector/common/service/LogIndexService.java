@@ -100,7 +100,7 @@ public class LogIndexService {
 
     private LogIndexes getIndexes(MsgRecorder recorder, IDataHolder<LogIndexes> indexesHolder, File file) {
         String indexKey = getIndexKey(file);
-        LogIndexes indexes = indexesHolder.updateAndGet(indexKey);
+        LogIndexes indexes = indexesHolder.get(indexKey);
         try {
             if (null != indexes) {
                 return indexes.withCheck(logCollectConfig);

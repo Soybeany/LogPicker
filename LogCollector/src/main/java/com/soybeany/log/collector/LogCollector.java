@@ -11,7 +11,7 @@ import com.soybeany.log.collector.query.factory.UidModuleFactory;
 import com.soybeany.log.collector.query.provider.FileProvider;
 import com.soybeany.log.collector.query.service.QueryService;
 import com.soybeany.util.cache.IDataHolder;
-import com.soybeany.util.cache.MemDataHolder;
+import com.soybeany.util.cache.StdMemDataHolder;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -72,8 +72,8 @@ public class LogCollector {
         }
 
         private void setupDefaultDataHolder() {
-            indexesHolder = new MemDataHolder<>(logCollectConfig.maxFileIndexesRetain);
-            resultHolder = new MemDataHolder<>(logCollectConfig.maxResultRetain);
+            indexesHolder = new StdMemDataHolder<>(logCollectConfig.maxFileIndexesRetain, true);
+            resultHolder = new StdMemDataHolder<>(logCollectConfig.maxResultRetain, true);
         }
     }
 

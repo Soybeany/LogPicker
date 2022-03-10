@@ -75,7 +75,7 @@ public class QueryResultService {
             return null;
         }
         // 若指定了resultId，则尝试获取指定的result
-        QueryResult result = resultHolder.updateAndGet(resultId);
+        QueryResult result = resultHolder.get(resultId);
         if (null == result) {
             throw new LogException("指定的resultId不存在或已过期");
         }
