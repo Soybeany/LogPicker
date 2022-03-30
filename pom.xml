@@ -25,7 +25,7 @@
     </modules>
 
     <properties>
-        <bdlib.version>2.6.23</bdlib.version>
+        <bdlib.version>2.6.26</bdlib.version>
     </properties>
 
     <dependencies>
