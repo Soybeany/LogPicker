@@ -98,7 +98,7 @@ public class QueryResultService {
             }
         }
         Map<File, QueryIndexes> indexesMap = new LinkedHashMap<>();
-        for (File logFile : fileProvider.onGetFiles(queryParam)) {
+        for (File logFile : fileProvider.onGetFiles(queryParam.getFileParam())) {
             QueryIndexes indexes = initContextWithFile(queryParam, context, limiters, logFile);
             indexesMap.put(logFile, indexes);
         }

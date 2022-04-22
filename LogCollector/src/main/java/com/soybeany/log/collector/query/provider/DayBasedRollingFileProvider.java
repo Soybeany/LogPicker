@@ -1,6 +1,6 @@
 package com.soybeany.log.collector.query.provider;
 
-import com.soybeany.log.collector.query.data.QueryParam;
+import com.soybeany.log.collector.query.data.FileParam;
 import com.soybeany.log.core.model.LogException;
 
 import java.io.File;
@@ -37,7 +37,7 @@ public class DayBasedRollingFileProvider implements FileProvider {
     }
 
     @Override
-    public Set<File> onGetFiles(QueryParam param) {
+    public Set<File> onGetFiles(FileParam param) {
         // 若已指定日志文件，则不需再添加
         if (!param.getLogFiles().isEmpty()) {
             return param.getLogFiles();

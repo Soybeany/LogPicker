@@ -2,14 +2,17 @@ package com.soybeany.log.collector.common.service;
 
 import com.soybeany.log.collector.common.data.LogCollectConfig;
 import com.soybeany.log.collector.common.data.LogIndexes;
+import com.soybeany.log.collector.common.model.MsgRecorder;
 import com.soybeany.log.collector.common.model.loader.LogLineHolder;
 import com.soybeany.log.core.model.FileRange;
 import com.soybeany.log.core.model.LogLine;
 import com.soybeany.log.core.model.LogPack;
 import com.soybeany.log.core.model.LogTag;
 import com.soybeany.log.core.util.TimeUtils;
+import com.soybeany.util.cache.IDataHolder;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -17,6 +20,8 @@ import java.util.*;
  * @date 2021/1/14
  */
 public class LogIndexService extends BaseScanService<LogIndexes> {
+
+    private final RangeService rangeService;
 
     // ********************静态方法********************
 
@@ -55,7 +60,8 @@ public class LogIndexService extends BaseScanService<LogIndexes> {
     // ********************实例方法********************
 
     public LogIndexService(LogCollectConfig logCollectConfig, RangeService rangeService) {
-        super(logCollectConfig, rangeService);
+        super(logCollectConfig);
+        this.rangeService = rangeService;
     }
 
     @Override
@@ -71,6 +77,10 @@ public class LogIndexService extends BaseScanService<LogIndexes> {
     @Override
     public void onHandleLogPack(LogIndexes indexes, LogPack logPack) {
         indexTagAndUid(indexes.uidRanges, indexes.tagUidMap, logPack, true);
+    }
+
+    public LogIndexes updateAndGetIndexes(MsgRecorder recorder, IDataHolder<LogIndexes> unitHolder, File file) throws IOException {
+        return updateAndGetUnit("索引", recorder, unitHolder, file);
     }
 
     public void indexTagAndUid(Map<String, LinkedList<FileRange>> uidRanges, Map<String, Map<String, Set<String>>> tagUidMap, LogPack logPack, boolean append) {

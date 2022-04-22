@@ -59,6 +59,10 @@ public class LogCollectConfig {
      */
     public int maxFileIndexesRetain = 10;
     /**
+     * 在内存中最多持有的文件统计数
+     */
+    public int maxFileStatisticRetain = 10;
+    /**
      * 在内存中最多持有的结果数
      */
     public int maxResultRetain = 10;
@@ -66,6 +70,10 @@ public class LogCollectConfig {
      * 索引保留的时间
      */
     public int indexRetainSec = 300;
+    /**
+     * 统计数据保留的时间
+     */
+    public int statisticRetainSec = 300;
     /**
      * 查询结果保留的时间
      */
@@ -114,6 +122,11 @@ public class LogCollectConfig {
         return this;
     }
 
+    public LogCollectConfig withMaxFileStatisticRetain(int count) {
+        this.maxFileStatisticRetain = count;
+        return this;
+    }
+
     public LogCollectConfig withMaxResultRetain(int count) {
         this.maxResultRetain = count;
         return this;
@@ -121,6 +134,11 @@ public class LogCollectConfig {
 
     public LogCollectConfig withIndexRetainSec(int sec) {
         this.indexRetainSec = sec;
+        return this;
+    }
+
+    public LogCollectConfig withStatisticRetainSec(int sec) {
+        this.statisticRetainSec = sec;
         return this;
     }
 

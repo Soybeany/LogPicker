@@ -21,22 +21,20 @@ import java.io.IOException;
 public abstract class BaseScanService<Unit extends BaseUnit> implements IUnitHandler<Unit> {
 
     protected final LogCollectConfig logCollectConfig;
-    protected final RangeService rangeService;
 
-    public BaseScanService(LogCollectConfig logCollectConfig, RangeService rangeService) {
+    protected BaseScanService(LogCollectConfig logCollectConfig) {
         this.logCollectConfig = logCollectConfig;
-        this.rangeService = rangeService;
     }
 
-    public Unit updateAndGetUnit(MsgRecorder recorder, IDataHolder<Unit> unitHolder, File file) throws IOException {
+    protected Unit updateAndGetUnit(String unitDesc, MsgRecorder recorder, IDataHolder<Unit> unitHolder, File file) throws IOException {
         // 得到索引
-        Unit unit = getIndexes(recorder, unitHolder, file);
+        Unit unit = getUnit(unitDesc, recorder, unitHolder, file);
         try {
             unit.lock.lock();
             long startByte = unit.scannedBytes;
             // 若索引已是最新，则不再更新
             if (file.length() == startByte) {
-                recorder.write("“" + file.getName() + "”的索引不需更新(" + startByte + ")");
+                recorder.write("“" + file.getName() + "”的" + unitDesc + "不需更新(" + startByte + ")");
                 return unit;
             }
             // 更新索引
@@ -52,7 +50,7 @@ public abstract class BaseScanService<Unit extends BaseUnit> implements IUnitHan
                 unit.scannedBytes = lineLoader.getReadPointer();
             }
             long spendTime = System.currentTimeMillis() - startTime;
-            recorder.write("“" + file.getName() + "”的索引已更新(" + startByte + "~" + unit.scannedBytes + ")，耗时" + spendTime + "ms");
+            recorder.write("“" + file.getName() + "”的" + unitDesc + "已更新(" + startByte + "~" + unit.scannedBytes + ")，耗时" + spendTime + "ms");
             return unit;
         } finally {
             unit.lock.unlock();
@@ -61,23 +59,23 @@ public abstract class BaseScanService<Unit extends BaseUnit> implements IUnitHan
 
     // ***********************内部方法****************************
 
-    private Unit getIndexes(MsgRecorder recorder, IDataHolder<Unit> indexesHolder, File file) {
-        String indexKey = getIndexKey(file);
-        Unit unit = indexesHolder.get(indexKey);
+    private Unit getUnit(String unitDesc, MsgRecorder recorder, IDataHolder<Unit> unitHolder, File file) {
+        String unitKey = getUnitKey(file);
+        Unit unit = unitHolder.get(unitKey);
         try {
             if (null != unit) {
                 unit.check(logCollectConfig);
                 return unit;
             }
         } catch (LogException e) {
-            recorder.write("重新创建“" + file.getName() + "”的索引文件(" + e.getMessage() + ")");
+            recorder.write("重新创建“" + file.getName() + "”的" + unitDesc + "(" + e.getMessage() + ")");
         }
         unit = onGetNewUnit(logCollectConfig, file);
-        indexesHolder.put(indexKey, unit, logCollectConfig.indexRetainSec);
+        unitHolder.put(unitKey, unit, logCollectConfig.indexRetainSec);
         return unit;
     }
 
-    private String getIndexKey(File logFile) {
+    private String getUnitKey(File logFile) {
         try {
             return BDCipherUtils.calculateMd5(logFile.getAbsolutePath());
         } catch (Exception e) {
