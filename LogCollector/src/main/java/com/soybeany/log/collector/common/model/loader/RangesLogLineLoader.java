@@ -32,7 +32,7 @@ public class RangesLogLineLoader implements ILogLineLoader {
     }
 
     @Override
-    public boolean loadNextLogLine(ResultHolder resultHolder) throws IOException {
+    public boolean loadNextLogLine(LogLineHolder resultHolder) throws IOException {
         while (true) {
             // 检查范围
             boolean endOfRange = adjustPointer(resultHolder);
@@ -72,7 +72,7 @@ public class RangesLogLineLoader implements ILogLineLoader {
     /**
      * @return 是否已达全部范围的结尾
      */
-    private boolean adjustPointer(ResultHolder resultHolder) throws IOException {
+    private boolean adjustPointer(LogLineHolder resultHolder) throws IOException {
         // 若未到达当前范围的末尾，则不作处理
         if (getReadPointer() < targetPointer) {
             return false;
@@ -89,14 +89,14 @@ public class RangesLogLineLoader implements ILogLineLoader {
         return false;
     }
 
-    private void resetAndUpdateReadBytes(long pointer, ResultHolder resultHolder) throws IOException {
+    private void resetAndUpdateReadBytes(long pointer, LogLineHolder resultHolder) throws IOException {
         boolean isRead = delegate.resetTo(pointer, resultHolder);
         if (isRead) {
             updateReadBytes(resultHolder);
         }
     }
 
-    private void updateReadBytes(ResultHolder resultHolder) {
+    private void updateReadBytes(LogLineHolder resultHolder) {
         readBytes += (resultHolder.toByte - resultHolder.fromByte);
     }
 

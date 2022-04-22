@@ -17,7 +17,7 @@ public class LogPackLoader<T extends ILogLineLoader> implements Closeable {
     private final int maxLinesPerResultWithNoUid;
     private Map<String, LogPack> uidMap;
 
-    private final ILogLineLoader.ResultHolder holder = new SimpleLogLineLoader.ResultHolder();
+    private final LogLineHolder holder = new LogLineHolder();
     private IListener listener;
 
     public LogPackLoader(T logLineLoader, String noUidPlaceholder, int maxLinesPerResultWithNoUid, Map<String, LogPack> uidMap) {
@@ -120,7 +120,7 @@ public class LogPackLoader<T extends ILogLineLoader> implements Closeable {
     // ********************内部类********************
 
     public interface IListener {
-        void onReadLine(ILogLineLoader.ResultHolder holder);
+        void onReadLine(LogLineHolder holder);
     }
 
 }

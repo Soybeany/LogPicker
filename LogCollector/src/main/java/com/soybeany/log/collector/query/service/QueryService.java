@@ -93,7 +93,7 @@ public class QueryService {
                 }
             }
             // 检测文件是否有变更
-            result.context.indexesMap.values().forEach(indexes -> indexes.withCheck(logCollectConfig));
+            result.context.indexesMap.values().forEach(indexes -> indexes.check(logCollectConfig));
         } finally {
             // 释放加载器持有器
             for (LogPackLoader<RangesLogLineLoader> loader : loaderMap.values()) {

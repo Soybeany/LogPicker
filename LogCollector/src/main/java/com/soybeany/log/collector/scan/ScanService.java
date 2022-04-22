@@ -31,7 +31,7 @@ public class ScanService {
 
     private LogIndexes scanFile(MsgRecorder recorder, IDataHolder<LogIndexes> indexesHolder, File file) {
         try {
-            return logIndexService.updateAndGetIndexes(recorder, indexesHolder, file);
+            return logIndexService.updateAndGetUnit(recorder, indexesHolder, file);
         } catch (Exception e) {
             throw new LogException("日志文件扫描异常:" + e.getMessage());
         }

@@ -79,7 +79,7 @@ public class SimpleLogLineLoader implements ILogLineLoader {
     // ********************公开方法********************
 
     @Override
-    public boolean loadNextLogLine(ResultHolder resultHolder) throws IOException {
+    public boolean loadNextLogLine(LogLineHolder resultHolder) throws IOException {
         while (true) {
             String line = raf.readLine();
             // 若没有读到新的行，则直接返回
@@ -123,7 +123,7 @@ public class SimpleLogLineLoader implements ILogLineLoader {
         raf.close();
     }
 
-    public boolean resetTo(long pointer, ResultHolder resultHolder) throws IOException {
+    public boolean resetTo(long pointer, LogLineHolder resultHolder) throws IOException {
         raf.seek(nextFromByte = pointer);
         boolean isRead = popLastLogLine(resultHolder);
         readBytes = 0;
@@ -146,7 +146,7 @@ public class SimpleLogLineLoader implements ILogLineLoader {
         lastLogLineHolder.append(toByte, lineString);
     }
 
-    private boolean popLastLogLine(ResultHolder resultHolder) {
+    private boolean popLastLogLine(LogLineHolder resultHolder) {
         // 若已没有上一行，直接返回
         if (null == lastLogLineHolder.logLine) {
             return false;
@@ -157,7 +157,7 @@ public class SimpleLogLineLoader implements ILogLineLoader {
         return true;
     }
 
-    private void setupResult(ResultHolder resultHolder) {
+    private void setupResult(LogLineHolder resultHolder) {
         lastLogLineHolder.mergeTempContent();
         resultHolder.fromByte = lastLogLineHolder.fromByte;
         resultHolder.toByte = readPointer = lastLogLineHolder.toByte;

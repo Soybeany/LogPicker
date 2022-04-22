@@ -1,28 +1,22 @@
 package com.soybeany.log.collector.common.service;
 
-import com.soybeany.config.BDCipherUtils;
 import com.soybeany.log.collector.common.data.LogCollectConfig;
 import com.soybeany.log.collector.common.data.LogIndexes;
-import com.soybeany.log.collector.common.model.MsgRecorder;
-import com.soybeany.log.collector.common.model.loader.ILogLineLoader;
-import com.soybeany.log.collector.common.model.loader.LogPackLoader;
-import com.soybeany.log.collector.common.model.loader.SimpleLogLineLoader;
-import com.soybeany.log.core.model.*;
+import com.soybeany.log.collector.common.model.loader.LogLineHolder;
+import com.soybeany.log.core.model.FileRange;
+import com.soybeany.log.core.model.LogLine;
+import com.soybeany.log.core.model.LogPack;
+import com.soybeany.log.core.model.LogTag;
 import com.soybeany.log.core.util.TimeUtils;
-import com.soybeany.util.cache.IDataHolder;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.*;
 
 /**
  * @author Soybeany
  * @date 2021/1/14
  */
-public class LogIndexService {
-
-    private final LogCollectConfig logCollectConfig;
-    private final RangeService rangeService;
+public class LogIndexService extends BaseScanService<LogIndexes> {
 
     // ********************静态方法********************
 
@@ -61,56 +55,22 @@ public class LogIndexService {
     // ********************实例方法********************
 
     public LogIndexService(LogCollectConfig logCollectConfig, RangeService rangeService) {
-        this.logCollectConfig = logCollectConfig;
-        this.rangeService = rangeService;
+        super(logCollectConfig, rangeService);
     }
 
-    public LogIndexes updateAndGetIndexes(MsgRecorder recorder, IDataHolder<LogIndexes> indexesHolder, File file) throws IOException {
-        // 得到索引
-        LogIndexes indexes = getIndexes(recorder, indexesHolder, file);
-        try {
-            indexes.lock.lock();
-            long startByte = indexes.scannedBytes;
-            // 若索引已是最新，则不再更新
-            if (file.length() == startByte) {
-                recorder.write("“" + file.getName() + "”的索引不需更新(" + startByte + ")");
-                return indexes;
-            }
-            // 更新索引
-            long startTime = System.currentTimeMillis();
-            try (SimpleLogLineLoader lineLoader = new SimpleLogLineLoader(indexes.logFile, logCollectConfig.logCharset, logCollectConfig.lineParsePattern, logCollectConfig.tagParsePattern, logCollectConfig.lineTimeFormatter);
-                 LogPackLoader<ILogLineLoader> packLoader = new LogPackLoader<>(lineLoader, logCollectConfig.noUidPlaceholder, logCollectConfig.maxLinesPerResultWithNoUid, indexes.uidTempMap)) {
-                lineLoader.resetTo(startByte, null); // 因为不会有旧数据，理论上这里不会null异常
-                packLoader.setListener(holder -> indexTime(indexes, holder.fromByte, holder.logLine));
-                LogPack logPack;
-                while (null != (logPack = packLoader.loadNextCompleteLogPack())) {
-                    indexTagAndUid(indexes.uidRanges, indexes.tagUidMap, logPack, true);
-                }
-                indexes.scannedBytes = lineLoader.getReadPointer();
-            }
-            long spendTime = System.currentTimeMillis() - startTime;
-            recorder.write("“" + file.getName() + "”的索引已更新(" + startByte + "~" + indexes.scannedBytes + ")，耗时" + spendTime + "ms");
-            return indexes;
-        } finally {
-            indexes.lock.unlock();
-        }
+    @Override
+    public LogIndexes onGetNewUnit(LogCollectConfig logCollectConfig, File logFile) {
+        return new LogIndexes(logCollectConfig, logFile);
     }
 
-    // ********************内部方法********************
+    @Override
+    public void onHandleLogLine(LogIndexes indexes, LogLineHolder holder) {
+        indexTime(indexes, holder.fromByte, holder.logLine);
+    }
 
-    private LogIndexes getIndexes(MsgRecorder recorder, IDataHolder<LogIndexes> indexesHolder, File file) {
-        String indexKey = getIndexKey(file);
-        LogIndexes indexes = indexesHolder.get(indexKey);
-        try {
-            if (null != indexes) {
-                return indexes.withCheck(logCollectConfig);
-            }
-        } catch (LogException e) {
-            recorder.write("重新创建“" + file.getName() + "”的索引文件(" + e.getMessage() + ")");
-        }
-        indexes = new LogIndexes(logCollectConfig, file);
-        indexesHolder.put(indexKey, indexes, logCollectConfig.indexRetainSec);
-        return indexes;
+    @Override
+    public void onHandleLogPack(LogIndexes indexes, LogPack logPack) {
+        indexTagAndUid(indexes.uidRanges, indexes.tagUidMap, logPack, true);
     }
 
     public void indexTagAndUid(Map<String, LinkedList<FileRange>> uidRanges, Map<String, Map<String, Set<String>>> tagUidMap, LogPack logPack, boolean append) {
@@ -119,6 +79,8 @@ public class LogIndexService {
         }
         indexUid(uidRanges, logPack, append);
     }
+
+    // ********************内部方法********************
 
     private void indexTag(Map<String, Map<String, Set<String>>> tagUidMap, LogTag logTag) {
         if (!logCollectConfig.tagsToIndex.contains(logTag.key)) {
@@ -149,14 +111,6 @@ public class LogIndexService {
 
     private long getModifiedMillis(LogLine logLine) {
         return TimeUtils.toMillis(logLine.time) / 1000 * 1000;
-    }
-
-    private String getIndexKey(File logFile) {
-        try {
-            return BDCipherUtils.calculateMd5(logFile.getAbsolutePath());
-        } catch (Exception e) {
-            throw new LogException(e);
-        }
     }
 
 }
