@@ -58,7 +58,9 @@ public class BaseExecutor {
                 throw new RuntimeException("编码异常", e);
             }
         });
-        stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+        if (stringBuilder.length() > 1) {
+            stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+        }
         Request request = new Request.Builder()
                 .post(RequestBody.create(MediaType.parse("application/x-www-form-urlencoded;charset=utf-8"), stringBuilder.toString()))
                 .url(url)
