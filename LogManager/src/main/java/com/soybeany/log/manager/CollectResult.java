@@ -61,13 +61,29 @@ class CollectResult {
                 logPart.add(pack);
             });
         });
-        // 排序
-        logPart.sort(comparator);
         // 组装
         List<Object> output = new LinkedList<>();
         output.add(infoPart);
-        output.addAll(logPart);
+        output.addAll(getSorted(logPart));
         return output;
+    }
+
+    private List<LogPackForRead> getSorted(List<LogPackForRead> logPart) {
+        Map<String, List<LogPackForRead>> tmp = new HashMap<>();
+        // 分组
+        for (LogPackForRead part : logPart) {
+            tmp.computeIfAbsent(part.uid, k -> new ArrayList<>()).add(part);
+        }
+        // 组间排序
+        List<List<LogPackForRead>> tmp2 = new ArrayList<>(tmp.values());
+        tmp2.sort((g1, g2) -> comparator.compare(g1.get(0), g2.get(0)));
+        // 组内排序并整合到最终结果
+        List<LogPackForRead> result = new ArrayList<>();
+        tmp2.forEach(list -> {
+            list.sort(comparator);
+            result.addAll(list);
+        });
+        return result;
     }
 
     private Set<String> getAllServers() {
