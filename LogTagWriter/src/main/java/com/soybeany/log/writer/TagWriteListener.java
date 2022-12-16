@@ -11,7 +11,7 @@ import javax.servlet.http.HttpServletRequest;
  */
 public abstract class TagWriteListener implements ServletRequestListener {
 
-    private static final String KEY_TRACE_ID = "traceId";
+    private final String traceIdAttributeKey = onGetTraceIdAttributeKey();
 
     private final TagWriter tagWriter = onGetTagWriter();
 
@@ -27,10 +27,12 @@ public abstract class TagWriteListener implements ServletRequestListener {
             return;
         }
         // 设置并输出开始标签
-        TagWriter.setupTraceId(true);
-        tagWriter.writeStartTag();
-        tagWriter.writeUrlTag(onGetUrlToWrite(request));
-        request.setAttribute(KEY_TRACE_ID, TagWriter.getTraceId());
+        String traceId = onSetupTraceId();
+        if (null != traceId) {
+            TagWriter.setupTraceId(true, traceId);
+        }
+        tagWriter.writeStdBorderTag(onGetUrlToWrite(request), true);
+        request.setAttribute(traceIdAttributeKey, TagWriter.getTraceId());
     }
 
     @Override
@@ -52,12 +54,20 @@ public abstract class TagWriteListener implements ServletRequestListener {
 
     // ********************子类重写********************
 
+    protected String onGetTraceIdAttributeKey() {
+        return "traceId";
+    }
+
     protected TagWriter onGetTagWriter() {
         return new TagWriter();
     }
 
     protected String onGetUrlToWrite(HttpServletRequest request) {
         return request.getRequestURI().substring(request.getContextPath().length());
+    }
+
+    protected String onSetupTraceId() {
+        return null;
     }
 
     protected boolean shouldWriteFlags(HttpServletRequest request) {
@@ -67,7 +77,7 @@ public abstract class TagWriteListener implements ServletRequestListener {
     // ********************内部方法********************
 
     private boolean hasNoStartFlag(ServletRequest request) {
-        return null == request.getAttribute(KEY_TRACE_ID);
+        return null == request.getAttribute(traceIdAttributeKey);
     }
 
 }

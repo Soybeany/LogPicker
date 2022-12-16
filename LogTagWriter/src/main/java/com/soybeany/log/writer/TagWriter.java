@@ -7,7 +7,6 @@ import org.slf4j.MDC;
 
 import javax.servlet.ServletRequest;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -36,11 +35,17 @@ public class TagWriter {
     }
 
     public static void setupTraceId(boolean forceNew) {
+        setupTraceId(forceNew, null);
+    }
+
+    public static void setupTraceId(boolean forceNew, String traceId) {
         if (!forceNew && null != getTraceId()) {
             return;
         }
-        String uuid = UUID.randomUUID().toString().replaceAll("-", "").substring(24);
-        MDC.put(KEY_TRACE_ID, uuid);
+        if (null == traceId) {
+            traceId = UUID.randomUUID().toString().replaceAll("-", "").substring(24);
+        }
+        MDC.put(KEY_TRACE_ID, traceId);
     }
 
     public static String getTraceId() {
@@ -53,12 +58,11 @@ public class TagWriter {
 
     // ********************记录区********************
 
-    public void writeStdBorderTag(String url, String info, boolean isStart) {
+    public void writeStdBorderTag(String url, boolean isStart) {
         if (isStart) {
             setupTraceId(false);
             writeStartTag();
             writeUrlTag(url);
-            Optional.ofNullable(info).ifPresent(this::writeInfoTag);
         } else {
             writeEndTag();
             removeTraceId();
