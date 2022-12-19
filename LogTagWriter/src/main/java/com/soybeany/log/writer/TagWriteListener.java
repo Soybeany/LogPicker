@@ -27,7 +27,7 @@ public abstract class TagWriteListener implements ServletRequestListener {
             return;
         }
         // 设置并输出开始标签
-        String traceId = onSetupTraceId();
+        String traceId = onSetupTraceId(request);
         if (null != traceId) {
             TagWriter.setupTraceId(true, traceId);
         }
@@ -66,7 +66,7 @@ public abstract class TagWriteListener implements ServletRequestListener {
         return request.getRequestURI().substring(request.getContextPath().length());
     }
 
-    protected String onSetupTraceId() {
+    protected String onSetupTraceId(HttpServletRequest request) {
         return null;
     }
 
