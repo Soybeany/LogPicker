@@ -62,7 +62,7 @@ public class ManagerController {
         addAction(appConfig.queryPath, new IAction() {
             @Override
             public String onInvoke(Map<String, String> headers, Map<String, String[]> param) {
-                return queryExecutor.getResult(appConfig.outerQueryPath, headers, param, appConfig.resultRetainSec);
+                return queryExecutor.getResult(headers, param, appConfig.resultRetainSec);
             }
 
             @Override

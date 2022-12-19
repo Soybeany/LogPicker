@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "config")
 public class AppConfig {
 
-    public String outerQueryPath;
     public String queryPath;
     public String helpPath;
     public int maxResultRetain;
@@ -23,10 +22,6 @@ public class AppConfig {
 
     public void setHelpPath(String helpPath) {
         this.helpPath = helpPath;
-    }
-
-    public void setOuterQueryPath(String outerQueryPath) {
-        this.outerQueryPath = outerQueryPath;
     }
 
     public void setMaxResultRetain(int maxResultRetain) {
