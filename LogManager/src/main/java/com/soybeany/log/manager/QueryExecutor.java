@@ -15,11 +15,11 @@ import java.util.concurrent.Callable;
  */
 public class QueryExecutor extends BaseExecutor {
 
-    private static final String KEY_LOG_SEARCH_HOSTS = "logSearchUrls";
-    private static final String KEY_UID_SEARCH_HOSTS = "uidSearchUrls";
+    private static final String KEY_LOG_SEARCH_URLS = "logSearchUrls";
+    private static final String KEY_UID_SEARCH_URLS = "uidSearchUrls";
     private static final String KEY_HIDE_MSG = "hideMsg";
     private static final String KEY_UID_LIST = "uidList";
-    private static final String HOST_SEPARATE_REGEX = "[,;]";
+    private static final String URL_SEPARATE_REGEX = "[,;]";
 
     private final IDataHolder<ResultHolder> holderMap;
 
@@ -45,14 +45,14 @@ public class QueryExecutor extends BaseExecutor {
                 return holder.getResultString();
             }
             // 使用resultId进行查找
-            holder.result = getNewResultsByResultId(holder.uidSearchHosts, holder.resultIdMap, holder.headers, holder.param, nextResultIdMap, comparator);
+            holder.result = getNewResultsByResultId(holder.uidSearchUrls, holder.resultIdMap, holder.headers, holder.param, nextResultIdMap, comparator);
         } else {
             // 使用参数进行查找
-            Set<String> logSearchHosts = toHostSet(param.remove(KEY_LOG_SEARCH_HOSTS));
-            Set<String> uidSearchHosts = toHostSet(param.remove(KEY_UID_SEARCH_HOSTS));
-            checkHosts(logSearchHosts, uidSearchHosts);
-            List<Object> list = getNewResultsByParam(logSearchHosts, uidSearchHosts, headers, param, nextResultIdMap, comparator);
-            holder = getNewHolder(headers, param, list, uidSearchHosts, expiryInSec);
+            Set<String> logSearchUrls = toUrlSet(param.remove(KEY_LOG_SEARCH_URLS));
+            Set<String> uidSearchUrls = toUrlSet(param.remove(KEY_UID_SEARCH_URLS));
+            checkUrls(logSearchUrls, uidSearchUrls);
+            List<Object> list = getNewResultsByParam(logSearchUrls, uidSearchUrls, headers, param, nextResultIdMap, comparator);
+            holder = getNewHolder(headers, param, list, uidSearchUrls, expiryInSec);
         }
         // 按需分页
         if (!nextResultIdMap.isEmpty()) {
@@ -65,63 +65,63 @@ public class QueryExecutor extends BaseExecutor {
 
     // ********************内部方法********************
 
-    private List<Object> getNewResultsByParam(Set<String> logSearchHosts, Set<String> uidSearchHosts, Map<String, String> headers, Map<String, String[]> param, Map<String, String> nextResultIdMap, Comparator<LogPackForRead> comparator) {
+    private List<Object> getNewResultsByParam(Set<String> logSearchUrls, Set<String> uidSearchUrls, Map<String, String> headers, Map<String, String[]> param, Map<String, String> nextResultIdMap, Comparator<LogPackForRead> comparator) {
         CollectResult result = new CollectResult(comparator);
         // 获取第一批结果(根据查询条件)
-        Map<String, Dto<QueryResultVO>> firstDtoMap = batchInvoke(logSearchHosts, host -> getResultByParam(host, headers, param));
+        Map<String, Dto<QueryResultVO>> firstDtoMap = batchInvoke(logSearchUrls, url -> getResultByParam(url, headers, param));
         result.add(firstDtoMap);
         // 获取第二批结果(按需，根据uid)
-        return getSecondPartResultsByUid(headers, param, result, uidSearchHosts, nextResultIdMap);
+        return getSecondPartResultsByUid(headers, param, result, uidSearchUrls, nextResultIdMap);
     }
 
-    private List<Object> getNewResultsByResultId(Set<String> uidSearchHosts, Map<String, String> resultIdMap, Map<String, String> headers, Map<String, String[]> param, Map<String, String> nextResultIdMap, Comparator<LogPackForRead> comparator) {
+    private List<Object> getNewResultsByResultId(Set<String> uidSearchUrls, Map<String, String> resultIdMap, Map<String, String> headers, Map<String, String[]> param, Map<String, String> nextResultIdMap, Comparator<LogPackForRead> comparator) {
         CollectResult result = new CollectResult(comparator);
         // 获取第一批结果(根据查询条件)
         Map<String, Dto<QueryResultVO>> firstDtoMap = batchInvoke(resultIdMap.keySet(), url -> getResultByResultId(url, headers, param, resultIdMap.get(url)));
         result.add(firstDtoMap);
         // 获取第二批结果(按需，根据uid)
-        return getSecondPartResultsByUid(headers, param, result, uidSearchHosts, nextResultIdMap);
+        return getSecondPartResultsByUid(headers, param, result, uidSearchUrls, nextResultIdMap);
     }
 
-    private List<Object> getSecondPartResultsByUid(Map<String, String> headers, Map<String, String[]> param, CollectResult result, Set<String> uidSearchHosts, Map<String, String> nextResultIdMap) {
+    private List<Object> getSecondPartResultsByUid(Map<String, String> headers, Map<String, String[]> param, CollectResult result, Set<String> uidSearchUrls, Map<String, String> nextResultIdMap) {
         Set<String> uidSet;
-        if (null != uidSearchHosts && !(uidSet = result.getUidSet()).isEmpty()) {
-            Map<String, Dto<QueryResultVO>> secondDtoMap = batchInvoke(uidSearchHosts, url -> getResultByUid(url, headers, param, uidSet));
+        if (null != uidSearchUrls && !(uidSet = result.getUidSet()).isEmpty()) {
+            Map<String, Dto<QueryResultVO>> secondDtoMap = batchInvoke(uidSearchUrls, url -> getResultByUid(url, headers, param, uidSet));
             result.add(secondDtoMap);
         }
         // 转换为最终结果
         return result.output(!Boolean.parseBoolean(getSingleValueFromMap(param, KEY_HIDE_MSG)), nextResultIdMap);
     }
 
-    private void checkHosts(Set<String> logSearchHosts, Set<String> uidSearchHosts) {
-        if (null == logSearchHosts) {
-            throw new LogException("未使用“logSearchHosts”指定要进行日志搜索的服务器");
+    private void checkUrls(Set<String> logSearchUrls, Set<String> uidSearchUrls) {
+        if (null == logSearchUrls) {
+            throw new LogException("未使用“logSearchUrls”指定要进行日志搜索的服务器");
         }
-        if (null == uidSearchHosts) {
+        if (null == uidSearchUrls) {
             return;
         }
-        Set<String> temp = new HashSet<>(logSearchHosts);
-        temp.retainAll(uidSearchHosts);
+        Set<String> temp = new HashSet<>(logSearchUrls);
+        temp.retainAll(uidSearchUrls);
         if (!temp.isEmpty()) {
-            throw new LogException("searchUidHosts中不能含有searchLogHosts中指定的服务器");
+            throw new LogException("searchUidUrls中不能含有searchLogUrls中指定的服务器");
         }
     }
 
-    private Set<String> toHostSet(String[] hostsArr) {
-        if (null == hostsArr || hostsArr.length == 0) {
+    private Set<String> toUrlSet(String[] urlsArr) {
+        if (null == urlsArr || urlsArr.length == 0) {
             return null;
         }
-        String hosts = hostsArr[0];
-        if (null == hosts) {
+        String urls = urlsArr[0];
+        if (null == urls) {
             return null;
         }
-        return new HashSet<>(Arrays.asList(hosts.split(HOST_SEPARATE_REGEX)));
+        return new HashSet<>(Arrays.asList(urls.split(URL_SEPARATE_REGEX)));
     }
 
-    private Map<String, Dto<QueryResultVO>> batchInvoke(Set<String> hosts, BatchInvokeCallback callback) {
+    private Map<String, Dto<QueryResultVO>> batchInvoke(Set<String> urls, BatchInvokeCallback callback) {
         Map<String, Callable<QueryResultVO>> callables = new HashMap<>();
-        for (String host : hosts) {
-            callables.put(host, () -> callback.onInvoke(host));
+        for (String url : urls) {
+            callables.put(url, () -> callback.onInvoke(url));
         }
         return invokeAll(callables);
     }
@@ -147,12 +147,12 @@ public class QueryExecutor extends BaseExecutor {
         return request(url, headers, param, QueryResultVO.class);
     }
 
-    private ResultHolder getNewHolder(Map<String, String> headers, Map<String, String[]> param, List<Object> result, Set<String> uidSearchHosts, int expiryInSec) {
-        return new ResultHolder(headers, param, null, result, uidSearchHosts, expiryInSec);
+    private ResultHolder getNewHolder(Map<String, String> headers, Map<String, String[]> param, List<Object> result, Set<String> uidSearchUrls, int expiryInSec) {
+        return new ResultHolder(headers, param, null, result, uidSearchUrls, expiryInSec);
     }
 
     private void generateNextHolder(ResultHolder last, Map<String, String> resultIdMap) {
-        ResultHolder next = new ResultHolder(last.headers, last.param, resultIdMap, null, last.uidSearchHosts, last.expiryInSec);
+        ResultHolder next = new ResultHolder(last.headers, last.param, resultIdMap, null, last.uidSearchUrls, last.expiryInSec);
         last.idOwner.nextResultId = next.idOwner.curResultId;
         next.idOwner.lastResultId = last.idOwner.curResultId;
     }
@@ -170,7 +170,7 @@ public class QueryExecutor extends BaseExecutor {
     // ********************内部类********************
 
     private interface BatchInvokeCallback {
-        QueryResultVO onInvoke(String host) throws IOException;
+        QueryResultVO onInvoke(String url) throws IOException;
     }
 
     private class ResultHolder {
@@ -178,16 +178,16 @@ public class QueryExecutor extends BaseExecutor {
         public final Map<String, String> headers;
         public final Map<String, String[]> param;
         public final Map<String, String> resultIdMap;
-        public final Set<String> uidSearchHosts;
+        public final Set<String> uidSearchUrls;
         private final int expiryInSec;
         public List<Object> result;
 
-        private ResultHolder(Map<String, String> headers, Map<String, String[]> param, Map<String, String> resultIdMap, List<Object> result, Set<String> uidSearchHosts, int expiryInSec) {
+        private ResultHolder(Map<String, String> headers, Map<String, String[]> param, Map<String, String> resultIdMap, List<Object> result, Set<String> uidSearchUrls, int expiryInSec) {
             this.headers = headers;
             this.param = param;
             this.resultIdMap = resultIdMap;
             this.result = result;
-            this.uidSearchHosts = uidSearchHosts;
+            this.uidSearchUrls = uidSearchUrls;
             String uid = UidUtils.getNew();
             idOwner.curResultId = uid;
             holderMap.put(uid, this, this.expiryInSec = expiryInSec);
