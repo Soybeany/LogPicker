@@ -2,6 +2,7 @@ package com.soybeany.log.manager;
 
 import com.soybeany.log.core.model.LogPackForRead;
 import com.soybeany.log.core.model.QueryResultVO;
+import com.soybeany.log.manager.executor.QueryExecutor;
 
 import java.util.*;
 
@@ -18,7 +19,7 @@ class CollectResult {
         this.comparator = comparator;
     }
 
-    public void add(Map<String, BaseExecutor.Dto<QueryResultVO>> dtoList) {
+    public void add(Map<String, QueryExecutor.Dto<QueryResultVO>> dtoList) {
         dtoList.forEach((server, dto) -> {
             if (dto.isNorm) {
                 voMap.put(server, dto.data);
@@ -67,6 +68,8 @@ class CollectResult {
         output.addAll(getSorted(logPart));
         return output;
     }
+
+    // ***********************内部方法****************************
 
     private List<LogPackForRead> getSorted(List<LogPackForRead> logPart) {
         Map<String, List<LogPackForRead>> tmp = new HashMap<>();

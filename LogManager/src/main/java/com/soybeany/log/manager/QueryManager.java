@@ -2,18 +2,19 @@ package com.soybeany.log.manager;
 
 import com.soybeany.log.core.model.*;
 import com.soybeany.log.core.util.UidUtils;
+import com.soybeany.log.manager.executor.QueryExecutor;
 import com.soybeany.util.cache.IDataHolder;
 import com.soybeany.util.cache.StdMemDataHolder;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.Callable;
+import java.util.concurrent.*;
 
 /**
  * @author Soybeany
  * @date 2021/2/5
  */
-public class QueryExecutor extends BaseExecutor {
+public class QueryManager {
 
     private static final String KEY_LOG_SEARCH_URLS = "logSearchUrls";
     private static final String KEY_UID_SEARCH_URLS = "uidSearchUrls";
@@ -21,9 +22,11 @@ public class QueryExecutor extends BaseExecutor {
     private static final String KEY_UID_LIST = "uidList";
     private static final String URL_SEPARATE_REGEX = "[,;]";
 
+    private final QueryExecutor queryExecutor;
     private final IDataHolder<ResultHolder> holderMap;
 
-    public QueryExecutor(int maxResultCount) {
+    public QueryManager(QueryExecutor queryExecutor, int maxResultCount) {
+        this.queryExecutor = queryExecutor;
         holderMap = new StdMemDataHolder<>(maxResultCount, true);
     }
 
@@ -68,7 +71,7 @@ public class QueryExecutor extends BaseExecutor {
     private List<Object> getNewResultsByParam(Set<String> logSearchUrls, Set<String> uidSearchUrls, Map<String, String> headers, Map<String, String[]> param, Map<String, String> nextResultIdMap, Comparator<LogPackForRead> comparator) {
         CollectResult result = new CollectResult(comparator);
         // 获取第一批结果(根据查询条件)
-        Map<String, Dto<QueryResultVO>> firstDtoMap = batchInvoke(logSearchUrls, url -> getResultByParam(url, headers, param));
+        Map<String, QueryExecutor.Dto<QueryResultVO>> firstDtoMap = batchInvoke(logSearchUrls, url -> getResultByParam(url, headers, param));
         result.add(firstDtoMap);
         // 获取第二批结果(按需，根据uid)
         return getSecondPartResultsByUid(headers, param, result, uidSearchUrls, nextResultIdMap);
@@ -77,7 +80,7 @@ public class QueryExecutor extends BaseExecutor {
     private List<Object> getNewResultsByResultId(Set<String> uidSearchUrls, Map<String, String> resultIdMap, Map<String, String> headers, Map<String, String[]> param, Map<String, String> nextResultIdMap, Comparator<LogPackForRead> comparator) {
         CollectResult result = new CollectResult(comparator);
         // 获取第一批结果(根据查询条件)
-        Map<String, Dto<QueryResultVO>> firstDtoMap = batchInvoke(resultIdMap.keySet(), url -> getResultByResultId(url, headers, param, resultIdMap.get(url)));
+        Map<String, QueryExecutor.Dto<QueryResultVO>> firstDtoMap = batchInvoke(resultIdMap.keySet(), url -> getResultByResultId(url, headers, param, resultIdMap.get(url)));
         result.add(firstDtoMap);
         // 获取第二批结果(按需，根据uid)
         return getSecondPartResultsByUid(headers, param, result, uidSearchUrls, nextResultIdMap);
@@ -86,7 +89,7 @@ public class QueryExecutor extends BaseExecutor {
     private List<Object> getSecondPartResultsByUid(Map<String, String> headers, Map<String, String[]> param, CollectResult result, Set<String> uidSearchUrls, Map<String, String> nextResultIdMap) {
         Set<String> uidSet;
         if (null != uidSearchUrls && !(uidSet = result.getUidSet()).isEmpty()) {
-            Map<String, Dto<QueryResultVO>> secondDtoMap = batchInvoke(uidSearchUrls, url -> getResultByUid(url, headers, param, uidSet));
+            Map<String, QueryExecutor.Dto<QueryResultVO>> secondDtoMap = batchInvoke(uidSearchUrls, url -> getResultByUid(url, headers, param, uidSet));
             result.add(secondDtoMap);
         }
         // 转换为最终结果
@@ -118,12 +121,32 @@ public class QueryExecutor extends BaseExecutor {
         return new HashSet<>(Arrays.asList(urls.split(URL_SEPARATE_REGEX)));
     }
 
-    private Map<String, Dto<QueryResultVO>> batchInvoke(Set<String> urls, BatchInvokeCallback callback) {
+    private Map<String, QueryExecutor.Dto<QueryResultVO>> batchInvoke(Set<String> urls, BatchInvokeCallback callback) {
         Map<String, Callable<QueryResultVO>> callables = new HashMap<>();
         for (String url : urls) {
             callables.put(url, () -> callback.onInvoke(url));
         }
         return invokeAll(callables);
+    }
+
+    @SuppressWarnings("AlibabaThreadPoolCreation")
+    private <T> Map<String, QueryExecutor.Dto<T>> invokeAll(Map<String, Callable<T>> tasks) {
+        ExecutorService service = Executors.newCachedThreadPool();
+        try {
+            Map<String, Future<T>> futures = new HashMap<>();
+            tasks.forEach((k, v) -> futures.put(k, service.submit(v)));
+            Map<String, QueryExecutor.Dto<T>> result = new HashMap<>();
+            futures.forEach((k, v) -> {
+                try {
+                    result.put(k, new QueryExecutor.Dto<>(true, v.get(), null));
+                } catch (InterruptedException | ExecutionException e) {
+                    result.put(k, new QueryExecutor.Dto<>(false, null, e.getMessage()));
+                }
+            });
+            return result;
+        } finally {
+            service.shutdownNow();
+        }
     }
 
     private QueryResultVO getResultByResultId(String url, Map<String, String> headers, Map<String, String[]> param, String resultId) throws IOException {
@@ -132,7 +155,7 @@ public class QueryExecutor extends BaseExecutor {
         return getResultByParam(url, headers, newParam);
     }
 
-    private QueryResultVO getResultByUid(String url, Map<String, String> headers, Map<String, String[]> param, Set<String> uidSet) throws IOException {
+    private QueryResultVO getResultByUid(String url, Map<String, String> headers, Map<String, String[]> param, Set<String> uidSet) {
         Map<String, String[]> newParam = new HashMap<>(param);
         Iterator<String> it = uidSet.iterator();
         StringBuilder uidListBuilder = new StringBuilder(it.next());
@@ -143,8 +166,8 @@ public class QueryExecutor extends BaseExecutor {
         return getResultByParam(url, headers, newParam);
     }
 
-    private QueryResultVO getResultByParam(String url, Map<String, String> headers, Map<String, String[]> param) throws IOException {
-        return request(url, headers, param, QueryResultVO.class);
+    private QueryResultVO getResultByParam(String url, Map<String, String> headers, Map<String, String[]> param) {
+        return queryExecutor.request(url, headers, param);
     }
 
     private ResultHolder getNewHolder(Map<String, String> headers, Map<String, String[]> param, List<Object> result, Set<String> uidSearchUrls, int expiryInSec) {
@@ -194,7 +217,7 @@ public class QueryExecutor extends BaseExecutor {
         }
 
         public String getResultString() {
-            return GSON.toJson(result);
+            return QueryExecutor.GSON.toJson(result);
         }
     }
 

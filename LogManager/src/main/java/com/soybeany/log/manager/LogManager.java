@@ -1,6 +1,7 @@
 package com.soybeany.log.manager;
 
 import com.soybeany.log.core.model.Direction;
+import com.soybeany.log.manager.executor.QueryExecutor;
 
 /**
  * @author Soybeany
@@ -8,8 +9,8 @@ import com.soybeany.log.core.model.Direction;
  */
 public class LogManager {
 
-    public static QueryExecutor query(int maxResultCount) {
-        return new QueryExecutor(maxResultCount);
+    public static QueryManager query(QueryExecutor queryExecutor, int maxResultCount) {
+        return new QueryManager(queryExecutor, maxResultCount);
     }
 
     public static String queryHelp(String helpPath, String forDirectReadPath) {

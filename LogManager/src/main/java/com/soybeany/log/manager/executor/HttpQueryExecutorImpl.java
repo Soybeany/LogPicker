@@ -1,46 +1,25 @@
-package com.soybeany.log.manager;
+package com.soybeany.log.manager.executor;
 
-import com.google.gson.Gson;
+import com.soybeany.exception.BdRtException;
+import com.soybeany.log.core.model.QueryResultVO;
 import okhttp3.*;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.net.URLEncoder;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Soybeany
  * @date 2021/2/8
  */
-public class BaseExecutor {
+public class HttpQueryExecutorImpl implements QueryExecutor {
 
     private static final OkHttpClient CLIENT_FOR_READ = new OkHttpClient.Builder().readTimeout(5, TimeUnit.MINUTES).build();
-    protected static final Gson GSON = new Gson();
 
-    @SuppressWarnings("AlibabaThreadPoolCreation")
-    protected static <T> Map<String, Dto<T>> invokeAll(Map<String, Callable<T>> tasks) {
-        ExecutorService service = Executors.newCachedThreadPool();
-        try {
-            Map<String, Future<T>> futures = new HashMap<>();
-            tasks.forEach((k, v) -> futures.put(k, service.submit(v)));
-            Map<String, Dto<T>> result = new HashMap<>();
-            futures.forEach((k, v) -> {
-                try {
-                    result.put(k, new Dto<>(true, v.get(), null));
-                } catch (InterruptedException | ExecutionException e) {
-                    result.put(k, new Dto<>(false, null, e.getMessage()));
-                }
-            });
-            return result;
-        } finally {
-            service.shutdownNow();
-        }
-    }
-
-    protected <T> T request(String url, Map<String, String> headers, Map<String, String[]> param, Type type) throws IOException {
+    @Override
+    public QueryResultVO request(String url, Map<String, String> headers, Map<String, String[]> param) {
         if (!url.startsWith("http")) {
             url = "http://" + url;
         }
@@ -71,21 +50,9 @@ public class BaseExecutor {
             if (!response.isSuccessful() || null == (body = response.body())) {
                 throw new IOException("“" + url + "”请求异常(" + response.code() + ")");
             }
-            return GSON.fromJson(body.string(), type);
-        }
-    }
-
-    // ********************内部类********************
-
-    public static class Dto<T> {
-        public boolean isNorm;
-        public T data;
-        public String msg;
-
-        public Dto(boolean isNorm, T data, String msg) {
-            this.isNorm = isNorm;
-            this.data = data;
-            this.msg = msg;
+            return GSON.fromJson(body.string(), QueryResultVO.class);
+        } catch (IOException e) {
+            throw new BdRtException(e.getMessage());
         }
     }
 
