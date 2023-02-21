@@ -9,8 +9,8 @@ import com.soybeany.log.manager.executor.QueryExecutor;
  */
 public class LogManager {
 
-    public static QueryManager query(QueryExecutor queryExecutor, int maxResultCount) {
-        return new QueryManager(queryExecutor, maxResultCount);
+    public static QueryManager query(QueryExecutor queryExecutor, UrlProvider defaultUrlProvider, int maxResultCount) {
+        return new QueryManager(queryExecutor, defaultUrlProvider, maxResultCount);
     }
 
     public static String queryHelp(String helpPath, String forDirectReadPath) {

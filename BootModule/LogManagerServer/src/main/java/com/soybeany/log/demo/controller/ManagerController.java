@@ -59,7 +59,7 @@ public class ManagerController {
 
     @PostConstruct
     private void init() {
-        queryManager = LogManager.query(new HttpQueryExecutorImpl(), appConfig.maxResultRetain);
+        queryManager = LogManager.query(new HttpQueryExecutorImpl(), host -> host + appConfig.outerQueryPath, appConfig.maxResultRetain);
         addAction(appConfig.queryPath, new IAction() {
             @Override
             public String onInvoke(Map<String, String> headers, Map<String, String[]> param) {

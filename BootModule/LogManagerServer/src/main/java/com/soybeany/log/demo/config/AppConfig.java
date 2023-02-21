@@ -13,6 +13,7 @@ public class AppConfig {
 
     public String queryPath;
     public String helpPath;
+    public String outerQueryPath;
     public int maxResultRetain;
     public int resultRetainSec;
 
@@ -22,6 +23,10 @@ public class AppConfig {
 
     public void setHelpPath(String helpPath) {
         this.helpPath = helpPath;
+    }
+
+    public void setOuterQueryPath(String outerQueryPath) {
+        this.outerQueryPath = outerQueryPath;
     }
 
     public void setMaxResultRetain(int maxResultRetain) {
