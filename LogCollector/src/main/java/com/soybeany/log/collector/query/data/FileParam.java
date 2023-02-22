@@ -34,6 +34,18 @@ public class FileParam {
         FORMATTER_MAP.put(5, time -> LocalDateTime.of(LocalDate.now(), LocalTime.parse(time, DateTimeFormatter.ofPattern("HH:mm"))));
     }
 
+    public static LocalDateTime parseTime(String string) {
+        DateTimeParser parser = FORMATTER_MAP.get(string.length());
+        if (null == parser) {
+            throw new LogException("使用了不支持的时间格式");
+        }
+        try {
+            return parser.parse(string);
+        } catch (DateTimeParseException e) {
+            throw new LogException("“" + string + "”时间解析异常");
+        }
+    }
+
     public void setFromTime(String value, boolean validate) {
         fromTime = parseTime(value);
         if (validate) {
@@ -85,20 +97,6 @@ public class FileParam {
 
     public LinkedHashSet<File> getLogFiles() {
         return logFiles;
-    }
-
-    // ***********************内部方法****************************
-
-    private LocalDateTime parseTime(String string) {
-        DateTimeParser parser = FORMATTER_MAP.get(string.length());
-        if (null == parser) {
-            throw new LogException("使用了不支持的时间格式");
-        }
-        try {
-            return parser.parse(string);
-        } catch (DateTimeParseException e) {
-            throw new LogException("“" + string + "”时间解析异常");
-        }
     }
 
     // ********************内部类********************
