@@ -25,8 +25,9 @@ public class RangeService {
      */
     public void append(LinkedList<FileRange> ranges, long fromByte, long toByte) {
         FileRange lastRange = ranges.peekLast();
-        // 存在范围且差距小于指定值，延长结束下标
-        if (null != lastRange && (toByte - lastRange.to <= logCollectConfig.maxBytesGapToMerge)) {
+        // 存在范围，新范围在已有范围后，且差距小于指定值，延长结束下标
+        long delta;
+        if (null != lastRange && (delta = toByte - lastRange.to) > 0 && delta <= logCollectConfig.maxBytesGapToMerge) {
             lastRange.to = toByte;
             return;
         }
