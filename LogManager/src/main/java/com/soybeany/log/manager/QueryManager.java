@@ -20,6 +20,8 @@ public class QueryManager {
     private static final String KEY_LOG_SEARCH_HOSTS = "logSearchHosts";
     private static final String KEY_UID_SEARCH_HOSTS = "uidSearchHosts";
     private static final String KEY_HIDE_MSG = "hideMsg";
+    private static final String KEY_FROM_TIME = "fromTime";
+    private static final String KEY_TO_TIME = "toTime";
     private static final String KEY_UID_LIST = "uidList";
     private static final String HOST_SEPARATE_REGEX = "[,;]";
 
@@ -172,12 +174,14 @@ public class QueryManager {
     }
 
     private QueryResultVO getResultByUid(String url, Map<String, String> headers, Map<String, String[]> param, Set<String> uidSet) {
-        Map<String, String[]> newParam = new HashMap<>(param);
         Iterator<String> it = uidSet.iterator();
         StringBuilder uidListBuilder = new StringBuilder(it.next());
         while (it.hasNext()) {
             uidListBuilder.append(";").append(it.next());
         }
+        Map<String, String[]> newParam = new HashMap<>();
+        newParam.put(KEY_FROM_TIME, param.get(KEY_FROM_TIME));
+        newParam.put(KEY_TO_TIME, param.get(KEY_TO_TIME));
         setSingleValueToMap(newParam, KEY_UID_LIST, uidListBuilder.toString());
         return getResultByParam(url, headers, newParam);
     }
