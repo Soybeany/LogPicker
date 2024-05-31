@@ -10,6 +10,7 @@ import com.soybeany.log.core.model.LogPack;
 import com.soybeany.util.cache.IDataHolder;
 import com.soybeany.util.cache.StdMemDataHolder;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 
@@ -17,7 +18,7 @@ import java.io.IOException;
  * @author Soybeany
  * @date 2022/4/22
  */
-public class StatisticService<Statistic extends BaseUnit> extends BaseScanService<Statistic> {
+public class StatisticService<Statistic extends BaseUnit> extends BaseScanService<Statistic> implements Closeable {
 
     private final String unitDesc;
     private final MsgRecorder msgRecorder;
@@ -46,6 +47,11 @@ public class StatisticService<Statistic extends BaseUnit> extends BaseScanServic
     @Override
     public void onHandleLogPack(Statistic statistic, LogPack logPack) {
         handler.onHandleLogPack(statistic, logPack);
+    }
+
+    @Override
+    public void close() throws IOException {
+        holder.close();
     }
 
     public StatisticService<Statistic> statisticHolder(IDataHolder<Statistic> holder) {
