@@ -48,7 +48,13 @@ public class QueryController {
 
     @GetMapping("/help")
     public String help() {
-        return Direction.query("/query/help", "/query/forDirectRead");
+        Direction direction = new Direction();
+        return direction.defaultIntroduce()
+                .defaultParams()
+                .defaultResults()
+                .defaultSpecials()
+                .defaultTimeSupports()
+                .build();
     }
 
     @PostConstruct

@@ -71,7 +71,7 @@ public class ManagerController {
                 return MediaType.APPLICATION_JSON_VALUE;
             }
         });
-        addAction(appConfig.helpPath, (headers, param) -> LogManager.queryHelp(appConfig.helpPath, appConfig.queryPath));
+        addAction(appConfig.helpPath, (headers, param) -> LogManager.queryHelp());
     }
 
     private void addAction(String key, IAction action) {
