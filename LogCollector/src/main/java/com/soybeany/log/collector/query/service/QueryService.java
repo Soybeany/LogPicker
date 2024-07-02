@@ -19,6 +19,7 @@ import com.soybeany.log.core.model.LogPack;
 import com.soybeany.util.cache.IDataHolder;
 import com.soybeany.util.file.BdFileUtils;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -27,7 +28,7 @@ import java.util.*;
  * @author Soybeany
  * @date 2021/1/5
  */
-public class QueryService {
+public class QueryService implements Closeable {
 
     private static final ThreadLocal<Long> READ_BYTES_LOCAL = new ThreadLocal<>();
 
@@ -40,6 +41,11 @@ public class QueryService {
         this.logCollectConfig = logCollectConfig;
         this.rangeService = new RangeService(logCollectConfig);
         this.queryResultService = new QueryResultService(logCollectConfig, fileProvider, moduleFactories, rangeService, indexesHolder, resultHolder);
+    }
+
+    @Override
+    public void close() throws IOException {
+        queryResultService.close();
     }
 
     public <T> T simpleQuery(Map<String, String> param, LogExporter<T> logExporter) {
@@ -306,5 +312,4 @@ public class QueryService {
         nextResult.lastId = result.id;
         queryResultService.registerResult(nextResult);
     }
-
 }

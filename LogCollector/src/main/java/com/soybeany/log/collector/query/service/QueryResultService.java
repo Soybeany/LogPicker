@@ -19,7 +19,9 @@ import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.core.util.TimeUtils;
 import com.soybeany.util.cache.IDataHolder;
 
+import java.io.Closeable;
 import java.io.File;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -27,7 +29,7 @@ import java.util.*;
  * @author Soybeany
  * @date 2021/1/7
  */
-public class QueryResultService {
+public class QueryResultService implements Closeable {
 
     private final LogCollectConfig logCollectConfig;
     private final FileProvider fileProvider;
@@ -53,8 +55,21 @@ public class QueryResultService {
 
     // ****************************************公开方法****************************************
 
+    @Override
+    public void close() throws IOException {
+        fileProvider.close();
+        if (null != indexesHolder) {
+            indexesHolder.close();
+        }
+        if (null != resultHolder) {
+            resultHolder.close();
+        }
+    }
+
     public synchronized void registerResult(QueryResult result) {
-        resultHolder.put(result.id, result, logCollectConfig.resultRetainSec);
+        if (null != resultHolder) {
+            resultHolder.put(result.id, result, logCollectConfig.resultRetainSec);
+        }
     }
 
     public QueryResult getResult(Map<String, String[]> param) {
@@ -75,11 +90,9 @@ public class QueryResultService {
             return null;
         }
         // 若指定了resultId，则尝试获取指定的result
-        QueryResult result = resultHolder.get(resultId);
-        if (null == result) {
-            throw new LogException("指定的resultId不存在或已过期");
-        }
-        return result;
+        return Optional.ofNullable(resultHolder)
+                .map(holder -> holder.get(resultId))
+                .orElseThrow(() -> new LogException("指定的resultId不存在或已过期"));
     }
 
     private QueryResult getNewResult(Map<String, String[]> param) {
@@ -156,5 +169,4 @@ public class QueryResultService {
                 .map(Map.Entry::getValue).orElse(indexes.scannedBytes);
         return new FileRange(startByte, endByte);
     }
-
 }

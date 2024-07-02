@@ -72,8 +72,12 @@ public class LogCollector {
         }
 
         private void setupDefaultDataHolder() {
-            indexesHolder = new StdMemDataHolder<>(logCollectConfig.maxFileIndexesRetain);
-            resultHolder = new StdMemDataHolder<>(logCollectConfig.maxResultRetain);
+            if (logCollectConfig.maxFileIndexesRetain > 0) {
+                indexesHolder = new StdMemDataHolder<>(logCollectConfig.maxFileIndexesRetain);
+            }
+            if (logCollectConfig.maxResultRetain > 0) {
+                resultHolder = new StdMemDataHolder<>(logCollectConfig.maxResultRetain);
+            }
         }
     }
 

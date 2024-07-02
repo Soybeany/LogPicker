@@ -1,5 +1,6 @@
 package com.soybeany.log.collector.common.data;
 
+import com.soybeany.log.core.model.LogException;
 import com.soybeany.log.core.util.Md5Calculator;
 
 import java.time.format.DateTimeFormatter;
@@ -12,7 +13,7 @@ import java.util.regex.Pattern;
  * @author Soybeany
  * @date 2021/1/7
  */
-public class LogCollectConfig {
+public class LogCollectConfig implements Cloneable {
 
     /**
      * 日志的字符集
@@ -55,25 +56,17 @@ public class LogCollectConfig {
      */
     public int defaultMaxResultCount = 30;
     /**
-     * 在内存中最多持有的文件索引数
+     * 在内存中最多持有的文件索引数（当值不为正数时不保留）
      */
     public int maxFileIndexesRetain = 10;
     /**
-     * 在内存中最多持有的文件统计数
-     */
-    public int maxFileStatisticRetain = 10;
-    /**
-     * 在内存中最多持有的结果数
+     * 在内存中最多持有的结果数（当值不为正数时不保留）
      */
     public int maxResultRetain = 10;
     /**
      * 索引保留的时间
      */
     public int indexRetainSec = 300;
-    /**
-     * 统计数据保留的时间
-     */
-    public int statisticRetainSec = 300;
     /**
      * 查询结果保留的时间
      */
@@ -122,11 +115,6 @@ public class LogCollectConfig {
         return this;
     }
 
-    public LogCollectConfig withMaxFileStatisticRetain(int count) {
-        this.maxFileStatisticRetain = count;
-        return this;
-    }
-
     public LogCollectConfig withMaxResultRetain(int count) {
         this.maxResultRetain = count;
         return this;
@@ -134,11 +122,6 @@ public class LogCollectConfig {
 
     public LogCollectConfig withIndexRetainSec(int sec) {
         this.indexRetainSec = sec;
-        return this;
-    }
-
-    public LogCollectConfig withStatisticRetainSec(int sec) {
-        this.statisticRetainSec = sec;
         return this;
     }
 
@@ -154,4 +137,12 @@ public class LogCollectConfig {
                 .calculate();
     }
 
+    @Override
+    public LogCollectConfig clone() {
+        try {
+            return (LogCollectConfig) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new LogException("无法克隆LogCollectConfig:" + e.getMessage());
+        }
+    }
 }

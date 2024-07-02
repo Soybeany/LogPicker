@@ -61,7 +61,7 @@ public abstract class BaseScanService<Unit extends BaseUnit> implements IUnitHan
 
     private Unit getUnit(String unitDesc, MsgRecorder recorder, IDataHolder<Unit> unitHolder, File file) {
         String unitKey = getUnitKey(file);
-        Unit unit = unitHolder.get(unitKey);
+        Unit unit = null != unitHolder ? unitHolder.get(unitKey) : null;
         try {
             if (null != unit) {
                 unit.check(logCollectConfig);
@@ -71,7 +71,9 @@ public abstract class BaseScanService<Unit extends BaseUnit> implements IUnitHan
             recorder.write("重新创建“" + file.getName() + "”的" + unitDesc + "(" + e.getMessage() + ")");
         }
         unit = onGetNewUnit(logCollectConfig, file);
-        unitHolder.put(unitKey, unit, logCollectConfig.indexRetainSec);
+        if (null != unitHolder) {
+            unitHolder.put(unitKey, unit, logCollectConfig.indexRetainSec);
+        }
         return unit;
     }
 

@@ -7,10 +7,7 @@ import com.soybeany.log.collector.common.model.loader.LogLineHolder;
 import com.soybeany.log.collector.common.service.BaseScanService;
 import com.soybeany.log.collector.common.service.IUnitHandler;
 import com.soybeany.log.core.model.LogPack;
-import com.soybeany.util.cache.IDataHolder;
-import com.soybeany.util.cache.StdMemDataHolder;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 
@@ -18,49 +15,36 @@ import java.io.IOException;
  * @author Soybeany
  * @date 2022/4/22
  */
-public class StatisticService<Statistic extends BaseUnit> extends BaseScanService<Statistic> implements Closeable {
+public class StatisticService<Unit extends BaseUnit> extends BaseScanService<Unit> {
 
     private final String unitDesc;
     private final MsgRecorder msgRecorder;
-    private final IUnitHandler<Statistic> handler;
+    private final IUnitHandler<Unit> handler;
 
-    private IDataHolder<Statistic> holder;
-
-    public StatisticService(LogCollectConfig logCollectConfig, String unitDesc, MsgRecorder recorder, IUnitHandler<Statistic> handler) {
+    public StatisticService(LogCollectConfig logCollectConfig, String unitDesc, MsgRecorder recorder, IUnitHandler<Unit> handler) {
         super(logCollectConfig);
         this.unitDesc = unitDesc;
         this.msgRecorder = recorder;
         this.handler = handler;
-        holder = new StdMemDataHolder<>(logCollectConfig.maxFileStatisticRetain);
     }
 
     @Override
-    public Statistic onGetNewUnit(LogCollectConfig logCollectConfig, File logFile) {
+    public Unit onGetNewUnit(LogCollectConfig logCollectConfig, File logFile) {
         return handler.onGetNewUnit(logCollectConfig, logFile);
     }
 
     @Override
-    public void onHandleLogLine(Statistic statistic, LogLineHolder holder) {
-        handler.onHandleLogLine(statistic, holder);
+    public void onHandleLogLine(Unit unit, LogLineHolder holder) {
+        handler.onHandleLogLine(unit, holder);
     }
 
     @Override
-    public void onHandleLogPack(Statistic statistic, LogPack logPack) {
-        handler.onHandleLogPack(statistic, logPack);
+    public void onHandleLogPack(Unit unit, LogPack logPack) {
+        handler.onHandleLogPack(unit, logPack);
     }
 
-    @Override
-    public void close() throws IOException {
-        holder.close();
-    }
-
-    public StatisticService<Statistic> statisticHolder(IDataHolder<Statistic> holder) {
-        this.holder = holder;
-        return this;
-    }
-
-    public Statistic updateAndGetUnit(File file) throws IOException {
-        return updateAndGetUnit(unitDesc, msgRecorder, holder, file);
+    public Unit updateAndGetUnit(File file) throws IOException {
+        return updateAndGetUnit(unitDesc, msgRecorder, null, file);
     }
 
 }
