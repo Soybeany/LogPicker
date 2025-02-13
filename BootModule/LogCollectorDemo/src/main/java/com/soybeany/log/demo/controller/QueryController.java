@@ -19,7 +19,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
 
 /**
  * @author Soybeany
@@ -62,6 +64,11 @@ public class QueryController {
         LogCollectConfig config = appConfig.toLogCollectConfig();
         FileProvider fileProvider = new DayBasedRollingFileProvider(appConfig.dirToScan, appConfig.logTodayFileName, appConfig.logHistoryFileName);
         queryService = LogCollector.query(config).build(fileProvider);
+    }
+
+    @PreDestroy
+    private void onDestroy() throws IOException {
+        queryService.close();
     }
 
     private String byParam(HttpServletRequest request, GsonLogExporter exporter) {
